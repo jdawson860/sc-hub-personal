@@ -1,0 +1,37 @@
+{
+  "type": "object",
+  "properties": {
+    "timestamp": {
+      "type": "string"
+    },
+    "athlete": {
+      "type": "string"
+    },
+    "session_type": {
+      "type": "string",
+      "enum": [
+        "Lower A",
+        "Lower B",
+        "Upper A",
+        "Upper B"
+      ]
+    },
+    "exercise": {
+      "type": "string"
+    },
+    "set_number": {
+      "type": "number"
+    },
+    "reps": {
+      "type": "number"
+    },
+    "load": {
+      "type": "string"
+    },
+    "rpe": {
+      "type": "number"
+    }
+  },
+  "required": [],
+  "name": "SessionLog"
+}
