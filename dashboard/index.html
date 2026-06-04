@@ -64,6 +64,16 @@
     .rpe-low { background: #e8f5e9; color: #2e7d32; }
     .rpe-mid { background: #fff3e0; color: #e65100; }
     .rpe-high { background: #fce4ec; color: #c62828; }
+    /* ACWR BADGE */
+    .acwr-badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 12px; font-weight: 800; }
+    .acwr-optimal  { background: #e8f5e9; color: #2e7d32; }
+    .acwr-low      { background: #e3f2fd; color: #1565c0; }
+    .acwr-caution  { background: #fff3e0; color: #e65100; }
+    .acwr-danger   { background: #fce4ec; color: #c62828; }
+    .acwr-none     { background: #f0f4f8; color: var(--muted); }
+    .acwr-zone-bar { position: relative; height: 8px; border-radius: 4px; background: linear-gradient(to right, #90caf9 0%, #90caf9 22%, #a5d6a7 22%, #a5d6a7 61%, #ffe082 61%, #ffe082 78%, #ef9a9a 78%, #ef9a9a 100%); margin-bottom: 6px; }
+    .acwr-zone-marker { position: absolute; top: -4px; width: 16px; height: 16px; background: var(--navy); border-radius: 50%; transform: translateX(-50%); border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.3); transition: left 0.5s; }
+    .acwr-zones-label { display: flex; justify-content: space-between; font-size: 9px; color: var(--muted); font-weight: 600; margin-top: 2px; }
     .session-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; margin: 1px; }
     .sb-la { background: #e3f2fd; color: #1565c0; }
     .sb-lb { background: #e8f5e9; color: #2e7d32; }
@@ -220,7 +230,7 @@ function renderCoachView(data) {
       <table class="data-table" id="athleteTable">
         <thead><tr>
           <th>Athlete</th><th>Last Session</th><th>Sessions</th>
-          <th>Session Types</th><th>Avg RPE</th><th>⚡ RPE≥9</th><th>Weekly Volume</th>
+          <th>Session Types</th><th>Avg RPE</th><th>⚡ RPE≥9</th><th>ACWR</th><th>Weekly Volume</th>
         </tr></thead>
         <tbody id="athleteTableBody"></tbody>
       </table>
@@ -245,6 +255,15 @@ function renderCoachView(data) {
       <canvas id="compareChart" height="80"></canvas>
     </div>
 
+
+    <div class="section-title">Squad ACWR — Acute:Chronic Workload Ratio</div>
+    <div class="card">
+      <div class="card-title">Rolling 7-day acute ÷ 28-day chronic (all athletes combined) — danger zone &gt;1.5, optimal 0.8–1.3</div>
+      <div class="acwr-zone-bar" style="margin-bottom:16px"><div class="acwr-zone-marker" id="squadACWRMarker" style="left:50%"></div></div>
+      <div class="acwr-zones-label"><span>Under (&lt;0.8)</span><span>Optimal (0.8–1.3)</span><span>Caution</span><span>Danger (&gt;1.5)</span></div>
+      <br/>
+      <canvas id="squadACWRChart" height="70"></canvas>
+    </div>
     <div class="section-title">Squad RPE Trend</div>
     <div class="card">
       <div class="card-title">Average Squad RPE — Last 30 Days</div>
@@ -275,10 +294,48 @@ function renderCoachView(data) {
       <td>${sessionBadges||'<span style="color:var(--muted)">—</span>'}</td>
       <td><span class="rpe-badge ${rpeClass}">${a.avgRpe}</span></td>
       <td style="color:${a.highRpeSets>3?'var(--red)':'var(--text)'};font-weight:${a.highRpeSets>3?700:400}">${a.highRpeSets}</td>
+      <td>${(() => { const v=a.latestACWR?.acwr; const c=!v?'acwr-none':v<0.8?'acwr-low':v<=1.3?'acwr-optimal':v<=1.5?'acwr-caution':'acwr-danger'; return `<span class="acwr-badge ${c}">${v?v.toFixed(2):'—'}</span>`; })()}</td>
       <td><div class="mini-bar-wrap"><div class="mini-bar-bg" style="background:#e3f2fd"><div class="mini-bar-fill" style="width:${Math.round(lastVol/maxVol*100)}%;background:var(--accent2)"></div></div><span style="font-size:11px;color:var(--muted)">${lastVol>0?lastVol.toLocaleString():'—'}</span></div></td>
     `;
     tbody.appendChild(tr);
   });
+
+  // Squad ACWR chart
+  const squadACWR = data.squadACWR || [];
+  if (squadACWR.length > 0) {
+    const acwrPlugin = {
+      id:'acwrZones',
+      beforeDraw(chart) {
+        const {ctx,chartArea:{left,right,top,bottom},scales:{y}} = chart;
+        [{min:0,max:0.8,color:'rgba(144,202,249,0.15)'},{min:0.8,max:1.3,color:'rgba(165,214,167,0.20)'},{min:1.3,max:1.5,color:'rgba(255,224,130,0.25)'},{min:1.5,max:2.5,color:'rgba(239,154,154,0.25)'}].forEach(z=>{
+          const yT=y.getPixelForValue(Math.min(z.max,y.max)), yB=y.getPixelForValue(Math.max(z.min,y.min));
+          ctx.fillStyle=z.color; ctx.fillRect(left,yT,right-left,yB-yT);
+        });
+      }
+    };
+    const acwrCtx = document.getElementById('squadACWRChart').getContext('2d');
+    charts['squadACWR'] = new Chart(acwrCtx, {
+      type:'line', plugins:[acwrPlugin],
+      data:{ labels:squadACWR.map(r=>r.date.slice(5)), datasets:[
+        {label:'ACWR',data:squadACWR.map(r=>r.acwr),borderColor:'#081830',backgroundColor:'rgba(8,24,48,0.05)',borderWidth:2.5,pointRadius:2,fill:true,tension:0.4,yAxisID:'y'},
+        {label:'Acute (7d)',data:squadACWR.map(r=>r.acute),borderColor:'#1e90ff',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:0.4,yAxisID:'y2'},
+        {label:'Chronic (28d)',data:squadACWR.map(r=>r.chronic),borderColor:'#00c8a0',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:0.4,yAxisID:'y2'},
+      ]},
+      options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{font:{size:11},boxWidth:12}}},
+        scales:{
+          y:{position:'left',min:0,max:2,grid:{color:'#f0f4f8'},ticks:{font:{size:11}},title:{display:true,text:'ACWR',font:{size:11}}},
+          y2:{position:'right',grid:{drawOnChartArea:false},ticks:{font:{size:11}},title:{display:true,text:'Load (kg×reps)',font:{size:10}}},
+          x:{grid:{display:false},ticks:{font:{size:10},maxTicksLimit:14}}
+        }
+      }
+    });
+    const latest = squadACWR[squadACWR.length-1];
+    if (latest) {
+      const pct = Math.min(Math.max((latest.acwr/2)*100,2),98);
+      const marker = document.getElementById('squadACWRMarker');
+      if (marker) marker.style.left = pct+'%';
+    }
+  }
 
   // RPE trend chart
   if (rpeTrend.length > 0) {
@@ -379,6 +436,11 @@ function renderAthleteView(data) {
   const sessions = sessionHistory.length;
   const rpeArr = logs.filter(r=>r.rpe).map(r=>r.rpe);
   const avgRpe = rpeArr.length ? (rpeArr.reduce((a,b)=>a+b,0)/rpeArr.length).toFixed(1) : '—';
+  const latestACWR = data.latestACWR;
+  const acwrVal = latestACWR?.acwr;
+  const acwrStatVal = acwrVal ? acwrVal.toFixed(2) : '—';
+  const acwrStatClass = !acwrVal ? '' : acwrVal < 0.8 ? '' : acwrVal <= 1.3 ? 'green' : acwrVal <= 1.5 ? 'warn' : 'red';
+  const acwrStatSub = !acwrVal ? 'Not enough data' : acwrVal < 0.8 ? 'Under-training' : acwrVal <= 1.3 ? 'Optimal zone' : acwrVal <= 1.5 ? 'Caution' : '⚠️ Danger zone';
 
   // Personal bests per exercise
   const pbMap = {};
@@ -410,6 +472,7 @@ function renderAthleteView(data) {
       <div class="stat-card green"><div class="stat-label">Sessions</div><div class="stat-value">${sessions}</div><div class="stat-sub">Total logged</div></div>
       <div class="stat-card"><div class="stat-label">Total Sets</div><div class="stat-value">${totalSets}</div><div class="stat-sub">All exercises</div></div>
       <div class="stat-card warn"><div class="stat-label">Avg RPE</div><div class="stat-value">${avgRpe}</div><div class="stat-sub">All sets</div></div>
+      <div class="stat-card ${acwrStatClass}"><div class="stat-label">Current ACWR</div><div class="stat-value">${acwrStatVal}</div><div class="stat-sub">${acwrStatSub}</div></div>
       <div class="stat-card"><div class="stat-label">PBs Tracked</div><div class="stat-value">${pbs.length}</div><div class="stat-sub">Exercises with load</div></div>
     </div>
 
@@ -432,6 +495,11 @@ function renderAthleteView(data) {
       </div>
     </div>
 
+    <div class="section-title">ACWR — Acute:Chronic Workload Ratio</div>
+    <div class="card">
+      <div class="card-title">Rolling 7-day (acute) ÷ 28-day (chronic) daily volume — optimal: 0.8–1.3</div>
+      <canvas id="athleteACWRChart" height="80"></canvas>
+    </div>
     <div class="section-title">Session History</div>
     <div class="card">
       <table class="data-table">
@@ -454,6 +522,55 @@ function renderAthleteView(data) {
       tr.innerHTML = `<td style="font-size:11px;font-weight:600">${i===0?'<span class="pb-crown">🏆</span>':''}${ex}</td><td class="pb-val">${pb.load}kg</td><td style="color:var(--muted)">${pb.reps||'—'}</td><td style="color:var(--muted);font-size:12px">${pb.date||'—'}</td>`;
       pbBody.appendChild(tr);
     });
+  }
+
+  // Athlete ACWR chart
+  const acwrSeries = data.acwrSeries || [];
+  if (acwrSeries.length > 0) {
+    setTimeout(() => {
+      const aCtx = document.getElementById('athleteACWRChart')?.getContext('2d');
+      if (!aCtx) return;
+      const acwrPlugin = {
+        id: 'acwrZones',
+        beforeDraw(chart) {
+          const {ctx, chartArea: {left,right,top,bottom}, scales: {y}} = chart;
+          const zones = [
+            {min:0, max:0.8, color:'rgba(144,202,249,0.15)'},
+            {min:0.8, max:1.3, color:'rgba(165,214,167,0.20)'},
+            {min:1.3, max:1.5, color:'rgba(255,224,130,0.25)'},
+            {min:1.5, max:2.5, color:'rgba(239,154,154,0.25)'},
+          ];
+          zones.forEach(z => {
+            const yTop = y.getPixelForValue(Math.min(z.max, y.max));
+            const yBot = y.getPixelForValue(Math.max(z.min, y.min));
+            ctx.fillStyle = z.color;
+            ctx.fillRect(left, yTop, right-left, yBot-yTop);
+          });
+        }
+      };
+      charts['athleteACWR'] = new Chart(aCtx, {
+        type:'line',
+        plugins:[acwrPlugin],
+        data:{
+          labels: acwrSeries.map(r=>r.date.slice(5)),
+          datasets:[
+            {label:'ACWR', data:acwrSeries.map(r=>r.acwr), borderColor:'#081830', backgroundColor:'rgba(8,24,48,0.05)', borderWidth:2.5, pointRadius:2, fill:true, tension:0.4, yAxisID:'y'},
+            {label:'Acute (7d)', data:acwrSeries.map(r=>r.acute), borderColor:'#1e90ff', borderWidth:1.5, borderDash:[4,3], pointRadius:0, fill:false, tension:0.4, yAxisID:'y2'},
+            {label:'Chronic (28d)', data:acwrSeries.map(r=>r.chronic), borderColor:'#00c8a0', borderWidth:1.5, borderDash:[4,3], pointRadius:0, fill:false, tension:0.4, yAxisID:'y2'},
+          ]
+        },
+        options:{
+          responsive:true,
+          interaction:{mode:'index',intersect:false},
+          plugins:{legend:{labels:{font:{size:11},boxWidth:12}}},
+          scales:{
+            y:{ position:'left', min:0, max:2, grid:{color:'#f0f4f8'}, ticks:{font:{size:11}}, title:{display:true,text:'ACWR',font:{size:11}} },
+            y2:{ position:'right', grid:{drawOnChartArea:false}, ticks:{font:{size:11}}, title:{display:true,text:'Load (kg×reps)',font:{size:10}} },
+            x:{ grid:{display:false}, ticks:{font:{size:10}, maxTicksLimit:14} }
+          }
+        }
+      });
+    }, 50);
   }
 
   // Weekly volume chart
