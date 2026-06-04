@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Core Testing — Cranbrook Rowing</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #081830; --navy2: #0d2545;
+      --accent: #1e90ff; --accent2: #00c8a0; --warn: #ff6b35; --red: #e63946;
+      --bg: #f0f4f8; --card: #ffffff; --text: #1a2332; --muted: #6b7a99;
+      --gold: #f59e0b; --silver: #94a3b8; --bronze: #b45309;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* HEADER */
+    .header { background: var(--navy); color: white; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 16px rgba(0,0,0,0.35); }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-logo { width: 40px; height: 40px; background: var(--accent2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .header-title { font-size: 17px; font-weight: 800; }
+    .header-sub { font-size: 12px; color: #8fa0be; margin-top: 1px; }
+    .nav-links { display: flex; gap: 8px; }
+    .nav-link { padding: 7px 14px; border-radius: 8px; color: #8fa0be; font-size: 13px; font-weight: 600; text-decoration: none; transition: all 0.2s; }
+    .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.12); color: white; }
+
+    /* SYNC BAR */
+    .sync-bar { background: var(--navy2); padding: 10px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .sync-info { color: #8fa0be; font-size: 12px; }
+    .sync-btn { padding: 6px 16px; background: var(--accent); border: none; border-radius: 7px; color: white; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: opacity 0.2s; }
+    .sync-btn:hover { opacity: 0.85; }
+    .sync-btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+    /* MAIN */
+    .main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+
+    /* YEAR TABS */
+    .year-tabs { display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; }
+    .year-tab { padding: 9px 20px; border: 2px solid #e2e8f0; border-radius: 10px; background: white; color: var(--muted); font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+    .year-tab:hover { border-color: var(--accent); color: var(--accent); }
+    .year-tab.active { background: var(--navy); border-color: var(--navy); color: white; }
+    .year-tab .count { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 1px 7px; font-size: 11px; margin-left: 4px; }
+    .year-tab:not(.active) .count { background: var(--bg); color: var(--muted); }
+
+    /* SECTION TITLE */
+    .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 12px; margin-top: 28px; }
+    .section-title:first-child { margin-top: 0; }
+
+    /* OVERALL RANKING TABLE */
+    .card { background: var(--card); border-radius: 14px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    .card-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px; }
+
+    .rank-table { width: 100%; border-collapse: collapse; }
+    .rank-table th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--bg); }
+    .rank-table th.center { text-align: center; }
+    .rank-table td { padding: 11px 12px; font-size: 13px; border-bottom: 1px solid var(--bg); vertical-align: middle; }
+    .rank-table tr:last-child td { border-bottom: none; }
+    .rank-table tr:hover td { background: #f8fafc; }
+
+    .rank-num { font-size: 18px; font-weight: 900; width: 36px; text-align: center; }
+    .rank-1 { color: var(--gold); }
+    .rank-2 { color: var(--silver); }
+    .rank-3 { color: var(--bronze); }
+    .rank-other { color: var(--muted); }
+
+    .athlete-name { font-weight: 700; font-size: 14px; color: var(--navy); }
+    .score-cell { text-align: center; font-weight: 600; font-size: 13px; }
+    .score-good { color: #2e7d32; }
+    .score-mid  { color: #e65100; }
+    .score-low  { color: var(--muted); }
+    .no-score { color: #d1d5db; font-size: 12px; }
+
+    /* BAR CHART ROW */
+    .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .bar-name { width: 120px; font-size: 12px; font-weight: 600; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-wrap { flex: 1; height: 24px; background: var(--bg); border-radius: 6px; overflow: hidden; position: relative; }
+    .bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-right: 6px; justify-content: flex-end; font-size: 11px; font-weight: 700; color: white; transition: width 0.6s ease; white-space: nowrap; min-width: 30px; }
+    .bar-rank { width: 24px; font-size: 12px; font-weight: 800; text-align: center; flex-shrink: 0; }
+
+    /* METRIC CARDS */
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+
+    /* MEDAL */
+    .medal { font-size: 18px; }
+
+    /* PROGRESS BADGE */
+    .tests-badge { display: inline-block; padding: 2px 8px; background: var(--bg); border-radius: 20px; font-size: 11px; font-weight: 700; color: var(--muted); }
+
+    /* LOADING */
+    .loading { display: flex; align-items: center; justify-content: center; height: 200px; color: var(--muted); font-size: 15px; gap: 10px; }
+    .spinner { width: 20px; height: 20px; border: 2px solid var(--bg); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty { text-align: center; color: var(--muted); padding: 60px 20px; font-size: 15px; line-height: 1.8; }
+    .empty strong { display: block; font-size: 24px; margin-bottom: 8px; }
+
+    /* SPINNER inline */
+    .spin-sm { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+
+    @media (max-width: 768px) {
+      .main { padding: 12px; }
+      .metrics-grid { grid-template-columns: 1fr; }
+      .bar-name { width: 80px; }
+      .header { padding: 0 14px; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="header-logo">🧪</div>
+    <div>
+      <div class="header-title">Core Testing</div>
+      <div class="header-sub">Cranbrook Rowing — Squad Rankings</div>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a class="nav-link" href="./index.html">S&C Dashboard</a>
+    <a class="nav-link" href="./logger.html">Session Logger</a>
+    <a class="nav-link active" href="#">Testing</a>
+  </div>
+</div>
+
+<div class="sync-bar">
+  <div class="sync-info" id="syncInfo">Loading data from Google Sheets…</div>
+  <button class="sync-btn" id="syncBtn" onclick="runSync()">
+    <span>↻</span> Sync from Sheets
+  </button>
+</div>
+
+<div class="main">
+  <div class="loading" id="loadingState"><div class="spinner"></div> Fetching testing data…</div>
+  <div id="content" style="display:none"></div>
+</div>
+
+<script>
+const TESTING_API  = 'https://superagent-84188511.base44.app/functions/getTestingData';
+const SYNC_API     = 'https://superagent-84188511.base44.app/functions/syncTestingData';
+
+let allData = null;
+let activeYear = null;
+
+const BAR_COLORS = ['#1e90ff','#00c8a0','#f59e0b','#e63946','#a78bfa','#fb923c'];
+
+async function loadData() {
+  try {
+    const res = await fetch(TESTING_API, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    allData = await res.json();
+    render();
+  } catch(e) {
+    document.getElementById('loadingState').innerHTML = `<div style="color:var(--red)">Error loading data: ${e.message}</div>`;
+  }
+}
+
+async function runSync() {
+  const btn = document.getElementById('syncBtn');
+  const info = document.getElementById('syncInfo');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin-sm"></span> Syncing…';
+  try {
+    const res = await fetch(SYNC_API, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const d = await res.json();
+    info.textContent = `Last sync: just now — ${d.synced} new records, ${d.skipped} already up to date`;
+    await loadData();
+  } catch(e) {
+    info.textContent = `Sync failed: ${e.message}`;
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<span>↻</span> Sync from Sheets';
+}
+
+function render() {
+  const loading = document.getElementById('loadingState');
+  const content = document.getElementById('content');
+  const info = document.getElementById('syncInfo');
+
+  loading.style.display = 'none';
+  content.style.display = 'block';
+
+  if (!allData?.yearGroups?.length) {
+    info.textContent = `${allData?.totalRecords || 0} records in database`;
+    content.innerHTML = `
+      <div class="empty">
+        <strong>🧪</strong>
+        No testing data yet.<br>
+        As athletes come in and complete the core testing battery,<br>
+        their results will appear here ranked by year level.<br><br>
+        <span style="font-size:13px;color:var(--muted)">Hit "Sync from Sheets" after recording results in the Google Form.</span>
+      </div>`;
+    return;
+  }
+
+  info.textContent = `${allData.totalRecords} records — ${allData.yearGroups.length} year group(s)`;
+
+  // Set active year if not set
+  if (!activeYear || !allData.yearGroups.find(g => g.yearLevel === activeYear)) {
+    activeYear = allData.yearGroups[0].yearLevel;
+  }
+
+  // Year tabs
+  const tabsHtml = allData.yearGroups.map(g => `
+    <button class="year-tab ${g.yearLevel === activeYear ? 'active' : ''}"
+      onclick="setYear('${g.yearLevel}')">
+      Year ${g.yearLevel}<span class="count">${g.athleteCount}</span>
+    </button>
+  `).join('');
+
+  const group = allData.yearGroups.find(g => g.yearLevel === activeYear);
+  content.innerHTML = `
+    <div class="year-tabs">${tabsHtml}</div>
+    ${renderYearGroup(group)}
+  `;
+}
+
+function setYear(yr) {
+  activeYear = yr;
+  render();
+}
+
+function renderYearGroup(group) {
+  if (!group) return '';
+
+  const { overallRanking, metricRankings } = group;
+
+  // Overall rankings table
+  const METRIC_KEYS = ['hollow_hold','prone_plank','side_plank_left','side_plank_right'];
+  const METRIC_LABELS = ['Hollow Hold','Prone Plank','Side L','Side R'];
+
+  const overallRows = overallRanking.map((a, i) => {
+    const rankClass = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other';
+    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    const scoreCells = METRIC_KEYS.map(k => {
+      const v = a.scores[k];
+      if (v === undefined || v === null) return `<td class="score-cell"><span class="no-score">—</span></td>`;
+      const cls = v >= 60 ? 'score-good' : v >= 30 ? 'score-mid' : 'score-low';
+      return `<td class="score-cell ${cls}">${v}s</td>`;
+    }).join('');
+    return `<tr>
+      <td><span class="rank-num ${rankClass}">${medal || a.overallRank}</span></td>
+      <td><span class="athlete-name">${a.athlete}</span></td>
+      <td style="text-align:center"><span class="tests-badge">${a.testsCompleted}/4</span></td>
+      <td style="text-align:center;font-weight:700;color:var(--navy)">${a.avgRank}</td>
+      ${scoreCells}
+    </tr>`;
+  }).join('');
+
+  // Metric bar charts
+  const metricCards = metricRankings.map((m, mi) => {
+    if (m.rankings.length === 0) return '';
+    const maxScore = m.rankings[0]?.score || 1;
+    const bars = m.rankings.map((r, i) => {
+      const pct = Math.round((r.score / maxScore) * 100);
+      const rankClass = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other';
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;
+      const color = i===0?'var(--gold)':i===1?'var(--silver)':i===2?'var(--bronze)':BAR_COLORS[mi%BAR_COLORS.length];
+      return `
+        <div class="bar-row">
+          <div class="bar-rank ${rankClass}">${medal}</div>
+          <div class="bar-name" title="${r.athlete}">${r.athlete}</div>
+          <div class="bar-wrap">
+            <div class="bar-fill" style="width:${pct}%;background:${color}">${r.score}s</div>
+          </div>
+        </div>`;
+    }).join('');
+    return `
+      <div class="card">
+        <div class="card-title">${m.label} <span style="font-weight:400;color:var(--muted)">(${m.rankings.length} athletes)</span></div>
+        ${bars}
+      </div>`;
+  }).filter(Boolean).join('');
+
+  return `
+    <div class="section-title">Overall Rankings — Year ${group.yearLevel}</div>
+    <div class="card">
+      <div class="card-title">Ranked by average position across all completed tests</div>
+      <table class="rank-table">
+        <thead><tr>
+          <th></th>
+          <th>Athlete</th>
+          <th class="center">Tests Done</th>
+          <th class="center">Avg Rank</th>
+          ${METRIC_LABELS.map(l => `<th class="center">${l}</th>`).join('')}
+        </tr></thead>
+        <tbody>${overallRows || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px">No athletes tested yet in this year group</td></tr>'}</tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Rankings by Test</div>
+    <div class="metrics-grid">${metricCards || '<div style="color:var(--muted);padding:20px">No test scores yet</div>'}</div>
+  `;
+}
+
+loadData();
+</script>
+</body>
+</html>

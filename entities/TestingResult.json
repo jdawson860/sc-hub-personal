@@ -1,0 +1,40 @@
+{
+  "type": "object",
+  "properties": {
+    "timestamp": {
+      "type": "string"
+    },
+    "athlete_first": {
+      "type": "string"
+    },
+    "athlete_last": {
+      "type": "string"
+    },
+    "athlete_name": {
+      "type": "string"
+    },
+    "year_level": {
+      "type": "string"
+    },
+    "height": {
+      "type": "number"
+    },
+    "weight": {
+      "type": "number"
+    },
+    "hollow_hold": {
+      "type": "number"
+    },
+    "prone_plank": {
+      "type": "number"
+    },
+    "side_plank_left": {
+      "type": "number"
+    },
+    "side_plank_right": {
+      "type": "number"
+    }
+  },
+  "required": [],
+  "name": "TestingResult"
+}
