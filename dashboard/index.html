@@ -6,142 +6,161 @@
   <title>S&C Dashboard — Cranbrook Rowing</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --navy:  #07122b; --navy2: #0c1f48; --navy3: #102460;
-      --accent: #1a56db; --accent2: #3b82f6;
-      --warn: #f59e0b; --red: #e63946;
-      --bg: #eef2f9; --card: #ffffff; --text: #07122b; --muted: #5a6a8a;
-      --border: #d0daf0;
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --navy:#07122b;--navy2:#0c1f48;--navy3:#102460;
+      --accent:#1a56db;--accent2:#3b82f6;
+      --warn:#f59e0b;--red:#e63946;--green:#22c55e;
+      --bg:#eef2f9;--card:#fff;--text:#07122b;--muted:#5a6a8a;--border:#d0daf0;
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
     /* HEADER */
-    .header { background: var(--navy); color: white; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 16px rgba(0,0,0,0.35); }
-    .header-left { display: flex; align-items: center; gap: 12px; }
-    .header-logo { width: 40px; height: 40px; background: var(--accent2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900; color: white; letter-spacing: -1px; }
-    .header-title { font-size: 17px; font-weight: 800; }
-    .header-sub { font-size: 12px; color: #8fa0be; margin-top: 1px; }
-    .view-toggle { display: flex; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 3px; gap: 2px; }
-    .view-btn { padding: 6px 18px; border: none; background: transparent; color: #8fa0be; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; }
-    .view-btn.active { background: var(--accent2); color: white; }
+    .header{background:var(--navy);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.35)}
+    .header-left{display:flex;align-items:center;gap:12px}
+    .header-logo{width:40px;height:40px;background:var(--accent2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#fff;letter-spacing:-1px}
+    .header-title{font-size:17px;font-weight:800}
+    .header-sub{font-size:12px;color:#8fa0be;margin-top:1px}
+    .view-toggle{display:flex;background:rgba(255,255,255,.1);border-radius:8px;padding:3px;gap:2px}
+    .view-btn{padding:6px 16px;border:none;background:transparent;color:#8fa0be;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s}
+    .view-btn.active{background:var(--accent2);color:#fff}
 
-    /* ATHLETE BAR */
-    .athlete-bar { background: var(--navy2); padding: 10px 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.07); }
-    .athlete-bar label { color: #8fa0be; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
-    .athlete-select { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 7px 14px; border-radius: 7px; font-size: 14px; font-weight: 600; cursor: pointer; outline: none; }
-    .athlete-select option { background: #0d2545; }
+    /* SUB-NAV */
+    .subnav{background:var(--navy2);padding:0 24px;display:flex;align-items:center;gap:4px;border-bottom:1px solid rgba(255,255,255,.07)}
+    .snav-btn{padding:12px 16px;border:none;background:transparent;color:#8fa0be;font-size:13px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;display:flex;align-items:center;gap:6px}
+    .snav-btn.active{color:#fff;border-bottom-color:var(--accent2)}
+    .athlete-sel-wrap{margin-left:auto;display:flex;align-items:center;gap:8px}
+    .athlete-sel-wrap label{color:#8fa0be;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+    .athlete-select{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;padding:6px 12px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;outline:none}
+    .athlete-select option{background:#0d2545}
 
     /* LAYOUT */
-    .main { padding: 24px; max-width: 1400px; margin: 0 auto; }
-    .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 12px; margin-top: 28px; }
-    .section-title:first-child { margin-top: 0; }
+    .main{padding:24px;max-width:1400px;margin:0 auto}
+    .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:12px;margin-top:28px}
+    .section-title:first-child{margin-top:0}
 
-    /* STAT CARDS */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-    .stat-card { background: var(--card); border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); border-left: 4px solid var(--accent2); }
-    .stat-card.warn { border-left-color: var(--warn); }
-    .stat-card.green { border-left-color: #22c55e; }
-    .stat-card.red { border-left-color: var(--red); }
-    .stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 5px; }
-    .stat-value { font-size: 26px; font-weight: 800; color: var(--navy); line-height: 1; }
-    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    /* STATS */
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+    .stat-card{background:var(--card);border-radius:12px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07);border-left:4px solid var(--accent2)}
+    .stat-card.warn{border-left-color:var(--warn)}
+    .stat-card.green{border-left-color:#22c55e}
+    .stat-card.red{border-left-color:var(--red)}
+    .stat-card.purple{border-left-color:#8b5cf6}
+    .stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px}
+    .stat-value{font-size:26px;font-weight:800;color:var(--navy);line-height:1}
+    .stat-sub{font-size:11px;color:var(--muted);margin-top:4px}
 
     /* CARDS */
-    .card { background: var(--card); border-radius: 14px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
-    .card-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px; }
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+    .card-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px}
+    .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
 
     /* TABLES */
-    .data-table { width: 100%; border-collapse: collapse; }
-    .data-table th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border, #d0daf0); }
-    .data-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border, #d0daf0); vertical-align: middle; }
-    .data-table tr:last-child td { border-bottom: none; }
-    .data-table tr:hover td { background: #f8fafc; cursor: pointer; }
-    .athlete-name { font-weight: 700; color: var(--navy); font-size: 14px; }
+    .data-table{width:100%;border-collapse:collapse}
+    .data-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);text-align:left;padding:8px 12px;border-bottom:2px solid var(--border)}
+    .data-table td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .data-table tr:last-child td{border-bottom:none}
+    .data-table tr:hover td{background:#f8fafc;cursor:pointer}
+    .athlete-name{font-weight:700;color:var(--navy);font-size:14px}
 
     /* BADGES */
-    .rpe-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: 700; }
-    .rpe-low { background: #e8f5e9; color: #2e7d32; }
-    .rpe-mid { background: #fff3e0; color: #e65100; }
-    .rpe-high { background: #fce4ec; color: #c62828; }
-    /* ACWR BADGE */
-    .acwr-badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 12px; font-weight: 800; }
-    .acwr-optimal  { background: #e8f5e9; color: #2e7d32; }
-    .acwr-low      { background: #e3f2fd; color: #1565c0; }
-    .acwr-caution  { background: #fff3e0; color: #e65100; }
-    .acwr-danger   { background: #fce4ec; color: #c62828; }
-    .acwr-none     { background: #f0f4f8; color: var(--muted); }
-    .acwr-zone-bar { position: relative; height: 8px; border-radius: 4px; background: linear-gradient(to right, #90caf9 0%, #90caf9 22%, #a5d6a7 22%, #a5d6a7 61%, #ffe082 61%, #ffe082 78%, #ef9a9a 78%, #ef9a9a 100%); margin-bottom: 6px; }
-    .acwr-zone-marker { position: absolute; top: -4px; width: 16px; height: 16px; background: var(--navy); border-radius: 50%; transform: translateX(-50%); border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.3); transition: left 0.5s; }
-    .acwr-zones-label { display: flex; justify-content: space-between; font-size: 9px; color: var(--muted); font-weight: 600; margin-top: 2px; }
-    .session-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; margin: 1px; }
-    .sb-la { background: #dbeafe; color: #1a56db; }
-    .sb-lb { background: #dcfce7; color: #15803d; }
-    .sb-ua { background: #ede9fe; color: #6d28d9; }
-    .sb-ub { background: #ffedd5; color: #c2410c; }
+    .rpe-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700}
+    .rpe-low{background:#e8f5e9;color:#2e7d32}
+    .rpe-mid{background:#fff3e0;color:#e65100}
+    .rpe-high{background:#fce4ec;color:#c62828}
+    .acwr-badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:800}
+    .acwr-optimal{background:#e8f5e9;color:#2e7d32}
+    .acwr-low{background:#e3f2fd;color:#1565c0}
+    .acwr-caution{background:#fff3e0;color:#e65100}
+    .acwr-danger{background:#fce4ec;color:#c62828}
+    .acwr-none{background:#f0f4f8;color:var(--muted)}
+    .session-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;margin:1px}
+    .sb-la{background:#dbeafe;color:#1a56db}
+    .sb-lb{background:#dcfce7;color:#15803d}
+    .sb-ua{background:#ede9fe;color:#6d28d9}
+    .sb-ub{background:#ffedd5;color:#c2410c}
+
+    /* ACWR zone bar */
+    .acwr-zone-bar{position:relative;height:8px;border-radius:4px;background:linear-gradient(to right,#90caf9 0%,#90caf9 22%,#a5d6a7 22%,#a5d6a7 61%,#ffe082 61%,#ffe082 78%,#ef9a9a 78%,#ef9a9a 100%);margin-bottom:6px}
+    .acwr-zone-marker{position:absolute;top:-4px;width:16px;height:16px;background:var(--navy);border-radius:50%;transform:translateX(-50%);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);transition:left .5s}
+    .acwr-zones-label{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);font-weight:600;margin-top:2px}
 
     /* MINI BAR */
-    .mini-bar-wrap { display: flex; align-items: center; gap: 6px; }
-    .mini-bar-bg { flex: 1; height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
-    .mini-bar-fill { height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.4s; }
+    .mini-bar-wrap{display:flex;align-items:center;gap:6px}
+    .mini-bar-bg{flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
+    .mini-bar-fill{height:100%;border-radius:3px;background:var(--accent);transition:width .4s}
 
     /* COMPLIANCE HEATMAP */
-    .heatmap-grid { display: grid; gap: 6px; }
-    .heatmap-row { display: flex; align-items: center; gap: 8px; }
-    .heatmap-label { font-size: 12px; font-weight: 700; color: var(--navy); width: 28px; flex-shrink: 0; }
-    .heatmap-cells { display: flex; gap: 4px; flex: 1; }
-    .heatmap-cell { flex: 1; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; transition: transform 0.15s; cursor: default; }
-    .heatmap-cell:hover { transform: scale(1.1); }
-    .heatmap-cell.done { background: #00c8a0; color: white; }
-    .heatmap-cell.miss { background: #fce4ec; color: #c62828; }
-    .heatmap-cell.none { background: #f0f4f8; color: var(--muted); }
-    .heatmap-headers { display: flex; gap: 4px; margin-bottom: 4px; padding-left: 36px; }
-    .heatmap-headers span { flex: 1; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted); text-align: center; letter-spacing: 0.5px; }
+    .heatmap-grid{display:grid;gap:6px}
+    .heatmap-row{display:flex;align-items:center;gap:8px}
+    .heatmap-label{font-size:12px;font-weight:700;color:var(--navy);width:28px;flex-shrink:0}
+    .heatmap-cells{display:flex;gap:4px;flex:1}
+    .heatmap-cell{flex:1;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;transition:transform .15s;cursor:default}
+    .heatmap-cell:hover{transform:scale(1.05)}
+    .heatmap-cell.done{background:#00c8a0;color:#fff}
+    .heatmap-cell.miss{background:#fce4ec;color:#c62828}
+    .heatmap-cell.none{background:#f0f4f8;color:var(--muted)}
+    .heatmap-headers{display:flex;gap:4px;margin-bottom:4px;padding-left:36px}
+    .heatmap-headers span{flex:1;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);text-align:center;letter-spacing:.5px}
 
     /* PB TABLE */
-    .pb-table { width: 100%; border-collapse: collapse; }
-    .pb-table th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); text-align: left; padding: 6px 10px; border-bottom: 2px solid var(--border, #d0daf0); }
-    .pb-table td { padding: 8px 10px; font-size: 13px; border-bottom: 1px solid var(--border, #d0daf0); }
-    .pb-table tr:last-child td { border-bottom: none; }
-    .pb-val { font-weight: 800; color: var(--navy); }
-    .pb-crown { color: #f59e0b; margin-right: 3px; }
+    .pb-table{width:100%;border-collapse:collapse}
+    .pb-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);text-align:left;padding:6px 10px;border-bottom:2px solid var(--border)}
+    .pb-table td{padding:8px 10px;font-size:13px;border-bottom:1px solid var(--border)}
+    .pb-table tr:last-child td{border-bottom:none}
+    .pb-val{font-weight:800;color:var(--navy)}
+    .pb-crown{color:#f59e0b;margin-right:3px}
 
     /* EXERCISE GRID */
-    .exercise-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-    .ex-card { background: var(--card); border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
-    .ex-card-title { font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .exercise-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+    .ex-card{background:var(--card);border-radius:12px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+    .ex-card-title{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
 
-    /* LOADING / EMPTY */
-    .loading { display: flex; align-items: center; justify-content: center; height: 200px; color: var(--muted); font-size: 15px; gap: 10px; }
-    .spinner { width: 20px; height: 20px; border: 2px solid var(--border, #d0daf0); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .empty { text-align: center; color: var(--muted); padding: 40px; font-size: 14px; }
+    /* ERG */
+    .erg-split{font-family:monospace;font-weight:700;color:var(--navy);font-size:14px}
+    .split-badge{display:inline-block;padding:3px 10px;background:#e3f2fd;color:#1565c0;border-radius:20px;font-size:12px;font-weight:800;font-family:monospace}
+    .wt-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
+    .wt-ut2{background:#e8f5e9;color:#2e7d32}
+    .wt-ut1{background:#e3f2fd;color:#1565c0}
+    .wt-at{background:#ede9fe;color:#6d28d9}
+    .wt-tr{background:#fff3e0;color:#e65100}
+    .wt-an{background:#fce4ec;color:#c62828}
+    .wt-other{background:#f0f4f8;color:var(--muted)}
 
-    /* COMPARISON */
-    .compare-controls { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-    .compare-select { padding: 8px 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-weight: 600; outline: none; cursor: pointer; }
-    .compare-select:focus { border-color: var(--accent); }
+    /* TESTING */
+    .rank-badge{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:12px;font-weight:800}
+    .rank-1{background:#ffd700;color:#7a5c00}
+    .rank-2{background:#e0e0e0;color:#555}
+    .rank-3{background:#cd7f32;color:#fff}
+    .rank-other{background:#f0f4f8;color:var(--muted)}
+    .year-tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+    .year-tab{padding:7px 16px;border:2px solid var(--border);border-radius:20px;background:#fff;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
+    .year-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 
-    /* TABS */
-    .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--bg); border-radius: 10px; padding: 4px; }
-    .tab { flex: 1; padding: 9px; border: none; background: transparent; color: var(--muted); border-radius: 7px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; text-align: center; }
-    .tab.active { background: white; color: var(--navy); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    /* COMPARE */
+    .compare-controls{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+    .compare-select{padding:8px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:13px;font-weight:600;outline:none;cursor:pointer}
+    .compare-select:focus{border-color:var(--accent)}
 
-    @media (max-width: 768px) {
-      .header { padding: 0 14px; }
-      .main { padding: 12px; }
-      .two-col, .three-col { grid-template-columns: 1fr; }
-      .stats-grid { grid-template-columns: repeat(2, 1fr); }
-      .view-btn { padding: 5px 10px; font-size: 12px; }
-      .exercise-grid { grid-template-columns: 1fr; }
+    /* UTIL */
+    .loading{display:flex;align-items:center;justify-content:center;height:200px;color:var(--muted);font-size:15px;gap:10px}
+    .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .empty{text-align:center;color:var(--muted);padding:40px;font-size:14px}
+
+    @media(max-width:768px){
+      .header{padding:0 14px}
+      .main{padding:12px}
+      .two-col,.three-col{grid-template-columns:1fr}
+      .stats-grid{grid-template-columns:repeat(2,1fr)}
+      .subnav{padding:0 12px;overflow-x:auto}
     }
   </style>
 </head>
 <body>
 
-<div class="header">
+<header class="header">
   <div class="header-left">
     <div class="header-logo">S&C</div>
     <div>
@@ -153,13 +172,19 @@
     <button class="view-btn active" id="btnCoach" onclick="switchView('coach')">Coach</button>
     <button class="view-btn" id="btnAthlete" onclick="switchView('athlete')">Athlete</button>
   </div>
-</div>
+</header>
 
-<div class="athlete-bar" id="athleteBar" style="display:none;">
-  <label>Athlete</label>
-  <select class="athlete-select" id="athleteSelect" onchange="loadAthleteView()">
-    <option>Loading…</option>
-  </select>
+<!-- SUBNAV (tabs + athlete selector) -->
+<div class="subnav" id="subnav">
+  <button class="snav-btn active" id="snav-sc" onclick="switchTab('sc')">💪 S&C</button>
+  <button class="snav-btn" id="snav-erg" onclick="switchTab('erg')">🚣 Erg</button>
+  <button class="snav-btn" id="snav-testing" onclick="switchTab('testing')">📋 Testing</button>
+  <div class="athlete-sel-wrap" id="athSelWrap" style="display:none">
+    <label>Athlete</label>
+    <select class="athlete-select" id="athleteSelect" onchange="loadAthleteView()">
+      <option>Loading…</option>
+    </select>
+  </div>
 </div>
 
 <div class="main" id="mainContent">
@@ -167,61 +192,91 @@
 </div>
 
 <script>
-const API = 'https://superagent-84188511.base44.app/functions/getDashboardData';
+const API_SC   = 'https://superagent-84188511.base44.app/functions/getDashboardData';
+const API_ERG  = 'https://superagent-84188511.base44.app/functions/getErgData';
+const API_TEST = 'https://superagent-84188511.base44.app/functions/getTestingData';
+
 let currentView = 'coach';
-let coachData = null;
-let charts = {};
+let currentTab  = 'sc';
+let coachData   = null;
+let charts      = {};
 
-function destroyCharts() { Object.values(charts).forEach(c => c.destroy()); charts = {}; }
+function destroyCharts(){ Object.values(charts).forEach(c=>c.destroy()); charts={}; }
 
-async function fetchData(payload) {
-  const res = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+async function fetchData(url, payload){
+  const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload||{}) });
   return res.json();
 }
 
-function switchView(view) {
+function switchView(view){
   currentView = view;
   document.getElementById('btnCoach').classList.toggle('active', view==='coach');
   document.getElementById('btnAthlete').classList.toggle('active', view==='athlete');
-  document.getElementById('athleteBar').style.display = view==='athlete' ? 'flex' : 'none';
-  if (view==='coach') loadCoachView();
-  else loadAthleteView();
-}
 
-// ═══════════════════════════════════════════════════════
-// COACH VIEW
-// ═══════════════════════════════════════════════════════
-async function loadCoachView() {
-  destroyCharts();
-  document.getElementById('mainContent').innerHTML = '<div class="loading"><div class="spinner"></div> Loading squad data…</div>';
-  try {
-    coachData = await fetchData({ view:'coach' });
-    renderCoachView(coachData);
-  } catch(e) {
-    document.getElementById('mainContent').innerHTML = `<div class="empty">Error: ${e.message}</div>`;
+  // Show/hide tab bar and athlete selector
+  const snav = document.getElementById('subnav');
+  const athWrap = document.getElementById('athSelWrap');
+
+  if(view==='athlete'){
+    // Athlete view: hide tab bar tabs (just SC), show selector
+    document.getElementById('snav-sc').style.display='none';
+    document.getElementById('snav-erg').style.display='none';
+    document.getElementById('snav-testing').style.display='none';
+    athWrap.style.display='flex';
+    loadAthleteView();
+  } else {
+    document.getElementById('snav-sc').style.display='';
+    document.getElementById('snav-erg').style.display='';
+    document.getElementById('snav-testing').style.display='';
+    athWrap.style.display='none';
+    switchTab(currentTab);
   }
 }
 
-function renderCoachView(data) {
-  const { athleteSummary, rpeTrend, athletes } = data;
-  const totalSessions = athleteSummary.reduce((a,b) => a + b.totalSessions, 0);
-  const avgRpe = athleteSummary.length ? (athleteSummary.reduce((a,b) => a + b.avgRpe, 0) / athleteSummary.length).toFixed(1) : '—';
-  const highRpeTotal = athleteSummary.reduce((a,b) => a + b.highRpeSets, 0);
-  const activeAthletes = athleteSummary.filter(a => {
-    if (!a.lastSession) return false;
-    return (new Date() - new Date(a.lastSession)) / 86400000 <= 7;
-  }).length;
+function switchTab(tab){
+  currentTab = tab;
+  ['sc','erg','testing'].forEach(t=>{
+    document.getElementById(`snav-${t}`).classList.toggle('active', t===tab);
+  });
+  if(tab==='sc') loadCoachView();
+  else if(tab==='erg') loadErgView();
+  else if(tab==='testing') loadTestingView();
+}
 
-  document.getElementById('mainContent').innerHTML = `
+// ═══════════════════════════════════════════════════
+// S&C COACH VIEW
+// ═══════════════════════════════════════════════════
+async function loadCoachView(){
+  destroyCharts();
+  document.getElementById('mainContent').innerHTML='<div class="loading"><div class="spinner"></div> Loading squad data…</div>';
+  try{
+    coachData = await fetchData(API_SC, {view:'coach'});
+    renderCoachView(coachData);
+  } catch(e){
+    document.getElementById('mainContent').innerHTML=`<div class="empty">Error: ${e.message}</div>`;
+  }
+}
+
+function renderCoachView(data){
+  const sums = data.athlete_summaries || [];
+  const athletes = data.athletes || [];
+  const squad = data.squad || {};
+  const heatmap = data.heatmap || {};
+  const sessionTypes = data.session_types || ['Lower A','Lower B','Upper A','Upper B'];
+
+  // Squad-level RPE trend from raw athlete data
+  const rpeTrend = buildSquadRpeTrend(sums);
+
+  document.getElementById('mainContent').innerHTML=`
     <div class="section-title">Squad Overview</div>
     <div class="stats-grid">
-      <div class="stat-card green"><div class="stat-label">Active This Week</div><div class="stat-value">${activeAthletes}<span style="font-size:14px;color:var(--muted)">/${athletes.length}</span></div><div class="stat-sub">Athletes trained</div></div>
-      <div class="stat-card"><div class="stat-label">Total Sessions</div><div class="stat-value">${totalSessions}</div><div class="stat-sub">All time</div></div>
-      <div class="stat-card warn"><div class="stat-label">Avg Squad RPE</div><div class="stat-value">${avgRpe}</div><div class="stat-sub">All athletes</div></div>
-      <div class="stat-card red"><div class="stat-label">High RPE Sets</div><div class="stat-value">${highRpeTotal}</div><div class="stat-sub">RPE ≥ 9</div></div>
+      <div class="stat-card green"><div class="stat-label">Active This Week</div><div class="stat-value">${squad.active_this_week||0}<span style="font-size:14px;color:var(--muted)">/${squad.total_athletes||0}</span></div><div class="stat-sub">Athletes trained</div></div>
+      <div class="stat-card"><div class="stat-label">Total Sets</div><div class="stat-value">${squad.total_sessions||0}</div><div class="stat-sub">All time</div></div>
+      <div class="stat-card warn"><div class="stat-label">Avg Squad RPE</div><div class="stat-value">${squad.avg_rpe||'—'}</div><div class="stat-sub">All sets</div></div>
+      <div class="stat-card red"><div class="stat-label">High RPE Sets</div><div class="stat-value">${squad.high_rpe_sets||0}</div><div class="stat-sub">RPE ≥ 9</div></div>
     </div>
 
-    <div class="section-title">Session Compliance — Last 4 Weeks</div>
+    <div class="section-title">Session Compliance — This Week</div>
     <div class="card">
       <div class="card-title">Did each athlete complete each session type this week?</div>
       <div id="complianceHeatmap"></div>
@@ -229,10 +284,10 @@ function renderCoachView(data) {
 
     <div class="section-title">Athlete Summary</div>
     <div class="card">
-      <table class="data-table" id="athleteTable">
+      <table class="data-table">
         <thead><tr>
           <th>Athlete</th><th>Last Session</th><th>Sessions</th>
-          <th>Session Types</th><th>Avg RPE</th><th>⚡ RPE≥9</th><th>ACWR</th><th>Weekly Volume</th>
+          <th>Session Types</th><th>Avg RPE</th><th>RPE≥9</th><th>ACWR</th><th>Wk Volume</th>
         </tr></thead>
         <tbody id="athleteTableBody"></tbody>
       </table>
@@ -252,223 +307,537 @@ function renderCoachView(data) {
           <option>CHIN UPS</option><option>BB HIGH PULL</option>
           <option>FRONT FOOT ELEVATED SPLIT SQUAT</option>
         </select>
-        <button onclick="renderComparison()" style="padding:8px 16px;background:var(--accent);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;">Compare</button>
+        <button onclick="renderComparison()" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px">Compare</button>
       </div>
       <canvas id="compareChart" height="80"></canvas>
     </div>
 
-
     <div class="section-title">Squad ACWR — Acute:Chronic Workload Ratio</div>
     <div class="card">
-      <div class="card-title">Rolling 7-day acute ÷ 28-day chronic (all athletes combined) — danger zone &gt;1.5, optimal 0.8–1.3</div>
+      <div class="card-title">Rolling 7-day acute ÷ 28-day chronic — optimal 0.8–1.3</div>
       <div class="acwr-zone-bar" style="margin-bottom:16px"><div class="acwr-zone-marker" id="squadACWRMarker" style="left:50%"></div></div>
       <div class="acwr-zones-label"><span>Under (&lt;0.8)</span><span>Optimal (0.8–1.3)</span><span>Caution</span><span>Danger (&gt;1.5)</span></div>
-      <br/>
-      <canvas id="squadACWRChart" height="70"></canvas>
+      <br/><canvas id="squadACWRChart" height="70"></canvas>
     </div>
+
     <div class="section-title">Squad RPE Trend</div>
     <div class="card">
-      <div class="card-title">Average Squad RPE — Last 30 Days</div>
+      <div class="card-title">Avg RPE per athlete — last 30 days of data</div>
       <canvas id="rpeChart" height="70"></canvas>
     </div>
   `;
 
   // Compliance heatmap
-  renderComplianceHeatmap(athleteSummary, athletes);
+  renderComplianceHeatmap(sums, athletes, heatmap, sessionTypes);
 
   // Athlete table
   const tbody = document.getElementById('athleteTableBody');
-  const maxSess = Math.max(...athleteSummary.map(a => a.totalSessions), 1);
-  athleteSummary.forEach(a => {
-    const rpeClass = a.avgRpe >= 8.5 ? 'rpe-high' : a.avgRpe >= 7.5 ? 'rpe-mid' : 'rpe-low';
-    const daysSince = a.lastSession ? Math.floor((new Date() - new Date(a.lastSession)) / 86400000) : null;
-    const lastStr = daysSince === null ? '—' : daysSince === 0 ? 'Today' : daysSince === 1 ? 'Yesterday' : `${daysSince}d ago`;
-    const lastVol = a.weeklyLoad[3]?.totalVolume || 0;
-    const maxVol = Math.max(...a.weeklyLoad.map(w => w.totalVolume), 1);
-    const sessionBadges = Object.entries(a.sessionCounts).filter(([,v])=>v>0)
-      .map(([k,v]) => { const cls = k==='Lower A'?'sb-la':k==='Lower B'?'sb-lb':k==='Upper A'?'sb-ua':'sb-ub'; return `<span class="session-badge ${cls}">${k} ×${v}</span>`; }).join('');
+  const maxSess = Math.max(...sums.map(a=>a.total_sessions||0),1);
+  sums.forEach(a=>{
+    const rpeClass = (a.avg_rpe||0)>=8.5?'rpe-high':(a.avg_rpe||0)>=7.5?'rpe-mid':'rpe-low';
+    const ds = a.days_since_last;
+    const lastStr = ds===null?'—':ds===0?'Today':ds===1?'Yesterday':`${ds}d ago`;
+    const sc = a.session_counts||{};
+    const badges = Object.entries(sc).filter(([,v])=>v>0)
+      .map(([k,v])=>{const cls=k==='Lower A'?'sb-la':k==='Lower B'?'sb-lb':k==='Upper A'?'sb-ua':'sb-ub';return `<span class="session-badge ${cls}">${k} ×${v}</span>`;}).join('');
+    const acwrVal = a.acwr;
+    const acwrCls = !acwrVal?'acwr-none':acwrVal<0.8?'acwr-low':acwrVal<=1.3?'acwr-optimal':acwrVal<=1.5?'acwr-caution':'acwr-danger';
     const tr = document.createElement('tr');
-    tr.onclick = () => { switchView('athlete'); document.getElementById('athleteSelect').value = a.athlete; loadAthleteView(); };
-    tr.innerHTML = `
+    tr.onclick=()=>{ switchView('athlete'); document.getElementById('athleteSelect').value=a.athlete; loadAthleteView(); };
+    tr.innerHTML=`
       <td><span class="athlete-name">${a.athlete}</span></td>
-      <td style="color:${daysSince>7?'var(--red)':'var(--text)'};font-weight:${daysSince>7?700:400}">${lastStr}</td>
-      <td><div class="mini-bar-wrap"><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${Math.round(a.totalSessions/maxSess*100)}%"></div></div><span style="font-size:13px;font-weight:700">${a.totalSessions}</span></div></td>
-      <td>${sessionBadges||'<span style="color:var(--muted)">—</span>'}</td>
-      <td><span class="rpe-badge ${rpeClass}">${a.avgRpe}</span></td>
-      <td style="color:${a.highRpeSets>3?'var(--red)':'var(--text)'};font-weight:${a.highRpeSets>3?700:400}">${a.highRpeSets}</td>
-      <td>${(() => { const v=a.latestACWR?.acwr; const c=!v?'acwr-none':v<0.8?'acwr-low':v<=1.3?'acwr-optimal':v<=1.5?'acwr-caution':'acwr-danger'; return `<span class="acwr-badge ${c}">${v?v.toFixed(2):'—'}</span>`; })()}</td>
-      <td><div class="mini-bar-wrap"><div class="mini-bar-bg" style="background:#e3f2fd"><div class="mini-bar-fill" style="width:${Math.round(lastVol/maxVol*100)}%;background:var(--accent)"></div></div><span style="font-size:11px;color:var(--muted)">${lastVol>0?lastVol.toLocaleString():'—'}</span></div></td>
+      <td style="color:${ds>7?'var(--red)':'var(--text)'};font-weight:${ds>7?700:400}">${lastStr}</td>
+      <td><div class="mini-bar-wrap"><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${Math.round((a.total_sessions||0)/maxSess*100)}%"></div></div><span style="font-size:13px;font-weight:700">${a.total_sessions||0}</span></div></td>
+      <td>${badges||'<span style="color:var(--muted)">—</span>'}</td>
+      <td><span class="rpe-badge ${rpeClass}">${a.avg_rpe||'—'}</span></td>
+      <td style="color:${(a.high_rpe_sets||0)>3?'var(--red)':'var(--text)'};font-weight:${(a.high_rpe_sets||0)>3?700:400}">${a.high_rpe_sets||0}</td>
+      <td><span class="acwr-badge ${acwrCls}">${acwrVal?acwrVal.toFixed(2):'—'}</span></td>
+      <td><span style="font-size:12px;color:var(--muted)">${a.weekly_load>0?a.weekly_load.toLocaleString()+'kg':'—'}</span></td>
     `;
     tbody.appendChild(tr);
   });
 
-  // Squad ACWR chart
-  const squadACWR = data.squadACWR || [];
-  if (squadACWR.length > 0) {
-    const acwrPlugin = {
-      id:'acwrZones',
-      beforeDraw(chart) {
-        const {ctx,chartArea:{left,right,top,bottom},scales:{y}} = chart;
-        [{min:0,max:0.8,color:'rgba(144,202,249,0.15)'},{min:0.8,max:1.3,color:'rgba(165,214,167,0.20)'},{min:1.3,max:1.5,color:'rgba(255,224,130,0.25)'},{min:1.5,max:2.5,color:'rgba(239,154,154,0.25)'}].forEach(z=>{
-          const yT=y.getPixelForValue(Math.min(z.max,y.max)), yB=y.getPixelForValue(Math.max(z.min,y.min));
-          ctx.fillStyle=z.color; ctx.fillRect(left,yT,right-left,yB-yT);
-        });
+  // Squad ACWR (aggregate from per-athlete)
+  const squadACWR = buildSquadACWR(sums);
+  renderACWRChart('squadACWRChart','squadACWRMarker',squadACWR);
+
+  // RPE trend
+  renderRpeTrendChart(rpeTrend, sums, athletes);
+
+  setTimeout(renderComparison,300);
+}
+
+function buildSquadRpeTrend(sums){
+  // Returns last 30 days of per-athlete avg RPE trend (use acwr_history as a proxy for activity)
+  // Simple: return empty — we'll build a per-athlete bar chart instead
+  return [];
+}
+
+function buildSquadACWR(sums){
+  // Merge all athlete ACWR histories by date, take average acwr per day
+  const byDate={};
+  sums.forEach(a=>{
+    (a.acwr_history||[]).forEach(p=>{
+      if(!byDate[p.date]) byDate[p.date]={acwr:[],acute:[],chronic:[]};
+      if(p.acwr) byDate[p.date].acwr.push(p.acwr);
+      if(p.acute) byDate[p.date].acute.push(p.acute);
+      if(p.chronic) byDate[p.date].chronic.push(p.chronic);
+    });
+  });
+  return Object.entries(byDate).sort(([a],[b])=>a.localeCompare(b)).map(([date,v])=>({
+    date,
+    acwr: v.acwr.length ? parseFloat((v.acwr.reduce((a,b)=>a+b,0)/v.acwr.length).toFixed(2)) : 0,
+    acute: v.acute.length ? Math.round(v.acute.reduce((a,b)=>a+b,0)/v.acute.length) : 0,
+    chronic: v.chronic.length ? Math.round(v.chronic.reduce((a,b)=>a+b,0)/v.chronic.length) : 0,
+  }));
+}
+
+function renderACWRChart(canvasId, markerId, acwrData){
+  if(!acwrData.length) return;
+  const acwrPlugin={id:'acwrZones',beforeDraw(chart){
+    const{ctx,chartArea:{left,right},scales:{y}}=chart;
+    [{min:0,max:0.8,color:'rgba(144,202,249,.15)'},{min:0.8,max:1.3,color:'rgba(165,214,167,.20)'},{min:1.3,max:1.5,color:'rgba(255,224,130,.25)'},{min:1.5,max:2.5,color:'rgba(239,154,154,.25)'}].forEach(z=>{
+      const yT=y.getPixelForValue(Math.min(z.max,y.max)),yB=y.getPixelForValue(Math.max(z.min,y.min));
+      ctx.fillStyle=z.color;ctx.fillRect(left,yT,right-left,yB-yT);
+    });
+  }};
+  const ctx=document.getElementById(canvasId)?.getContext('2d');
+  if(!ctx) return;
+  charts[canvasId]=new Chart(ctx,{
+    type:'line',plugins:[acwrPlugin],
+    data:{labels:acwrData.map(r=>r.date.slice(5)),datasets:[
+      {label:'ACWR',data:acwrData.map(r=>r.acwr),borderColor:'#081830',backgroundColor:'rgba(8,24,48,.05)',borderWidth:2.5,pointRadius:2,fill:true,tension:.4,yAxisID:'y'},
+      {label:'Acute (7d)',data:acwrData.map(r=>r.acute),borderColor:'#1e90ff',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:.4,yAxisID:'y2'},
+      {label:'Chronic (28d)',data:acwrData.map(r=>r.chronic),borderColor:'#00c8a0',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:.4,yAxisID:'y2'},
+    ]},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{font:{size:11},boxWidth:12}}},
+      scales:{
+        y:{position:'left',min:0,max:2,grid:{color:'#f0f4f8'},ticks:{font:{size:11}},title:{display:true,text:'ACWR',font:{size:11}}},
+        y2:{position:'right',grid:{drawOnChartArea:false},ticks:{font:{size:11}},title:{display:true,text:'Load',font:{size:10}}},
+        x:{grid:{display:false},ticks:{font:{size:10},maxTicksLimit:14}}
       }
-    };
-    const acwrCtx = document.getElementById('squadACWRChart').getContext('2d');
-    charts['squadACWR'] = new Chart(acwrCtx, {
-      type:'line', plugins:[acwrPlugin],
-      data:{ labels:squadACWR.map(r=>r.date.slice(5)), datasets:[
-        {label:'ACWR',data:squadACWR.map(r=>r.acwr),borderColor:'#081830',backgroundColor:'rgba(8,24,48,0.05)',borderWidth:2.5,pointRadius:2,fill:true,tension:0.4,yAxisID:'y'},
-        {label:'Acute (7d)',data:squadACWR.map(r=>r.acute),borderColor:'#1e90ff',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:0.4,yAxisID:'y2'},
-        {label:'Chronic (28d)',data:squadACWR.map(r=>r.chronic),borderColor:'#00c8a0',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:0.4,yAxisID:'y2'},
-      ]},
+    }
+  });
+  const latest=acwrData[acwrData.length-1];
+  if(latest && markerId){
+    const marker=document.getElementById(markerId);
+    if(marker) marker.style.left=Math.min(Math.max((latest.acwr/2)*100,2),98)+'%';
+  }
+}
+
+function renderRpeTrendChart(rpeTrend, sums, athletes){
+  const ctx=document.getElementById('rpeChart')?.getContext('2d');
+  if(!ctx) return;
+  const colors=['#1a56db','#22c55e','#f59e0b','#e63946','#8b5cf6','#06b6d4','#ec4899','#10b981','#f97316','#6366f1'];
+  charts['rpe']=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:athletes,
+      datasets:[{
+        label:'Avg RPE',
+        data:sums.map(a=>a.avg_rpe||0),
+        backgroundColor:athletes.map((_,i)=>colors[i%colors.length]+'cc'),
+        borderRadius:6,
+      }]
+    },
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{
+      y:{min:0,max:10,grid:{color:'#f0f4f8'},ticks:{font:{size:12}}},
+      x:{grid:{display:false},ticks:{font:{size:12}}}
+    }}
+  });
+}
+
+function renderComplianceHeatmap(sums, athletes, heatmap, sessionTypes){
+  const container=document.getElementById('complianceHeatmap');
+  if(!container) return;
+  let html=`<div class="heatmap-headers">${sessionTypes.map(s=>`<span>${s}</span>`).join('')}</div><div class="heatmap-grid">`;
+  athletes.forEach(ath=>{
+    html+=`<div class="heatmap-row"><div class="heatmap-label">${ath}</div><div class="heatmap-cells">`;
+    sessionTypes.forEach(st=>{
+      const done=heatmap[ath]?.[st];
+      const cls=done?'done':'none';
+      const lbl=done?'✓':'—';
+      html+=`<div class="heatmap-cell ${cls}" title="${ath} — ${st}">${lbl}</div>`;
+    });
+    html+=`</div></div>`;
+  });
+  html+=`</div>`;
+  container.innerHTML=html;
+}
+
+async function renderComparison(){
+  const ath1=document.getElementById('compareAth1')?.value;
+  const ath2=document.getElementById('compareAth2')?.value;
+  const exercise=document.getElementById('compareExercise')?.value;
+  if(!ath1||!ath2||!exercise) return;
+  if(charts['compare']){charts['compare'].destroy();delete charts['compare'];}
+  const [d1,d2]=await Promise.all([
+    fetchData(API_SC,{view:'athlete',athlete:ath1}),
+    fetchData(API_SC,{view:'athlete',athlete:ath2})
+  ]);
+  const getPoints=(d,ex)=>{ const ep=(d.exerciseProgressions||[]).find(e=>e.exercise===ex); return ep?.points||[]; };
+  const p1=getPoints(d1,exercise);
+  const p2=getPoints(d2,exercise);
+  const allDates=[...new Set([...p1.map(p=>p.date),...p2.map(p=>p.date)])].sort();
+  const mapLoad=(pts,dates)=>dates.map(d=>{const f=pts.find(p=>p.date===d);return f?f.avgLoad:null;});
+  const ctx=document.getElementById('compareChart')?.getContext('2d');
+  if(!ctx) return;
+  charts['compare']=new Chart(ctx,{
+    type:'line',
+    data:{labels:allDates.map(d=>d.slice(5)),datasets:[
+      {label:`${ath1} — Load`,data:mapLoad(p1,allDates),borderColor:'#1a56db',backgroundColor:'rgba(26,86,219,.07)',borderWidth:2.5,pointRadius:4,fill:true,tension:.4,spanGaps:true},
+      {label:`${ath2} — Load`,data:mapLoad(p2,allDates),borderColor:'#e63946',backgroundColor:'rgba(230,57,70,.07)',borderWidth:2.5,pointRadius:4,fill:true,tension:.4,spanGaps:true},
+    ]},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{font:{size:12},boxWidth:12}}},
+      scales:{y:{grid:{color:'#f0f4f8'},ticks:{font:{size:11}},title:{display:true,text:'kg',font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// ERG VIEW
+// ═══════════════════════════════════════════════════
+async function loadErgView(){
+  destroyCharts();
+  document.getElementById('mainContent').innerHTML='<div class="loading"><div class="spinner"></div> Loading erg data…</div>';
+  try{
+    const data=await fetchData(API_ERG,{});
+    renderErgView(data);
+  } catch(e){
+    document.getElementById('mainContent').innerHTML=`<div class="empty">Error loading erg data: ${e.message}</div>`;
+  }
+}
+
+function renderErgView(data){
+  const sums=data.athlete_summaries||[];
+  const athletes=data.athletes||[];
+  const allSessions=(data.sessions||[]).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  const totalDist=sums.reduce((a,s)=>a+(s.total_distance||0),0);
+  const totalSess=sums.reduce((a,s)=>a+(s.total_sessions||0),0);
+
+  // Best split overall
+  const splitsWithData=allSessions.filter(s=>s.avg_split);
+  const bestSplit=splitsWithData.length? [...splitsWithData].sort((a,b)=>a.avg_split.localeCompare(b.avg_split))[0]:null;
+
+  document.getElementById('mainContent').innerHTML=`
+    <div class="section-title">Erg Overview</div>
+    <div class="stats-grid">
+      <div class="stat-card green"><div class="stat-label">Athletes</div><div class="stat-value">${athletes.length}</div><div class="stat-sub">With erg data</div></div>
+      <div class="stat-card"><div class="stat-label">Total Sessions</div><div class="stat-value">${totalSess}</div><div class="stat-sub">All time</div></div>
+      <div class="stat-card purple"><div class="stat-label">Total Distance</div><div class="stat-value">${totalDist>=1000?(totalDist/1000).toFixed(1)+'k':totalDist}</div><div class="stat-sub">metres</div></div>
+      <div class="stat-card warn"><div class="stat-label">Best Squad Split</div><div class="stat-value" style="font-size:18px">${bestSplit?bestSplit.avg_split:'—'}</div><div class="stat-sub">${bestSplit?bestSplit.athlete+' — '+bestSplit.workout_type:'No data yet'}</div></div>
+    </div>
+
+    <div class="section-title">Athlete Erg Summary</div>
+    <div class="card">
+      <table class="data-table">
+        <thead><tr>
+          <th>Athlete</th><th>Sessions</th><th>Total Distance</th><th>Last Session</th><th>Workout Type</th><th>Best Split</th><th>ACWR</th>
+        </tr></thead>
+        <tbody id="ergTableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Recent Erg Sessions</div>
+    <div class="card">
+      <table class="data-table">
+        <thead><tr>
+          <th>Date</th><th>Athlete</th><th>Type</th><th>Distance</th><th>Time</th><th>Avg Split</th><th>HR</th><th>RPE</th><th>Notes</th>
+        </tr></thead>
+        <tbody id="ergSessionsBody"></tbody>
+      </table>
+    </div>
+
+    ${athletes.length>0?`
+    <div class="section-title">Distance per Athlete</div>
+    <div class="card">
+      <div class="card-title">Total erg metres — all time</div>
+      <canvas id="ergDistChart" height="80"></canvas>
+    </div>`:''}
+  `;
+
+  // Athlete summary table
+  const eTbody=document.getElementById('ergTableBody');
+  if(sums.length===0){
+    eTbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px">No erg sessions logged yet — athletes can log via the Athlete Hub</td></tr>';
+  } else {
+    sums.forEach(a=>{
+      const acwrVal=a.acwr;
+      const acwrCls=!acwrVal?'acwr-none':acwrVal<0.8?'acwr-low':acwrVal<=1.3?'acwr-optimal':acwrVal<=1.5?'acwr-caution':'acwr-danger';
+      const ds=a.days_since_last;
+      const lastStr=ds===null?'—':ds===0?'Today':ds===1?'Yesterday':`${ds}d ago`;
+      const dist=a.total_distance||0;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td><span class="athlete-name">${a.athlete}</span></td>
+        <td style="font-weight:700">${a.total_sessions}</td>
+        <td style="font-weight:700">${dist>=1000?(dist/1000).toFixed(1)+'km':dist+'m'}</td>
+        <td>${lastStr}</td>
+        <td>${a.last_session?.type?`<span class="wt-badge wt-${(a.last_session.type||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,4)}">${a.last_session.type}</span>`:'—'}</td>
+        <td>${a.last_session?.split?`<span class="split-badge">${a.last_session.split}</span>`:'—'}</td>
+        <td><span class="acwr-badge ${acwrCls}">${acwrVal?acwrVal.toFixed(2):'—'}</span></td>
+      `;
+      eTbody.appendChild(tr);
+    });
+  }
+
+  // Recent sessions table
+  const sSbody=document.getElementById('ergSessionsBody');
+  if(allSessions.length===0){
+    sSbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px">No sessions yet</td></tr>';
+  } else {
+    allSessions.slice(0,30).forEach(s=>{
+      const date=s.timestamp?.slice(0,10)||'—';
+      const rpeClass=(s.rpe||0)>=8.5?'rpe-high':(s.rpe||0)>=7.5?'rpe-mid':'rpe-low';
+      const wtKey=(s.workout_type||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,4);
+      const dist=s.total_distance?`${(s.total_distance/1000).toFixed(1)}km`:'—';
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td style="font-weight:600">${date}</td>
+        <td><span class="athlete-name">${s.athlete||'—'}</span></td>
+        <td>${s.workout_type?`<span class="wt-badge wt-${wtKey}">${s.workout_type}</span>`:'—'}</td>
+        <td>${dist}</td>
+        <td style="font-family:monospace">${s.total_time||'—'}</td>
+        <td>${s.avg_split?`<span class="split-badge">${s.avg_split}</span>`:'—'}</td>
+        <td style="color:var(--muted)">${s.avg_heart_rate?s.avg_heart_rate+'bpm':'—'}</td>
+        <td>${s.rpe?`<span class="rpe-badge ${rpeClass}">${s.rpe}</span>`:'—'}</td>
+        <td style="font-size:12px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.notes||''}</td>
+      `;
+      sSbody.appendChild(tr);
+    });
+  }
+
+  // Distance bar chart
+  if(athletes.length>0){
+    setTimeout(()=>{
+      const ctx=document.getElementById('ergDistChart')?.getContext('2d');
+      if(!ctx) return;
+      const colors=['#1a56db','#22c55e','#f59e0b','#e63946','#8b5cf6','#06b6d4','#ec4899','#10b981'];
+      charts['ergDist']=new Chart(ctx,{
+        type:'bar',
+        data:{labels:sums.map(s=>s.athlete),datasets:[{label:'Distance (m)',data:sums.map(s=>s.total_distance||0),backgroundColor:sums.map((_,i)=>colors[i%colors.length]+'cc'),borderRadius:8}]},
+        options:{responsive:true,plugins:{legend:{display:false}},scales:{
+          y:{grid:{color:'#f0f4f8'},ticks:{font:{size:11},callback:v=>v>=1000?`${(v/1000).toFixed(0)}k`:v}},
+          x:{grid:{display:false},ticks:{font:{size:12}}}
+        }}
+      });
+    },100);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// TESTING VIEW
+// ═══════════════════════════════════════════════════
+async function loadTestingView(){
+  destroyCharts();
+  document.getElementById('mainContent').innerHTML='<div class="loading"><div class="spinner"></div> Loading testing data…</div>';
+  try{
+    const data=await fetchData(API_TEST,{});
+    renderTestingView(data);
+  } catch(e){
+    document.getElementById('mainContent').innerHTML=`<div class="empty">Error loading testing data: ${e.message}</div>`;
+  }
+}
+
+let testingData=null;
+let activeYearTab=null;
+
+function renderTestingView(data){
+  testingData=data;
+  const yearGroups=data.yearGroups||[];
+
+  if(yearGroups.length===0){
+    document.getElementById('mainContent').innerHTML='<div class="empty">No testing data yet — collect results via the Testing form</div>';
+    return;
+  }
+
+  activeYearTab=yearGroups[0].yearLevel;
+
+  document.getElementById('mainContent').innerHTML=`
+    <div class="section-title">Core Testing Results</div>
+    <div class="stats-grid" style="margin-bottom:20px">
+      <div class="stat-card green"><div class="stat-label">Year Groups</div><div class="stat-value">${yearGroups.length}</div><div class="stat-sub">Tested</div></div>
+      <div class="stat-card"><div class="stat-label">Total Athletes</div><div class="stat-value">${yearGroups.reduce((a,g)=>a+g.athleteCount,0)}</div><div class="stat-sub">Records</div></div>
+      <div class="stat-card purple"><div class="stat-label">Tests Conducted</div><div class="stat-value">4</div><div class="stat-sub">Metrics tracked</div></div>
+    </div>
+    <div class="year-tabs" id="yearTabs"></div>
+    <div id="yearContent"></div>
+  `;
+
+  // Year tabs
+  const tabsEl=document.getElementById('yearTabs');
+  yearGroups.forEach(g=>{
+    const btn=document.createElement('button');
+    btn.className='year-tab'+(g.yearLevel===activeYearTab?' active':'');
+    btn.textContent=`Year ${g.yearLevel}`;
+    btn.onclick=()=>selectYearTab(g.yearLevel);
+    tabsEl.appendChild(btn);
+  });
+
+  renderYearContent(activeYearTab);
+}
+
+function selectYearTab(yr){
+  activeYearTab=yr;
+  document.querySelectorAll('.year-tab').forEach(b=>{
+    b.classList.toggle('active',b.textContent===`Year ${yr}`);
+  });
+  renderYearContent(yr);
+}
+
+function renderYearContent(yr){
+  const group=(testingData.yearGroups||[]).find(g=>g.yearLevel===yr);
+  if(!group){ document.getElementById('yearContent').innerHTML=''; return; }
+
+  const {overallRanking, metricRankings}=group;
+  const METRICS=[
+    {key:'hollow_hold',label:'Hollow Hold',unit:'s'},
+    {key:'prone_plank',label:'Prone Plank',unit:'s'},
+    {key:'side_plank_left',label:'Side Plank Left',unit:'s'},
+    {key:'side_plank_right',label:'Side Plank Right',unit:'s'},
+  ];
+
+  let html=`
+    <div class="section-title">Overall Ranking — Year ${yr}</div>
+    <div class="card" style="margin-bottom:20px">
+      <table class="data-table">
+        <thead><tr>
+          <th>Rank</th><th>Athlete</th>
+          ${METRICS.map(m=>`<th>${m.label}</th>`).join('')}
+          <th>Tests</th><th>Avg Rank</th>
+        </tr></thead>
+        <tbody>
+          ${overallRanking.map(a=>{
+            const rankBadgeClass=a.overallRank===1?'rank-1':a.overallRank===2?'rank-2':a.overallRank===3?'rank-3':'rank-other';
+            const scores=METRICS.map(m=>{
+              const sc=a.scores[m.key];
+              return `<td style="font-weight:700">${sc!=null?sc+m.unit:'—'}</td>`;
+            }).join('');
+            return `<tr>
+              <td><span class="rank-badge ${rankBadgeClass}">${a.overallRank}</span></td>
+              <td><span class="athlete-name">${a.athlete}</span></td>
+              ${scores}
+              <td style="color:var(--muted)">${a.testsCompleted}/4</td>
+              <td style="color:var(--muted)">${a.avgRank}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Metric Leaderboards — Year ${yr}</div>
+    <div class="two-col">
+      ${metricRankings.map(metric=>`
+        <div class="card">
+          <div class="card-title">${metric.label} (${metric.unit}) — higher is better</div>
+          <table class="pb-table">
+            <thead><tr><th>Rank</th><th>Athlete</th><th>Score</th></tr></thead>
+            <tbody>
+              ${metric.rankings.slice(0,10).map(r=>{
+                const rankBadgeClass=r.rank===1?'rank-1':r.rank===2?'rank-2':r.rank===3?'rank-3':'rank-other';
+                return `<tr>
+                  <td><span class="rank-badge ${rankBadgeClass}">${r.rank}</span></td>
+                  <td style="font-weight:700">${r.athlete}</td>
+                  <td class="pb-val">${r.score}${metric.unit}</td>
+                </tr>`;
+              }).join('')}
+              ${metric.rankings.length===0?'<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">No data</td></tr>':''}
+            </tbody>
+          </table>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="section-title">Visual Comparison — Year ${yr}</div>
+    <div class="card">
+      <div class="card-title">All metrics per athlete (seconds)</div>
+      <canvas id="testingChart" height="100"></canvas>
+    </div>
+  `;
+
+  document.getElementById('yearContent').innerHTML=html;
+
+  // Radar/bar chart for all athletes in this year group
+  setTimeout(()=>{
+    const ctx=document.getElementById('testingChart')?.getContext('2d');
+    if(!ctx) return;
+    const athletes=overallRanking.map(a=>a.athlete);
+    const colors=['#1a56db','#22c55e','#f59e0b','#e63946','#8b5cf6','#06b6d4'];
+    charts['testing']=new Chart(ctx,{
+      type:'bar',
+      data:{
+        labels:METRICS.map(m=>m.label),
+        datasets:athletes.map((ath,i)=>({
+          label:ath,
+          data:METRICS.map(m=>{
+            const a=overallRanking.find(r=>r.athlete===ath);
+            return a?.scores[m.key]||0;
+          }),
+          backgroundColor:colors[i%colors.length]+'bb',
+          borderRadius:5,
+        }))
+      },
       options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{font:{size:11},boxWidth:12}}},
         scales:{
-          y:{position:'left',min:0,max:2,grid:{color:'#f0f4f8'},ticks:{font:{size:11}},title:{display:true,text:'ACWR',font:{size:11}}},
-          y2:{position:'right',grid:{drawOnChartArea:false},ticks:{font:{size:11}},title:{display:true,text:'Load (kg×reps)',font:{size:10}}},
-          x:{grid:{display:false},ticks:{font:{size:10},maxTicksLimit:14}}
+          y:{grid:{color:'#f0f4f8'},ticks:{font:{size:11}},title:{display:true,text:'seconds',font:{size:11}}},
+          x:{grid:{display:false},ticks:{font:{size:12}}}
         }
       }
     });
-    const latest = squadACWR[squadACWR.length-1];
-    if (latest) {
-      const pct = Math.min(Math.max((latest.acwr/2)*100,2),98);
-      const marker = document.getElementById('squadACWRMarker');
-      if (marker) marker.style.left = pct+'%';
-    }
-  }
-
-  // RPE trend chart
-  if (rpeTrend.length > 0) {
-    const ctx = document.getElementById('rpeChart').getContext('2d');
-    charts['rpe'] = new Chart(ctx, {
-      type: 'line',
-      data: { labels: rpeTrend.map(r=>r.date.slice(5)), datasets: [{ label:'Avg RPE', data: rpeTrend.map(r=>r.avgRpe), borderColor:'#1e90ff', backgroundColor:'rgba(30,144,255,0.08)', borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#1e90ff', fill:true, tension:0.4 }] },
-      options: { responsive:true, plugins:{ legend:{display:false} }, scales:{ y:{min:5,max:10,grid:{color:'#f0f4f8'},ticks:{font:{size:12}}}, x:{grid:{display:false},ticks:{font:{size:11}}} } }
-    });
-  }
-
-  // Initial comparison
-  setTimeout(renderComparison, 200);
+  },100);
 }
 
-function renderComplianceHeatmap(athleteSummary, athletes) {
-  const container = document.getElementById('complianceHeatmap');
-  const sessionTypes = ['Lower A','Lower B','Upper A','Upper B'];
-  const now = new Date();
-
-  // Build 4-week grid per athlete
-  const weeks = ['W1','W2','W3','W4'];
-  let html = `<div class="heatmap-headers">${sessionTypes.map(s=>`<span>${s}</span>`).join('')}</div><div class="heatmap-grid">`;
-
-  athletes.forEach(ath => {
-    const summary = athleteSummary.find(a => a.athlete === ath);
-    html += `<div class="heatmap-row"><div class="heatmap-label">${ath}</div><div class="heatmap-cells">`;
-    sessionTypes.forEach(st => {
-      const count = summary?.sessionCounts[st] || 0;
-      const cls = count > 0 ? 'done' : 'none';
-      const label = count > 0 ? '✓' : '—';
-      html += `<div class="heatmap-cell ${cls}" title="${ath} — ${st}: ${count} session(s)">${label}</div>`;
-    });
-    html += `</div></div>`;
-  });
-
-  html += `</div>`;
-  container.innerHTML = html;
-}
-
-async function renderComparison() {
-  const ath1 = document.getElementById('compareAth1')?.value;
-  const ath2 = document.getElementById('compareAth2')?.value;
-  const exercise = document.getElementById('compareExercise')?.value;
-  if (!ath1 || !ath2 || !exercise) return;
-  if (charts['compare']) { charts['compare'].destroy(); delete charts['compare']; }
-
-  const [d1, d2] = await Promise.all([
-    fetchData({ view:'athlete', athlete: ath1 }),
-    fetchData({ view:'athlete', athlete: ath2 })
-  ]);
-
-  const getPoints = (d, ex) => {
-    const ep = d.exerciseProgressions?.find(e => e.exercise === ex);
-    return ep?.points || [];
-  };
-
-  const p1 = getPoints(d1, exercise);
-  const p2 = getPoints(d2, exercise);
-  const allDates = [...new Set([...p1.map(p=>p.date), ...p2.map(p=>p.date)])].sort();
-
-  const ctx = document.getElementById('compareChart')?.getContext('2d');
-  if (!ctx) return;
-
-  charts['compare'] = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: allDates.map(d => d.slice(5)),
-      datasets: [
-        { label:`${ath1} — Load`, data: allDates.map(d => p1.find(p=>p.date===d)?.avgLoad ?? null), borderColor:'#1e90ff', backgroundColor:'rgba(30,144,255,0.08)', borderWidth:2.5, pointRadius:5, fill:true, tension:0.4, spanGaps:true },
-        { label:`${ath2} — Load`, data: allDates.map(d => p2.find(p=>p.date===d)?.avgLoad ?? null), borderColor:'#00c8a0', backgroundColor:'rgba(0,200,160,0.08)', borderWidth:2.5, pointRadius:5, fill:true, tension:0.4, spanGaps:true }
-      ]
-    },
-    options: { responsive:true, plugins:{ legend:{ labels:{ font:{size:12}, boxWidth:14 } } }, scales:{ y:{ title:{display:true,text:'Avg Load (kg)',font:{size:11}}, grid:{color:'#f0f4f8'} }, x:{grid:{display:false}} } }
-  });
-}
-
-// ═══════════════════════════════════════════════════════
-// ATHLETE VIEW
-// ═══════════════════════════════════════════════════════
-async function loadAthleteView() {
-  const athlete = document.getElementById('athleteSelect')?.value;
-  if (!athlete || athlete === 'Loading…') return;
+// ═══════════════════════════════════════════════════
+// ATHLETE VIEW (coach's athlete drill-down)
+// ═══════════════════════════════════════════════════
+async function loadAthleteView(){
+  const athlete=document.getElementById('athleteSelect')?.value;
+  if(!athlete||athlete==='Loading…') return;
   destroyCharts();
-  document.getElementById('mainContent').innerHTML = '<div class="loading"><div class="spinner"></div> Loading athlete data…</div>';
-  try {
-    const data = await fetchData({ view:'athlete', athlete });
+  document.getElementById('mainContent').innerHTML='<div class="loading"><div class="spinner"></div> Loading athlete data…</div>';
+  try{
+    const data=await fetchData(API_SC,{view:'athlete',athlete});
     renderAthleteView(data);
-  } catch(e) {
-    document.getElementById('mainContent').innerHTML = `<div class="empty">Error: ${e.message}</div>`;
+  } catch(e){
+    document.getElementById('mainContent').innerHTML=`<div class="empty">Error: ${e.message}</div>`;
   }
 }
 
-function renderAthleteView(data) {
+function renderAthleteView(data){
   const { athlete, exerciseProgressions, sessionHistory } = data;
   const logs = data.logs || [];
   const totalSets = logs.length;
-  const sessions = sessionHistory.length;
+  const sessions = (sessionHistory||[]).length;
   const rpeArr = logs.filter(r=>r.rpe).map(r=>r.rpe);
   const avgRpe = rpeArr.length ? (rpeArr.reduce((a,b)=>a+b,0)/rpeArr.length).toFixed(1) : '—';
   const latestACWR = data.latestACWR;
   const acwrVal = latestACWR?.acwr;
   const acwrStatVal = acwrVal ? acwrVal.toFixed(2) : '—';
-  const acwrStatClass = !acwrVal ? '' : acwrVal < 0.8 ? '' : acwrVal <= 1.3 ? 'green' : acwrVal <= 1.5 ? 'warn' : 'red';
-  const acwrStatSub = !acwrVal ? 'Not enough data' : acwrVal < 0.8 ? 'Under-training' : acwrVal <= 1.3 ? 'Optimal zone' : acwrVal <= 1.5 ? 'Caution' : '⚠️ Danger zone';
+  const acwrStatClass = !acwrVal?'':acwrVal<0.8?'':acwrVal<=1.3?'green':acwrVal<=1.5?'warn':'red';
+  const acwrStatSub = !acwrVal?'Not enough data':acwrVal<0.8?'Under-training':acwrVal<=1.3?'Optimal zone':acwrVal<=1.5?'Caution':'⚠️ Danger zone';
 
-  // Personal bests per exercise
-  const pbMap = {};
-  logs.forEach(r => {
-    const load = parseFloat(r.load);
-    if (!isNaN(load) && load > 0) {
-      if (!pbMap[r.exercise] || load > pbMap[r.exercise].load) {
-        pbMap[r.exercise] = { load, date: r.timestamp?.slice(0,10), reps: r.reps };
-      }
+  const pbMap={};
+  logs.forEach(r=>{
+    const load=parseFloat(r.load);
+    if(!isNaN(load)&&load>0){
+      if(!pbMap[r.exercise]||load>pbMap[r.exercise].load)
+        pbMap[r.exercise]={load,date:r.timestamp?.slice(0,10),reps:r.reps};
     }
   });
-  const pbs = Object.entries(pbMap).sort((a,b) => b[1].load - a[1].load);
+  const pbs=Object.entries(pbMap).sort((a,b)=>b[1].load-a[1].load);
 
-  // Weekly volume (last 6 weeks)
-  const weeklyVol = [];
-  const now = new Date();
-  for (let w = 5; w >= 0; w--) {
-    const wStart = new Date(now); wStart.setDate(now.getDate() - (w+1)*7);
-    const wEnd = new Date(now); wEnd.setDate(now.getDate() - w*7);
-    const wLogs = logs.filter(r => { const d=new Date(r.timestamp); return d>=wStart && d<wEnd; });
-    const vol = wLogs.reduce((a,r) => { const l=parseFloat(r.load); return a + (isNaN(l)?0:l*(r.reps||1)); }, 0);
-    weeklyVol.push({ week: `W-${w}`, vol: Math.round(vol) });
+  const weeklyVol=[];
+  const now=new Date();
+  for(let w=5;w>=0;w--){
+    const wStart=new Date(now);wStart.setDate(now.getDate()-(w+1)*7);
+    const wEnd=new Date(now);wEnd.setDate(now.getDate()-w*7);
+    const wLogs=logs.filter(r=>{const d=new Date(r.timestamp);return d>=wStart&&d<wEnd;});
+    const vol=wLogs.reduce((a,r)=>{const l=parseFloat(r.load);return a+(isNaN(l)?0:l*(r.reps||1));},0);
+    weeklyVol.push({week:`W-${w}`,vol:Math.round(vol)});
   }
-  weeklyVol[weeklyVol.length-1].week = 'This wk';
+  weeklyVol[weeklyVol.length-1].week='This wk';
 
-  document.getElementById('mainContent').innerHTML = `
+  document.getElementById('mainContent').innerHTML=`
     <div class="section-title">Overview — ${athlete}</div>
     <div class="stats-grid">
       <div class="stat-card green"><div class="stat-label">Sessions</div><div class="stat-value">${sessions}</div><div class="stat-sub">Total logged</div></div>
@@ -502,10 +871,11 @@ function renderAthleteView(data) {
       <div class="card-title">Rolling 7-day (acute) ÷ 28-day (chronic) daily volume — optimal: 0.8–1.3</div>
       <canvas id="athleteACWRChart" height="80"></canvas>
     </div>
+
     <div class="section-title">Session History</div>
     <div class="card">
       <table class="data-table">
-        <thead><tr><th>Date</th><th>Session</th><th>Exercises</th><th>Sets</th><th>Avg RPE</th></tr></thead>
+        <thead><tr><th>Date</th><th>Session</th><th>Exercises (in order)</th><th>Sets</th><th>Avg RPE</th><th>Volume</th></tr></thead>
         <tbody id="historyBody"></tbody>
       </table>
     </div>
@@ -515,128 +885,89 @@ function renderAthleteView(data) {
   `;
 
   // PBs
-  const pbBody = document.getElementById('pbBody');
-  if (pbs.length === 0) {
-    pbBody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:20px">No load data yet</td></tr>';
+  const pbBody=document.getElementById('pbBody');
+  if(pbs.length===0){
+    pbBody.innerHTML='<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:20px">No load data yet</td></tr>';
   } else {
-    pbs.forEach(([ex, pb], i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td style="font-size:11px;font-weight:600">${i===0?'<span class="pb-crown">🏆</span>':''}${ex}</td><td class="pb-val">${pb.load}kg</td><td style="color:var(--muted)">${pb.reps||'—'}</td><td style="color:var(--muted);font-size:12px">${pb.date||'—'}</td>`;
+    pbs.slice(0,10).forEach(([ex,pb],i)=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td style="font-size:11px;font-weight:600">${i===0?'<span class="pb-crown">🏆</span>':''}${ex}</td><td class="pb-val">${pb.load}kg</td><td style="color:var(--muted)">${pb.reps||'—'}</td><td style="color:var(--muted);font-size:12px">${pb.date||'—'}</td>`;
       pbBody.appendChild(tr);
     });
   }
 
-  // Athlete ACWR chart
-  const acwrSeries = data.acwrSeries || [];
-  if (acwrSeries.length > 0) {
-    setTimeout(() => {
-      const aCtx = document.getElementById('athleteACWRChart')?.getContext('2d');
-      if (!aCtx) return;
-      const acwrPlugin = {
-        id: 'acwrZones',
-        beforeDraw(chart) {
-          const {ctx, chartArea: {left,right,top,bottom}, scales: {y}} = chart;
-          const zones = [
-            {min:0, max:0.8, color:'rgba(144,202,249,0.15)'},
-            {min:0.8, max:1.3, color:'rgba(165,214,167,0.20)'},
-            {min:1.3, max:1.5, color:'rgba(255,224,130,0.25)'},
-            {min:1.5, max:2.5, color:'rgba(239,154,154,0.25)'},
-          ];
-          zones.forEach(z => {
-            const yTop = y.getPixelForValue(Math.min(z.max, y.max));
-            const yBot = y.getPixelForValue(Math.max(z.min, y.min));
-            ctx.fillStyle = z.color;
-            ctx.fillRect(left, yTop, right-left, yBot-yTop);
-          });
-        }
-      };
-      charts['athleteACWR'] = new Chart(aCtx, {
-        type:'line',
-        plugins:[acwrPlugin],
-        data:{
-          labels: acwrSeries.map(r=>r.date.slice(5)),
-          datasets:[
-            {label:'ACWR', data:acwrSeries.map(r=>r.acwr), borderColor:'#081830', backgroundColor:'rgba(8,24,48,0.05)', borderWidth:2.5, pointRadius:2, fill:true, tension:0.4, yAxisID:'y'},
-            {label:'Acute (7d)', data:acwrSeries.map(r=>r.acute), borderColor:'#1e90ff', borderWidth:1.5, borderDash:[4,3], pointRadius:0, fill:false, tension:0.4, yAxisID:'y2'},
-            {label:'Chronic (28d)', data:acwrSeries.map(r=>r.chronic), borderColor:'#00c8a0', borderWidth:1.5, borderDash:[4,3], pointRadius:0, fill:false, tension:0.4, yAxisID:'y2'},
-          ]
-        },
-        options:{
-          responsive:true,
-          interaction:{mode:'index',intersect:false},
-          plugins:{legend:{labels:{font:{size:11},boxWidth:12}}},
-          scales:{
-            y:{ position:'left', min:0, max:2, grid:{color:'#f0f4f8'}, ticks:{font:{size:11}}, title:{display:true,text:'ACWR',font:{size:11}} },
-            y2:{ position:'right', grid:{drawOnChartArea:false}, ticks:{font:{size:11}}, title:{display:true,text:'Load (kg×reps)',font:{size:10}} },
-            x:{ grid:{display:false}, ticks:{font:{size:10}, maxTicksLimit:14} }
-          }
-        }
+  // Volume chart
+  setTimeout(()=>{
+    const vCtx=document.getElementById('volChart')?.getContext('2d');
+    if(vCtx){
+      charts['vol']=new Chart(vCtx,{
+        type:'bar',
+        data:{labels:weeklyVol.map(w=>w.week),datasets:[{label:'Volume (kg×reps)',data:weeklyVol.map(w=>w.vol),backgroundColor:weeklyVol.map((_,i)=>i===5?'rgba(30,144,255,.85)':'rgba(30,144,255,.3)'),borderRadius:6}]},
+        options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#f0f4f8'},ticks:{font:{size:11}}},x:{grid:{display:false},ticks:{font:{size:11}}}}}
       });
-    }, 50);
-  }
+    }
 
-  // Weekly volume chart
-  const vCtx = document.getElementById('volChart').getContext('2d');
-  charts['vol'] = new Chart(vCtx, {
-    type: 'bar',
-    data: { labels: weeklyVol.map(w=>w.week), datasets: [{ label:'Volume (kg×reps)', data: weeklyVol.map(w=>w.vol), backgroundColor: weeklyVol.map((_,i)=>i===5?'rgba(30,144,255,0.85)':'rgba(30,144,255,0.3)'), borderRadius:6 }] },
-    options: { responsive:true, plugins:{ legend:{display:false} }, scales:{ y:{ grid:{color:'#f0f4f8'}, ticks:{font:{size:11}} }, x:{ grid:{display:false}, ticks:{font:{size:11}} } } }
-  });
+    // ACWR chart
+    const acwrSeries=data.acwrSeries||[];
+    if(acwrSeries.length>0){
+      renderACWRChart('athleteACWRChart',null,acwrSeries);
+    }
+  },50);
 
   // Session history
-  const hBody = document.getElementById('historyBody');
-  sessionHistory.forEach(s => {
-    const cls = s.session_type==='Lower A'?'sb-la':s.session_type==='Lower B'?'sb-lb':s.session_type==='Upper A'?'sb-ua':'sb-ub';
-    const rpeClass = s.avgRpe>=8.5?'rpe-high':s.avgRpe>=7.5?'rpe-mid':'rpe-low';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td style="font-weight:600">${s.date}</td><td><span class="session-badge ${cls}">${s.session_type}</span></td><td style="color:var(--muted);font-size:12px">${s.exercises.slice(0,3).join(', ')}${s.exercises.length>3?` +${s.exercises.length-3}`:''}</td><td style="font-weight:600">${s.totalSets}</td><td><span class="rpe-badge ${rpeClass}">${s.avgRpe||'—'}</span></td>`;
+  const hBody=document.getElementById('historyBody');
+  (sessionHistory||[]).forEach(s=>{
+    const cls=s.session_type==='Lower A'?'sb-la':s.session_type==='Lower B'?'sb-lb':s.session_type==='Upper A'?'sb-ua':'sb-ub';
+    const rpeClass=(s.avgRpe||0)>=8.5?'rpe-high':(s.avgRpe||0)>=7.5?'rpe-mid':'rpe-low';
+    const exList=s.exercises.slice(0,4).join(', ')+(s.exercises.length>4?` +${s.exercises.length-4}`:'');
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="font-weight:600">${s.date}</td><td><span class="session-badge ${cls}">${s.session_type}</span></td><td style="color:var(--muted);font-size:12px">${exList}</td><td style="font-weight:600">${s.totalSets}</td><td><span class="rpe-badge ${rpeClass}">${s.avgRpe||'—'}</span></td><td style="font-size:12px;color:var(--muted)">${s.totalLoad>0?s.totalLoad.toLocaleString()+'kg':'—'}</td>`;
     hBody.appendChild(tr);
   });
 
   // Exercise progression charts
-  const grid = document.getElementById('exerciseGrid');
-  const validEps = exerciseProgressions.filter(ep => ep.points.length >= 1);
-  if (validEps.length === 0) { grid.innerHTML = '<div class="empty">No exercise data yet</div>'; return; }
-
-  validEps.forEach((ep, idx) => {
-    const div = document.createElement('div'); div.className = 'ex-card';
-    const cid = `ex_${idx}`;
-    div.innerHTML = `<div class="ex-card-title">${ep.exercise}</div><canvas id="${cid}" height="120"></canvas>`;
+  const grid=document.getElementById('exerciseGrid');
+  const validEps=(exerciseProgressions||[]).filter(ep=>ep.points.length>=1);
+  if(validEps.length===0){grid.innerHTML='<div class="empty">No exercise data yet</div>';return;}
+  validEps.forEach((ep,idx)=>{
+    const div=document.createElement('div');div.className='ex-card';
+    const cid=`ex_${idx}`;
+    div.innerHTML=`<div class="ex-card-title">${ep.exercise}</div><canvas id="${cid}" height="120"></canvas>`;
     grid.appendChild(div);
-    setTimeout(() => {
-      const ctx = document.getElementById(cid)?.getContext('2d');
-      if (!ctx) return;
-      const hasLoad = ep.points.some(p=>p.avgLoad!==null);
-      charts[cid] = new Chart(ctx, {
+    setTimeout(()=>{
+      const ctx=document.getElementById(cid)?.getContext('2d');
+      if(!ctx) return;
+      const hasLoad=ep.points.some(p=>p.avgLoad!==null);
+      charts[cid]=new Chart(ctx,{
         type:'line',
-        data: { labels: ep.points.map(p=>p.date.slice(5)), datasets: [
-          ...(hasLoad?[{ label:'Load (kg)', data:ep.points.map(p=>p.avgLoad), borderColor:'#1e90ff', backgroundColor:'rgba(30,144,255,0.07)', borderWidth:2, pointRadius:4, fill:true, tension:0.4, yAxisID:'y' }]:[]),
-          { label:'RPE', data:ep.points.map(p=>p.avgRpe), borderColor:'#ff6b35', borderWidth:2, borderDash:[4,3], pointRadius:3, fill:false, tension:0.4, yAxisID:hasLoad?'y2':'y' }
+        data:{labels:ep.points.map(p=>p.date.slice(5)),datasets:[
+          ...(hasLoad?[{label:'Load (kg)',data:ep.points.map(p=>p.avgLoad),borderColor:'#1e90ff',backgroundColor:'rgba(30,144,255,.07)',borderWidth:2,pointRadius:4,fill:true,tension:.4,yAxisID:'y'}]:[]),
+          {label:'RPE',data:ep.points.map(p=>p.avgRpe),borderColor:'#ff6b35',borderWidth:2,borderDash:[4,3],pointRadius:3,fill:false,tension:.4,yAxisID:hasLoad?'y2':'y'}
         ]},
-        options: { responsive:true, interaction:{mode:'index',intersect:false}, plugins:{legend:{display:ep.points.length>1,labels:{font:{size:10},boxWidth:10}}}, scales:{
-          y:{ position:'left', grid:{color:'#f0f4f8'}, ticks:{font:{size:10}}, title:{display:hasLoad,text:'kg',font:{size:10}} },
-          ...(hasLoad?{y2:{ position:'right', min:5, max:10, grid:{drawOnChartArea:false}, ticks:{font:{size:10}}, title:{display:true,text:'RPE',font:{size:10}} }}:{}),
-          x:{ grid:{display:false}, ticks:{font:{size:10}} }
-        }}
+        options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{display:ep.points.length>1,labels:{font:{size:10},boxWidth:10}}},
+          scales:{
+            y:{position:'left',grid:{color:'#f0f4f8'},ticks:{font:{size:10}},title:{display:hasLoad,text:'kg',font:{size:10}}},
+            ...(hasLoad?{y2:{position:'right',grid:{drawOnChartArea:false},ticks:{font:{size:10}},title:{display:true,text:'RPE',font:{size:10}}}}:{})
+          }
+        }
       });
-    }, 50);
+    },60*idx+100);
   });
 }
 
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
 // INIT
-// ═══════════════════════════════════════════════════════
-async function init() {
-  try {
-    const d = await fetchData({ view:'coach' });
-    coachData = d;
-    if (d.athletes?.length > 0) {
-      const sel = document.getElementById('athleteSelect');
-      sel.innerHTML = d.athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
+// ═══════════════════════════════════════════════════
+async function init(){
+  try{
+    coachData=await fetchData(API_SC,{view:'coach'});
+    if(coachData.athletes?.length>0){
+      const sel=document.getElementById('athleteSelect');
+      sel.innerHTML=coachData.athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
     }
-    renderCoachView(d);
-  } catch(e) {
-    document.getElementById('mainContent').innerHTML = `<div class="empty">Failed to load: ${e.message}</div>`;
+    renderCoachView(coachData);
+  } catch(e){
+    document.getElementById('mainContent').innerHTML=`<div class="empty">Failed to load: ${e.message}</div>`;
   }
 }
 
