@@ -1,0 +1,49 @@
+{
+  "type": "object",
+  "properties": {
+    "timestamp": {
+      "type": "string"
+    },
+    "athlete": {
+      "type": "string"
+    },
+    "workout_type": {
+      "type": "string",
+      "enum": [
+        "Single Distance",
+        "Single Time",
+        "Intervals",
+        "Custom"
+      ]
+    },
+    "total_distance": {
+      "type": "number"
+    },
+    "total_time": {
+      "type": "string"
+    },
+    "avg_split": {
+      "type": "string"
+    },
+    "avg_heart_rate": {
+      "type": "number"
+    },
+    "stroke_rate": {
+      "type": "number"
+    },
+    "rpe": {
+      "type": "number"
+    },
+    "intervals": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "ErgSession"
+}
