@@ -47,6 +47,90 @@ function computeACWR(logs: any[]): { date: string, acute: number, chronic: numbe
   return points;
 }
 
+// Build exercise progressions: for each exercise, one point per session (avg load + avg rpe)
+function buildExerciseProgressions(logs: any[]): { exercise: string, points: { date: string, avgLoad: number | null, avgRpe: number | null }[] }[] {
+  // Use an ordered map to preserve first-seen order per exercise
+  const exerciseOrder: string[] = [];
+  const byExercise: Record<string, any[]> = {};
+
+  // Sort logs by timestamp ascending so first-seen order = chronological order
+  const sorted = [...logs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+  for (const r of sorted) {
+    if (!r.exercise) continue;
+    if (!byExercise[r.exercise]) {
+      byExercise[r.exercise] = [];
+      exerciseOrder.push(r.exercise);
+    }
+    byExercise[r.exercise].push(r);
+  }
+
+  return exerciseOrder.map(ex => {
+    const exLogs = byExercise[ex];
+    // Group by date
+    const byDate: Record<string, any[]> = {};
+    for (const r of exLogs) {
+      const date = r.timestamp?.split('T')[0];
+      if (!date) continue;
+      if (!byDate[date]) byDate[date] = [];
+      byDate[date].push(r);
+    }
+    const points = Object.entries(byDate).sort(([a], [b]) => a.localeCompare(b)).map(([date, sets]) => {
+      const loads = sets.map(s => parseFloat(s.load)).filter(l => !isNaN(l) && l > 0);
+      const rpes = sets.map(s => s.rpe).filter(r => r != null);
+      return {
+        date,
+        avgLoad: loads.length ? parseFloat((loads.reduce((a, v) => a + v, 0) / loads.length).toFixed(1)) : null,
+        avgRpe: rpes.length ? parseFloat((rpes.reduce((a, v) => a + v, 0) / rpes.length).toFixed(1)) : null,
+      };
+    });
+    return { exercise: ex, points };
+  });
+}
+
+// Build session history: distinct sessions with exercise list in order of first set
+function buildSessionHistory(logs: any[]): any[] {
+  const seen = new Set<string>();
+  const sessions: any[] = [];
+
+  // Sort logs by timestamp ascending
+  const sorted = [...logs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+  for (const r of sorted) {
+    const date = r.timestamp?.split('T')[0];
+    const key = `${date}|${r.session_type}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      const sets = logs.filter(l => l.timestamp?.startsWith(date) && l.session_type === r.session_type);
+
+      // Preserve exercise order by first set_number / timestamp
+      const exerciseOrder: string[] = [];
+      const exSeen = new Set<string>();
+      [...sets]
+        .sort((a, b) => (a.set_number || 0) - (b.set_number || 0) || new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+        .forEach(s => { if (s.exercise && !exSeen.has(s.exercise)) { exSeen.add(s.exercise); exerciseOrder.push(s.exercise); } });
+
+      const rpes = sets.filter(s => s.rpe).map(s => s.rpe);
+      const tl = sets.reduce((a, s) => {
+        const l = parseFloat(s.load);
+        return a + (isNaN(l) ? 0 : l * (s.reps || 1));
+      }, 0);
+
+      sessions.push({
+        date,
+        session_type: r.session_type,
+        totalSets: sets.length,
+        avgRpe: rpes.length ? parseFloat((rpes.reduce((a, v) => a + v, 0) / rpes.length).toFixed(1)) : null,
+        totalLoad: Math.round(tl),
+        exercises: exerciseOrder,
+      });
+    }
+  }
+
+  // Return newest first
+  return sessions.sort((a, b) => b.date.localeCompare(a.date));
+}
+
 Deno.serve(async (req) => {
   const cors = {
     'Access-Control-Allow-Origin': '*',
@@ -98,14 +182,12 @@ Deno.serve(async (req) => {
         : null;
       const highRpeSets = logs.filter(r => r.rpe >= 9).length;
 
-      // Session counts
       const sessionCounts: Record<string, number> = {};
       for (const st of sessionTypes) sessionCounts[st] = 0;
       for (const r of logs) {
         if (sessionCounts[r.session_type] !== undefined) sessionCounts[r.session_type]++;
       }
 
-      // Weekly load
       const wkLoad = recent.reduce((a, r) => {
         const l = parseFloat(r.load);
         return a + (isNaN(l) ? 0 : l * (r.reps || 1));
@@ -113,8 +195,6 @@ Deno.serve(async (req) => {
 
       const lastLog = [...logs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
       const daysSinceLast = lastLog ? Math.floor((now.getTime() - new Date(lastLog.timestamp).getTime()) / 86400000) : null;
-
-      // Distinct session types done recently
       const recentTypes = [...new Set(recent.map(r => r.session_type))];
 
       return {
@@ -131,6 +211,7 @@ Deno.serve(async (req) => {
         days_since_last: daysSinceLast,
         recent_types: recentTypes,
         acwr_history: acwrData.slice(-28),
+        latestACWR: latestAcwr,
       };
     });
 
@@ -141,42 +222,22 @@ Deno.serve(async (req) => {
     const avgSquadRpe = allRpes.length ? parseFloat((allRpes.reduce((a, v) => a + v, 0) / allRpes.length).toFixed(1)) : null;
     const highRpeSets = allLogs.filter(r => r.rpe >= 9).length;
 
-    // Individual athlete detail (ACWR history + all sets)
+    // Individual athlete detail — returns flat structure matching what the frontend expects
     let individualDetail = null;
     if (athlete && byAthlete[athlete]) {
       const logs = byAthlete[athlete];
       const acwrData = computeACWR(logs);
-      
-      // Session index for this athlete (distinct date+session_type combos)
-      const sessionIndex: { date: string, session_type: string, set_count: number, avg_rpe: number | null, total_load: number }[] = [];
-      const seen = new Set<string>();
-      for (const r of logs) {
-        const date = r.timestamp?.split('T')[0];
-        const key = `${date}|${r.session_type}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          const sets = logs.filter(l => l.timestamp?.startsWith(date) && l.session_type === r.session_type);
-          const rpes = sets.filter(s => s.rpe).map(s => s.rpe);
-          const tl = sets.reduce((a, s) => {
-            const l = parseFloat(s.load);
-            return a + (isNaN(l) ? 0 : l * (s.reps || 1));
-          }, 0);
-          sessionIndex.push({
-            date,
-            session_type: r.session_type,
-            set_count: sets.length,
-            avg_rpe: rpes.length ? parseFloat((rpes.reduce((a, v) => a + v, 0) / rpes.length).toFixed(1)) : null,
-            total_load: Math.round(tl),
-          });
-        }
-      }
-      sessionIndex.sort((a, b) => b.date.localeCompare(a.date));
+      const latestACWR = acwrData.length ? acwrData[acwrData.length - 1] : null;
+      const sessionHistory = buildSessionHistory(logs);
+      const exerciseProgressions = buildExerciseProgressions(logs);
 
       individualDetail = {
         athlete,
-        logs: logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
-        acwr_history: acwrData,
-        session_index: sessionIndex,
+        logs: [...logs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
+        acwrSeries: acwrData,
+        latestACWR,
+        sessionHistory,
+        exerciseProgressions,
       };
     }
 
@@ -194,6 +255,8 @@ Deno.serve(async (req) => {
       heatmap,
       session_types: sessionTypes,
       individual: individualDetail,
+      // Flat spread for athlete view in coach dashboard
+      ...(individualDetail || {}),
     }, { status: 200, headers: cors });
 
   } catch (error) {

@@ -15,7 +15,6 @@ Deno.serve(async (req) => {
 
     const { athlete, date, session_type } = body;
 
-    // Fetch all session logs
     const allLogs = await base44.asServiceRole.entities.SessionLog.list();
 
     // Build session index: for each athlete, list distinct sessions (date + session_type)
@@ -26,7 +25,6 @@ Deno.serve(async (req) => {
       if (!date) continue;
       const key = log.athlete;
       if (!sessions[key]) sessions[key] = [];
-      // Check if this date+session_type already in list
       const exists = sessions[key].find(s => s.date === date && s.session_type === log.session_type);
       if (!exists) {
         sessions[key].push({ date, session_type: log.session_type, athlete: log.athlete });
@@ -41,14 +39,19 @@ Deno.serve(async (req) => {
     // If specific session requested, return its sets
     let sessionDetail = null;
     if (athlete && date && session_type) {
+      // Sort sets by set_number ascending (chronological order within session)
       const sets = allLogs
         .filter(l => l.athlete === athlete && l.timestamp?.startsWith(date) && l.session_type === session_type)
-        .sort((a, b) => (a.set_number || 0) - (b.set_number || 0));
+        .sort((a, b) => (a.set_number || 0) - (b.set_number || 0) || new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-      // Group by exercise
+      // Group by exercise, preserving first-seen order (chronological by set_number)
+      const exerciseOrder: string[] = [];
       const byExercise: Record<string, any[]> = {};
       for (const s of sets) {
-        if (!byExercise[s.exercise]) byExercise[s.exercise] = [];
+        if (!byExercise[s.exercise]) {
+          byExercise[s.exercise] = [];
+          exerciseOrder.push(s.exercise); // preserve insertion order
+        }
         byExercise[s.exercise].push({
           set: s.set_number,
           reps: s.reps,
@@ -70,7 +73,8 @@ Deno.serve(async (req) => {
         athlete,
         date,
         session_type,
-        exercises: Object.entries(byExercise).map(([name, sets]) => ({ name, sets })),
+        // exercises in the order they were performed
+        exercises: exerciseOrder.map(name => ({ name, sets: byExercise[name] })),
         total_sets: totalSets,
         avg_rpe: avgRpe,
         total_load: Math.round(totalLoad),
