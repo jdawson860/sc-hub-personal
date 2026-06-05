@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Cranbrook Rowing — Athlete Hub</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --navy:#07122b;--navy2:#0c1f48;--navy3:#102460;
+      --blue:#1a56db;--sky:#3b82f6;--sky-lt:#93c5fd;
+      --warn:#f59e0b;--red:#e63946;--green:#22c55e;
+      --bg:#eef2f9;--card:#fff;--text:#07122b;--muted:#5a6a8a;--border:#d0daf0;
+    }
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:100px}
+
+    /* HEADER */
+    .hdr{background:var(--navy);position:sticky;top:0;z-index:300;box-shadow:0 2px 20px rgba(0,0,0,.4)}
+    .hdr-r1{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:36px;height:36px;background:linear-gradient(135deg,var(--blue),var(--sky));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+    .brand-name{font-size:15px;font-weight:800;color:#fff;letter-spacing:-.3px}
+    .brand-sub{font-size:11px;color:#8fa0be}
+    .ath-pill{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:6px 12px;border-radius:20px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;transition:background .2s}
+    .ath-pill:hover{background:rgba(255,255,255,.2)}
+
+    /* MODE TABS */
+    .mode-bar{display:flex;background:var(--navy2);border-bottom:1px solid rgba(255,255,255,.08)}
+    .mode-tab{flex:1;padding:12px 0;text-align:center;color:#8fa0be;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;border-bottom:3px solid transparent;display:flex;align-items:center;justify-content:center;gap:6px}
+    .mode-tab.active{color:#fff;border-bottom-color:var(--sky);background:rgba(255,255,255,.05)}
+
+    /* ATHLETE SELECTOR OVERLAY */
+    .overlay{position:fixed;inset:0;background:rgba(7,18,43,.85);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+    .overlay.hidden{display:none}
+    .ath-picker{background:var(--card);border-radius:20px;padding:32px;width:min(400px,90vw);text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+    .ath-picker-logo{font-size:48px;margin-bottom:12px}
+    .ath-picker h2{font-size:22px;font-weight:800;color:var(--navy);margin-bottom:4px}
+    .ath-picker p{font-size:14px;color:var(--muted);margin-bottom:24px}
+    .ath-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+    .ath-btn{padding:14px 0;background:var(--bg);border:2px solid var(--border);border-radius:12px;font-size:16px;font-weight:800;color:var(--navy);cursor:pointer;transition:all .18s}
+    .ath-btn:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+    /* PAGES */
+    .page{display:none}.page.active{display:block}
+
+    /* LAYOUT */
+    .wrap{padding:16px;max-width:600px;margin:0 auto}
+    .sec{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:24px 0 10px}
+    .sec:first-child{margin-top:0}
+    .card{background:var(--card);border-radius:14px;padding:18px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-bottom:14px}
+
+    /* FORM ELEMENTS */
+    .field{margin-bottom:14px}
+    .field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:6px}
+    .field select,.field input,.field textarea{width:100%;padding:11px 14px;border:2px solid var(--border);border-radius:10px;font-size:15px;font-weight:600;color:var(--text);background:#fff;outline:none;transition:border .2s;-webkit-appearance:none}
+    .field select:focus,.field input:focus,.field textarea:focus{border-color:var(--blue)}
+    .field textarea{resize:vertical;min-height:80px;font-family:inherit}
+    .field .hint{font-size:11px;color:var(--muted);margin-top:4px}
+
+    /* SET ROWS */
+    .set-row{display:grid;grid-template-columns:40px 1fr 1fr 80px 32px;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+    .set-row:last-child{border-bottom:none}
+    .set-num{font-size:12px;font-weight:800;color:var(--muted);text-align:center}
+    .set-input{padding:8px 10px;border:2px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;text-align:center;width:100%;outline:none;background:#fff;transition:border .2s}
+    .set-input:focus{border-color:var(--blue)}
+    .set-input.rpe-input{color:var(--navy)}
+    .del-set{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:4px;border-radius:6px;line-height:1;opacity:.6;transition:opacity .2s}
+    .del-set:hover{opacity:1}
+
+    /* BUTTONS */
+    .btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;transition:all .2s;text-align:center}
+    .btn-primary{background:var(--blue);color:#fff}
+    .btn-primary:hover{background:#1244c0}
+    .btn-primary:active{transform:scale(.98)}
+    .btn-secondary{background:var(--bg);color:var(--navy);border:2px solid var(--border)}
+    .btn-secondary:hover{border-color:var(--blue)}
+    .btn-success{background:var(--green);color:#fff}
+    .btn-sm{padding:8px 16px;width:auto;display:inline-block;font-size:13px;border-radius:8px}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+
+    /* EXERCISE BLOCK */
+    .ex-block{background:var(--card);border-radius:14px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,.07);margin-bottom:12px;border-left:4px solid var(--sky)}
+    .ex-block-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+    .ex-name-lbl{font-size:14px;font-weight:800;color:var(--navy)}
+    .set-header{display:grid;grid-template-columns:40px 1fr 1fr 80px 32px;gap:8px;margin-bottom:4px}
+    .set-header span{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);text-align:center}
+    .set-header span:nth-child(2),.set-header span:nth-child(3){text-align:left}
+
+    /* ERG UPLOAD */
+    .upload-zone{border:3px dashed var(--border);border-radius:16px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .25s;background:#fafbff}
+    .upload-zone:hover,.upload-zone.drag{border-color:var(--blue);background:#f0f6ff}
+    .upload-zone.has-image{border-color:var(--green);background:#f0fff4}
+    .upload-zone input[type=file]{display:none}
+    .upload-icon{font-size:48px;margin-bottom:10px}
+    .upload-lbl{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px}
+    .upload-sub{font-size:12px;color:var(--muted)}
+    .preview-img{max-width:100%;max-height:300px;border-radius:12px;margin-top:16px;border:2px solid var(--green)}
+
+    /* EXTRACT RESULTS */
+    .extract-card{background:linear-gradient(135deg,#f0fff4,#e8f5e9);border:2px solid var(--green);border-radius:14px;padding:20px;margin-top:16px}
+    .extract-card h3{font-size:14px;font-weight:800;color:#1a7a3c;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+    .extract-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .extract-item{background:#fff;border-radius:10px;padding:12px;text-align:center}
+    .extract-item .ev{font-size:20px;font-weight:800;color:var(--navy)}
+    .extract-item .el{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-top:3px}
+
+    /* ERG TABS */
+    .erg-mode{display:flex;background:var(--bg);border-radius:10px;padding:3px;gap:2px;margin-bottom:16px}
+    .erg-mode-btn{flex:1;padding:8px;border:none;background:transparent;color:var(--muted);border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px}
+    .erg-mode-btn.active{background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+
+    /* INTERVAL ROWS */
+    .interval-row{display:grid;grid-template-columns:36px 1fr 1fr 1fr 28px;gap:6px;align-items:center;margin-bottom:6px}
+    .int-num{font-size:11px;font-weight:800;color:var(--muted);text-align:center;background:var(--bg);border-radius:6px;padding:6px 0}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 24px;border-radius:30px;font-size:14px;font-weight:700;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,.3);transition:opacity .3s;pointer-events:none}
+    .toast.hidden{opacity:0}
+
+    /* STATUS */
+    .status-bar{background:linear-gradient(135deg,var(--navy),var(--navy3));border-radius:14px;padding:16px 18px;color:#fff;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .status-ath{font-size:18px;font-weight:800}
+    .status-sub{font-size:12px;color:#8fa0be;margin-top:2px}
+    .status-change{background:rgba(255,255,255,.15);border:none;color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
+    .status-change:hover{background:rgba(255,255,255,.25)}
+
+    @media(max-width:400px){
+      .ath-grid{grid-template-columns:repeat(2,1fr)}
+      .set-row{grid-template-columns:32px 1fr 1fr 70px 28px;gap:6px}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ATHLETE SELECTOR OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="ath-picker">
+    <div class="ath-picker-logo">🚣</div>
+    <h2>Cranbrook Rowing</h2>
+    <p>Who are you?</p>
+    <div class="ath-grid" id="athGrid"></div>
+    <div style="font-size:12px;color:var(--muted)">Tap your initials to begin logging</div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-r1">
+    <div class="brand">
+      <div class="logo">🚣</div>
+      <div>
+        <div class="brand-name">Cranbrook Rowing</div>
+        <div class="brand-sub">Athlete Hub</div>
+      </div>
+    </div>
+    <div class="ath-pill" onclick="changeAthlete()">
+      <span id="headerAth">Select…</span> <span style="opacity:.6;font-size:11px">▼</span>
+    </div>
+  </div>
+  <div class="mode-bar">
+    <div class="mode-tab active" id="tab-sc" onclick="setMode('sc')">💪 S&amp;C Logger</div>
+    <div class="mode-tab" id="tab-erg" onclick="setMode('erg')">🚣 Erg Logger</div>
+  </div>
+</header>
+
+<!-- TOAST -->
+<div class="toast hidden" id="toast"></div>
+
+<!-- ═══════════════════════════════════════
+     S&C LOGGER PAGE
+═══════════════════════════════════════ -->
+<div class="page active" id="page-sc">
+  <div class="wrap">
+
+    <div class="status-bar" id="scStatus" style="display:none">
+      <div>
+        <div class="status-ath" id="scAthName">—</div>
+        <div class="status-sub" id="scSessName">—</div>
+      </div>
+      <button class="status-change" onclick="resetSession()">New Session</button>
+    </div>
+
+    <!-- Step 1: Session type -->
+    <div id="scStep1">
+      <p class="sec">Select Session</p>
+      <div class="card">
+        <div class="field">
+          <label>Session Type</label>
+          <select id="sessType">
+            <option value="">— Select —</option>
+            <option value="Lower A">Lower A</option>
+            <option value="Lower B">Lower B</option>
+            <option value="Upper A">Upper A</option>
+            <option value="Upper B">Upper B</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="startSession()">Start Session →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Exercise logging -->
+    <div id="scStep2" style="display:none">
+      <div id="exerciseBlocks"></div>
+
+      <div class="card" style="border:2px dashed var(--border);background:var(--bg)">
+        <div class="field" style="margin-bottom:10px">
+          <label>Add Exercise</label>
+          <select id="exSelect">
+            <option value="">— Choose exercise —</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="addExercise()" style="width:100%">+ Add Exercise</button>
+      </div>
+
+      <div class="card" style="background:linear-gradient(135deg,#f8fafc,#f0f4ff)">
+        <div class="field" style="margin-bottom:0">
+          <label>Session RPE (overall effort)</label>
+          <select id="sessionRpe">
+            <option value="">— Select overall RPE —</option>
+            <option value="1">1 — Very Easy</option>
+            <option value="2">2 — Easy</option>
+            <option value="3">3 — Moderate</option>
+            <option value="4">4 — Somewhat Hard</option>
+            <option value="5">5 — Hard</option>
+            <option value="6">6 — Hard</option>
+            <option value="7">7 — Very Hard</option>
+            <option value="8">8 — Very Hard</option>
+            <option value="9">9 — Extremely Hard</option>
+            <option value="10">10 — Max Effort</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="submitScBtn" onclick="submitSession()">Submit Session ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     ERG LOGGER PAGE
+═══════════════════════════════════════ -->
+<div class="page" id="page-erg">
+  <div class="wrap">
+
+    <p class="sec">Log Erg Session</p>
+
+    <!-- Mode toggle: Manual vs Photo -->
+    <div class="erg-mode">
+      <button class="erg-mode-btn active" id="em-manual" onclick="setErgMode('manual')">✏️ Manual Entry</button>
+      <button class="erg-mode-btn" id="em-photo" onclick="setErgMode('photo')">📸 Photo Upload</button>
+    </div>
+
+    <!-- MANUAL ERG FORM -->
+    <div id="ergManual">
+      <div class="card">
+        <div class="field">
+          <label>Workout Type</label>
+          <select id="ergType" onchange="updateErgForm()">
+            <option value="Single Distance">Single Distance (e.g. 2k, 5k)</option>
+            <option value="Single Time">Single Time (e.g. 30min, 60min)</option>
+            <option value="Intervals">Intervals (e.g. 8×500m)</option>
+            <option value="Custom">Custom</option>
+          </select>
+        </div>
+
+        <div id="ergFieldsBasic">
+          <div class="field">
+            <label>Total Distance (metres)</label>
+            <input type="number" id="ergDist" placeholder="e.g. 2000" inputmode="numeric"/>
+          </div>
+          <div class="field">
+            <label>Total Time (mm:ss.t)</label>
+            <input type="text" id="ergTime" placeholder="e.g. 6:42.3"/>
+          </div>
+          <div class="field">
+            <label>Average Split (/500m)</label>
+            <input type="text" id="ergSplit" placeholder="e.g. 1:40.5"/>
+          </div>
+          <div class="field">
+            <label>Average Heart Rate (bpm)</label>
+            <input type="number" id="ergHr" placeholder="e.g. 172" inputmode="numeric"/>
+          </div>
+          <div class="field">
+            <label>Stroke Rate (s/m)</label>
+            <input type="number" id="ergSr" placeholder="e.g. 22" inputmode="numeric"/>
+          </div>
+        </div>
+
+        <div id="ergFieldsIntervals" style="display:none">
+          <p class="sec" style="margin-top:0">Interval Structure</p>
+          <div class="field">
+            <label>Interval Description</label>
+            <input type="text" id="ergIntDesc" placeholder="e.g. 8×500m / 2min rest"/>
+            <div class="hint">Describe the interval set</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase">Interval Splits</div>
+            <button class="btn btn-secondary btn-sm" onclick="addIntervalRow()">+ Interval</button>
+          </div>
+          <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr;gap:6px;margin-bottom:6px">
+            <span style="font-size:10px;font-weight:700;color:var(--muted);text-align:center">#</span>
+            <span style="font-size:10px;font-weight:700;color:var(--muted)">Distance (m)</span>
+            <span style="font-size:10px;font-weight:700;color:var(--muted)">Time</span>
+            <span style="font-size:10px;font-weight:700;color:var(--muted)">Split /500m</span>
+          </div>
+          <div id="intervalRows"></div>
+          <div class="field" style="margin-top:12px">
+            <label>Rest / Recovery</label>
+            <input type="text" id="ergRestTime" placeholder="e.g. 2:00 rest"/>
+          </div>
+          <p class="sec">Summary</p>
+          <div class="field">
+            <label>Total Distance (m)</label>
+            <input type="number" id="ergDistInt" placeholder="Auto-calculated or enter manually" inputmode="numeric"/>
+          </div>
+          <div class="field">
+            <label>Average Split (/500m)</label>
+            <input type="text" id="ergSplitInt" placeholder="e.g. 1:40.5"/>
+          </div>
+          <div class="field">
+            <label>Average Heart Rate (bpm)</label>
+            <input type="number" id="ergHrInt" placeholder="e.g. 175" inputmode="numeric"/>
+          </div>
+          <div class="field">
+            <label>Stroke Rate</label>
+            <input type="number" id="ergSrInt" placeholder="e.g. 24" inputmode="numeric"/>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:4px">
+          <label>RPE (1–10)</label>
+          <select id="ergRpe">
+            <option value="">— Select —</option>
+            <option value="1">1 — Very Easy</option>
+            <option value="2">2</option>
+            <option value="3">3 — Moderate</option>
+            <option value="4">4</option>
+            <option value="5">5 — Hard</option>
+            <option value="6">6</option>
+            <option value="7">7 — Very Hard</option>
+            <option value="8">8</option>
+            <option value="9">9 — Extremely Hard</option>
+            <option value="10">10 — Max</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Notes (optional)</label>
+          <textarea id="ergNotes" placeholder="How did it feel? Conditions, technique focus…"></textarea>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="submitErgBtn" onclick="submitErgManual()">Submit Erg Session ✓</button>
+    </div>
+
+    <!-- PHOTO ERG FORM -->
+    <div id="ergPhoto" style="display:none">
+      <div class="card">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Take a photo of the completed workout on the Concept2 screen and we'll extract all the data automatically.</p>
+
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('ergImageInput').click()"
+          ondragover="ev.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="handleDrop(event)">
+          <input type="file" id="ergImageInput" accept="image/*" capture="environment" onchange="handleImageSelect(event)"/>
+          <div id="uploadPrompt">
+            <div class="upload-icon">📷</div>
+            <div class="upload-lbl">Tap to take a photo or upload</div>
+            <div class="upload-sub">JPG, PNG — Concept2 screen after workout</div>
+          </div>
+          <img id="previewImg" class="preview-img" style="display:none"/>
+        </div>
+
+        <div id="extractStatus" style="display:none;margin-top:14px;text-align:center">
+          <div style="font-size:14px;font-weight:700;color:var(--blue)">⏳ Extracting data from image…</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">This takes a few seconds</div>
+        </div>
+
+        <div id="extractResults" style="display:none"></div>
+
+        <!-- Confirm / edit extracted fields -->
+        <div id="extractForm" style="display:none;margin-top:16px">
+          <p class="sec" style="margin-top:0">Review & Confirm</p>
+          <div class="field"><label>Workout Type</label>
+            <select id="exType">
+              <option value="Single Distance">Single Distance</option>
+              <option value="Single Time">Single Time</option>
+              <option value="Intervals">Intervals</option>
+              <option value="Custom">Custom</option>
+            </select>
+          </div>
+          <div class="field"><label>Distance (m)</label><input type="number" id="exDist" inputmode="numeric"/></div>
+          <div class="field"><label>Time</label><input type="text" id="exTime"/></div>
+          <div class="field"><label>Avg Split (/500m)</label><input type="text" id="exSplit"/></div>
+          <div class="field"><label>Avg Heart Rate</label><input type="number" id="exHr" inputmode="numeric"/></div>
+          <div class="field"><label>Stroke Rate</label><input type="number" id="exSr" inputmode="numeric"/></div>
+          <div class="field"><label>Intervals</label><input type="text" id="exIntervals" placeholder="If applicable"/></div>
+          <div class="field"><label>RPE</label>
+            <select id="exRpe">
+              <option value="">— Select —</option>
+              <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+              <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+              <option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+            </select>
+          </div>
+          <div class="field"><label>Notes</label><textarea id="exNotes" placeholder="Optional notes"></textarea></div>
+          <button class="btn btn-primary" onclick="submitErgPhoto()">Submit Erg Session ✓</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────
+const BASE = 'https://superagent-84188511.base44.app/functions';
+const api = (fn, body) => fetch(`${BASE}/${fn}`, {
+  method:'POST', headers:{'Content-Type':'application/json'},
+  body:JSON.stringify(body)
+}).then(r=>r.json());
+
+const ATHLETES = ['AF','RR','JC','MA','TL','CC','SK','AS','HM','TD'];
+
+const EXERCISES = {
+  'Lower A': ['Romanian Deadlift','Front Squat','Bulgarian Split Squat','Nordic Curl','Leg Press','Hip Thrust','Calf Raise','GHD Raise'],
+  'Lower B': ['Trap Bar Deadlift','Back Squat','Single Leg RDL','Leg Curl','Leg Extension','Step Up','Glute Bridge','GHD Hold'],
+  'Upper A': ['Bench Press','Bent Over Row','Lat Pulldown','Overhead Press','Cable Row','Face Pull','Bicep Curl','Tricep Pushdown','Chin Ups'],
+  'Upper B': ['Incline DB Press','Pull Up','DB Row','Landmine Press','Cable Fly','Rear Delt Fly','Hammer Curl','Skull Crusher','Chin Ups'],
+};
+
+const TIME_EXERCISES = ['GHD Hold','Prone Plank','Side Plank','GHD Raise','Hollow Hold'];
+const BAND_EXERCISES = ['Chin Ups','Pull Up'];
+
+// ── STATE ─────────────────────────────────────────────────────────────
+let currentAthlete = localStorage.getItem('cranbrook_athlete') || null;
+let currentMode = 'sc';
+let currentSession = null;
+let exercises = []; // [{name, sets:[{reps,load,rpe}]}]
+let intervalCount = 0;
+let uploadedImageUrl = null;
+
+// ── INIT ──────────────────────────────────────────────────────────────
+function init() {
+  buildAthGrid();
+  if (currentAthlete) {
+    selectAthlete(currentAthlete, false);
+  } else {
+    document.getElementById('overlay').classList.remove('hidden');
+  }
+  loadStoredSession();
+  updateErgForm();
+}
+
+function buildAthGrid() {
+  document.getElementById('athGrid').innerHTML = ATHLETES.map(a =>
+    `<button class="ath-btn" onclick="selectAthlete('${a}')">${a}</button>`
+  ).join('');
+}
+
+function selectAthlete(ath, showOverlay=true) {
+  currentAthlete = ath;
+  localStorage.setItem('cranbrook_athlete', ath);
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('headerAth').textContent = ath;
+}
+
+function changeAthlete() {
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+// ── MODE SWITCH ───────────────────────────────────────────────────────
+function setMode(m) {
+  currentMode = m;
+  ['sc','erg'].forEach(id => {
+    document.getElementById(`page-${id}`).classList.toggle('active', id===m);
+    document.getElementById(`tab-${id}`).classList.toggle('active', id===m);
+  });
+}
+
+// ── S&C LOGGER ───────────────────────────────────────────────────────
+function startSession() {
+  const st = document.getElementById('sessType').value;
+  if (!st) { showToast('Please select a session type'); return; }
+  if (!currentAthlete) { showToast('Please select your name first'); changeAthlete(); return; }
+  currentSession = { athlete: currentAthlete, session_type: st, timestamp: new Date().toISOString() };
+  exercises = [];
+
+  document.getElementById('scStep1').style.display = 'none';
+  document.getElementById('scStep2').style.display = 'block';
+  document.getElementById('scStatus').style.display = 'flex';
+  document.getElementById('scAthName').textContent = currentAthlete;
+  document.getElementById('scSessName').textContent = st;
+
+  // Populate exercise dropdown
+  const exList = EXERCISES[st] || [];
+  document.getElementById('exSelect').innerHTML = '<option value="">— Choose exercise —</option>' +
+    exList.map(e => `<option value="${e}">${e}</option>`).join('');
+
+  saveSession();
+  renderExercises();
+}
+
+function addExercise() {
+  const name = document.getElementById('exSelect').value;
+  if (!name) { showToast('Select an exercise first'); return; }
+  if (exercises.find(e => e.name === name)) { showToast(`${name} already added`); return; }
+  exercises.push({ name, sets: [{ reps: '', load: '', rpe: '' }] });
+  document.getElementById('exSelect').value = '';
+  saveSession();
+  renderExercises();
+}
+
+function addSet(exIdx) {
+  exercises[exIdx].sets.push({ reps: '', load: '', rpe: '' });
+  saveSession();
+  renderExercises();
+}
+
+function removeSet(exIdx, setIdx) {
+  if (exercises[exIdx].sets.length <= 1) { showToast('Need at least one set'); return; }
+  exercises[exIdx].sets.splice(setIdx, 1);
+  saveSession();
+  renderExercises();
+}
+
+function removeExercise(exIdx) {
+  exercises.splice(exIdx, 1);
+  saveSession();
+  renderExercises();
+}
+
+function updateField(exIdx, setIdx, field, val) {
+  exercises[exIdx].sets[setIdx][field] = val;
+  saveSession();
+}
+
+function isTimeEx(name) { return TIME_EXERCISES.some(t => name.includes(t)); }
+function isBandEx(name) { return BAND_EXERCISES.some(t => name.includes(t)); }
+
+function renderExercises() {
+  const container = document.getElementById('exerciseBlocks');
+  if (!exercises.length) {
+    container.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);font-size:14px">No exercises added yet. Add your first exercise above.</div>';
+    return;
+  }
+  container.innerHTML = exercises.map((ex, ei) => {
+    const isTime = isTimeEx(ex.name);
+    const isBand = isBandEx(ex.name);
+    const repsLabel = isTime ? 'Time (s)' : 'Reps';
+    const loadLabel = isBand ? 'Band / +kg' : 'Load (kg)';
+
+    return `<div class="ex-block">
+      <div class="ex-block-head">
+        <div class="ex-name-lbl">${ex.name}</div>
+        <button class="btn btn-secondary btn-sm" style="padding:4px 10px;font-size:12px;color:var(--red);border-color:var(--red)" onclick="removeExercise(${ei})">Remove</button>
+      </div>
+      <div class="set-header">
+        <span>#</span><span>${repsLabel}</span><span>${loadLabel}</span><span>RPE</span><span></span>
+      </div>
+      ${ex.sets.map((s, si) => `
+        <div class="set-row">
+          <div class="set-num">${si+1}</div>
+          <input class="set-input" type="${isTime?'number':'number'}" inputmode="numeric" placeholder="${isTime?'sec':'reps'}" value="${s.reps}" oninput="updateField(${ei},${si},'reps',this.value)"/>
+          <input class="set-input" type="text" inputmode="decimal" placeholder="${isBand?'band/+kg':'kg'}" value="${s.load}" oninput="updateField(${ei},${si},'load',this.value)"/>
+          <select class="set-input rpe-input" onchange="updateField(${ei},${si},'rpe',this.value)">
+            <option value="">RPE</option>
+            ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}"${s.rpe==n?' selected':''}>${n}</option>`).join('')}
+          </select>
+          <button class="del-set" onclick="removeSet(${ei},${si})">×</button>
+        </div>`).join('')}
+      <button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%" onclick="addSet(${ei})">+ Add Set</button>
+    </div>`;
+  }).join('');
+}
+
+async function submitSession() {
+  if (!currentAthlete) { showToast('Please select your name'); return; }
+  if (!currentSession) { showToast('Start a session first'); return; }
+  if (!exercises.length) { showToast('Add at least one exercise'); return; }
+
+  const btn = document.getElementById('submitScBtn');
+  btn.disabled = true; btn.textContent = '⏳ Submitting…';
+
+  const records = [];
+  const ts = currentSession.timestamp;
+  const sessionRpe = document.getElementById('sessionRpe').value;
+
+  for (const ex of exercises) {
+    for (let i = 0; i < ex.sets.length; i++) {
+      const s = ex.sets[i];
+      records.push({
+        timestamp: ts,
+        athlete: currentAthlete,
+        session_type: currentSession.session_type,
+        exercise: ex.name,
+        set_number: i + 1,
+        reps: s.reps ? Number(s.reps) : null,
+        load: s.load || null,
+        rpe: s.rpe ? Number(s.rpe) : (sessionRpe ? Number(sessionRpe) : null),
+      });
+    }
+  }
+
+  try {
+    const res = await api('submitSession', records);
+    if (res.ok) {
+      showToast(`✅ Session logged! ${res.created} sets saved.`, 4000);
+      clearSession();
+    } else {
+      showToast('❌ Error submitting. Try again.');
+    }
+  } catch(e) {
+    showToast('❌ Network error. Try again.');
+  }
+  btn.disabled = false; btn.textContent = 'Submit Session ✓';
+}
+
+function clearSession() {
+  currentSession = null; exercises = [];
+  document.getElementById('scStep1').style.display = 'block';
+  document.getElementById('scStep2').style.display = 'none';
+  document.getElementById('scStatus').style.display = 'none';
+  document.getElementById('sessType').value = '';
+  document.getElementById('sessionRpe').value = '';
+  localStorage.removeItem('cranbrook_session');
+}
+
+function resetSession() {
+  if (confirm('Start a new session? Current data will be lost.')) clearSession();
+}
+
+function saveSession() {
+  if (currentSession) {
+    localStorage.setItem('cranbrook_session', JSON.stringify({ currentSession, exercises }));
+  }
+}
+
+function loadStoredSession() {
+  try {
+    const stored = localStorage.getItem('cranbrook_session');
+    if (!stored) return;
+    const { currentSession: cs, exercises: ex } = JSON.parse(stored);
+    if (!cs || !ex) return;
+    currentSession = cs;
+    exercises = ex;
+    document.getElementById('scStep1').style.display = 'none';
+    document.getElementById('scStep2').style.display = 'block';
+    document.getElementById('scStatus').style.display = 'flex';
+    document.getElementById('scAthName').textContent = cs.athlete;
+    document.getElementById('scSessName').textContent = cs.session_type;
+    const exList = EXERCISES[cs.session_type] || [];
+    document.getElementById('exSelect').innerHTML = '<option value="">— Choose exercise —</option>' +
+      exList.map(e=>`<option value="${e}">${e}</option>`).join('');
+    renderExercises();
+  } catch(e) {}
+}
+
+// ── ERG LOGGER ───────────────────────────────────────────────────────
+function setErgMode(m) {
+  document.getElementById('ergManual').style.display = m==='manual' ? 'block' : 'none';
+  document.getElementById('ergPhoto').style.display = m==='photo' ? 'block' : 'none';
+  document.getElementById('em-manual').classList.toggle('active', m==='manual');
+  document.getElementById('em-photo').classList.toggle('active', m==='photo');
+}
+
+function updateErgForm() {
+  const t = document.getElementById('ergType').value;
+  const isIntervals = t === 'Intervals';
+  document.getElementById('ergFieldsBasic').style.display = isIntervals ? 'none' : 'block';
+  document.getElementById('ergFieldsIntervals').style.display = isIntervals ? 'block' : 'none';
+  if (isIntervals && !document.getElementById('intervalRows').children.length) {
+    addIntervalRow(); addIntervalRow(); addIntervalRow();
+  }
+}
+
+function addIntervalRow() {
+  intervalCount++;
+  const n = intervalCount;
+  const row = document.createElement('div');
+  row.className = 'interval-row';
+  row.innerHTML = `
+    <div class="int-num">${n}</div>
+    <input class="set-input" type="number" inputmode="numeric" placeholder="m" id="int-dist-${n}"/>
+    <input class="set-input" type="text" placeholder="mm:ss" id="int-time-${n}"/>
+    <input class="set-input" type="text" placeholder="/500m" id="int-split-${n}"/>
+    <button class="del-set" onclick="this.parentElement.remove()">×</button>`;
+  document.getElementById('intervalRows').appendChild(row);
+}
+
+async function submitErgManual() {
+  if (!currentAthlete) { showToast('Select your name first'); changeAthlete(); return; }
+  const isIntervals = document.getElementById('ergType').value === 'Intervals';
+  const btn = document.getElementById('submitErgBtn');
+  btn.disabled = true; btn.textContent = '⏳ Submitting…';
+
+  // Build intervals string from rows
+  let intervalsStr = '';
+  if (isIntervals) {
+    const rows = document.getElementById('intervalRows').children;
+    const parts = [];
+    for (const row of rows) {
+      const inputs = row.querySelectorAll('input');
+      const dist = inputs[0].value, time = inputs[1].value, split = inputs[2].value;
+      if (dist || time || split) parts.push(`${dist}m / ${time} (${split}/500m)`);
+    }
+    intervalsStr = document.getElementById('ergIntDesc').value || parts.join(' | ');
+  }
+
+  const body = {
+    athlete: currentAthlete,
+    workout_type: document.getElementById('ergType').value,
+    total_distance: isIntervals ? (document.getElementById('ergDistInt').value||null) : (document.getElementById('ergDist').value||null),
+    total_time: isIntervals ? null : (document.getElementById('ergTime').value||null),
+    avg_split: isIntervals ? (document.getElementById('ergSplitInt').value||null) : (document.getElementById('ergSplit').value||null),
+    avg_heart_rate: isIntervals ? (document.getElementById('ergHrInt').value||null) : (document.getElementById('ergHr').value||null),
+    stroke_rate: isIntervals ? (document.getElementById('ergSrInt').value||null) : (document.getElementById('ergSr').value||null),
+    rpe: document.getElementById('ergRpe').value || null,
+    intervals: intervalsStr || null,
+    notes: document.getElementById('ergNotes').value || null,
+  };
+
+  try {
+    const res = await api('submitErg', body);
+    if (res.ok) {
+      showToast('✅ Erg session logged!', 4000);
+      resetErgForm();
+    } else {
+      showToast('❌ Error. Try again.');
+    }
+  } catch(e) {
+    showToast('❌ Network error. Try again.');
+  }
+  btn.disabled = false; btn.textContent = 'Submit Erg Session ✓';
+}
+
+function resetErgForm() {
+  ['ergDist','ergTime','ergSplit','ergHr','ergSr','ergNotes','ergIntDesc','ergRestTime','ergDistInt','ergSplitInt','ergHrInt','ergSrInt'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value='';
+  });
+  document.getElementById('ergRpe').value='';
+  document.getElementById('ergType').value='Single Distance';
+  document.getElementById('intervalRows').innerHTML='';
+  intervalCount=0;
+  updateErgForm();
+}
+
+// ── PHOTO UPLOAD & EXTRACTION ──────────────────────────────────────────
+function handleDrop(ev) {
+  ev.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag');
+  const file = ev.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) processImageFile(file);
+}
+
+function handleImageSelect(ev) {
+  const file = ev.target.files[0];
+  if (file) processImageFile(file);
+}
+
+async function processImageFile(file) {
+  // Show preview
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('previewImg');
+    img.src = e.target.result;
+    img.style.display = 'block';
+    document.getElementById('uploadPrompt').style.display = 'none';
+    document.getElementById('uploadZone').classList.add('has-image');
+  };
+  reader.readAsDataURL(file);
+
+  // Show extraction status
+  document.getElementById('extractStatus').style.display = 'block';
+  document.getElementById('extractResults').style.display = 'none';
+  document.getElementById('extractForm').style.display = 'none';
+
+  try {
+    // Convert to base64 and send to extraction API
+    const base64 = await fileToBase64(file);
+    const res = await api('extractErgImage', { image_base64: base64, athlete: currentAthlete });
+
+    document.getElementById('extractStatus').style.display = 'none';
+
+    if (res.ok && res.data) {
+      const d = res.data;
+      // Show pretty extracted card
+      document.getElementById('extractResults').style.display = 'block';
+      document.getElementById('extractResults').innerHTML = `
+        <div class="extract-card">
+          <h3>✅ Data Extracted Successfully</h3>
+          <div class="extract-grid">
+            ${d.total_distance ? `<div class="extract-item"><div class="ev">${d.total_distance}m</div><div class="el">Distance</div></div>` : ''}
+            ${d.total_time ? `<div class="extract-item"><div class="ev">${d.total_time}</div><div class="el">Time</div></div>` : ''}
+            ${d.avg_split ? `<div class="extract-item"><div class="ev">${d.avg_split}</div><div class="el">Avg Split</div></div>` : ''}
+            ${d.avg_heart_rate ? `<div class="extract-item"><div class="ev">${d.avg_heart_rate} bpm</div><div class="el">Avg HR</div></div>` : ''}
+            ${d.stroke_rate ? `<div class="extract-item"><div class="ev">${d.stroke_rate}</div><div class="el">Stroke Rate</div></div>` : ''}
+            ${d.workout_type ? `<div class="extract-item"><div class="ev">${d.workout_type}</div><div class="el">Type</div></div>` : ''}
+          </div>
+          <p style="font-size:12px;color:#1a7a3c;margin-top:10px">Review and edit below before submitting.</p>
+        </div>`;
+
+      // Populate form
+      document.getElementById('extractForm').style.display = 'block';
+      if (d.workout_type) document.getElementById('exType').value = d.workout_type;
+      if (d.total_distance) document.getElementById('exDist').value = d.total_distance;
+      if (d.total_time) document.getElementById('exTime').value = d.total_time;
+      if (d.avg_split) document.getElementById('exSplit').value = d.avg_split;
+      if (d.avg_heart_rate) document.getElementById('exHr').value = d.avg_heart_rate;
+      if (d.stroke_rate) document.getElementById('exSr').value = d.stroke_rate;
+      if (d.intervals) document.getElementById('exIntervals').value = d.intervals;
+      uploadedImageUrl = res.image_url || null;
+    } else {
+      document.getElementById('extractResults').style.display = 'block';
+      document.getElementById('extractResults').innerHTML = `
+        <div style="background:#fff3e0;border:2px solid var(--warn);border-radius:12px;padding:16px;margin-top:8px">
+          <b>⚠️ Couldn't extract all data automatically</b><br>
+          <span style="font-size:13px;color:var(--muted)">Please fill in the form below manually.</span>
+        </div>`;
+      document.getElementById('extractForm').style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('extractStatus').style.display = 'none';
+    document.getElementById('extractResults').style.display = 'block';
+    document.getElementById('extractResults').innerHTML = `<div style="color:var(--red);padding:12px">Error processing image. Please fill in manually.</div>`;
+    document.getElementById('extractForm').style.display = 'block';
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function submitErgPhoto() {
+  if (!currentAthlete) { showToast('Select your name first'); return; }
+  const body = {
+    athlete: currentAthlete,
+    workout_type: document.getElementById('exType').value || 'Custom',
+    total_distance: document.getElementById('exDist').value || null,
+    total_time: document.getElementById('exTime').value || null,
+    avg_split: document.getElementById('exSplit').value || null,
+    avg_heart_rate: document.getElementById('exHr').value || null,
+    stroke_rate: document.getElementById('exSr').value || null,
+    intervals: document.getElementById('exIntervals').value || null,
+    rpe: document.getElementById('exRpe').value || null,
+    notes: document.getElementById('exNotes').value || null,
+    image_url: uploadedImageUrl,
+  };
+  try {
+    const res = await api('submitErg', body);
+    if (res.ok) {
+      showToast('✅ Erg session logged!', 4000);
+      // reset photo form
+      document.getElementById('previewImg').style.display = 'none';
+      document.getElementById('uploadPrompt').style.display = 'block';
+      document.getElementById('uploadZone').classList.remove('has-image');
+      document.getElementById('extractResults').style.display = 'none';
+      document.getElementById('extractForm').style.display = 'none';
+      document.getElementById('extractStatus').style.display = 'none';
+      uploadedImageUrl = null;
+    } else { showToast('❌ Error. Try again.'); }
+  } catch(e) { showToast('❌ Network error. Try again.'); }
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────
+function showToast(msg, duration=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), duration);
+}
+
+init();
+</script>
+</body>
+</html>
