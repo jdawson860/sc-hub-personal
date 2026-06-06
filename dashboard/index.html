@@ -9,39 +9,40 @@
     *{box-sizing:border-box;margin:0;padding:0}
     :root{
       --navy:#07122b;--navy2:#0c1f48;--navy3:#102460;
-      --accent:#1a56db;--accent2:#3b82f6;
+      --accent:#e63946;--accent2:#e63946;
       --warn:#f59e0b;--red:#e63946;--green:#22c55e;
-      --bg:#eef2f9;--card:#fff;--text:#07122b;--muted:#5a6a8a;--border:#d0daf0;
+      --bg:#07122b;--card:#fff;--text:#07122b;--muted:#5a6a8a;--border:#d0daf0;
+      --page-muted:#8fa0be;
     }
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
     /* HEADER */
     .header{background:var(--navy);color:#fff;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:64px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.35)}
     .header-left{display:flex;align-items:center;gap:12px}
-    .header-logo{width:40px;height:40px;background:var(--accent2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#fff;letter-spacing:-1px}
+    .header-logo{width:40px;height:40px;background:var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#fff;letter-spacing:-1px}
     .header-title{font-size:17px;font-weight:800}
     .header-sub{font-size:12px;color:#8fa0be;margin-top:1px}
     .view-toggle{display:flex;background:rgba(255,255,255,.1);border-radius:8px;padding:3px;gap:2px}
     .view-btn{padding:6px 16px;border:none;background:transparent;color:#8fa0be;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s}
-    .view-btn.active{background:var(--accent2);color:#fff}
+    .view-btn.active{background:var(--red);color:#fff}
 
     /* SUB-NAV */
     .subnav{background:var(--navy2);padding:0 24px;display:flex;align-items:center;gap:4px;border-bottom:1px solid rgba(255,255,255,.07)}
     .snav-btn{padding:12px 16px;border:none;background:transparent;color:#8fa0be;font-size:13px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;display:flex;align-items:center;gap:6px}
-    .snav-btn.active{color:#fff;border-bottom-color:var(--accent2)}
+    .snav-btn.active{color:#fff;border-bottom-color:var(--red)}
     .athlete-sel-wrap{margin-left:auto;display:flex;align-items:center;gap:8px}
     .athlete-sel-wrap label{color:#8fa0be;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px}
     .athlete-select{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#fff;padding:6px 12px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;outline:none}
     .athlete-select option{background:#0d2545}
 
     /* LAYOUT */
-    .main{padding:24px;max-width:1400px;margin:0 auto}
-    .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:12px;margin-top:28px}
+    .main{padding:24px;max-width:1400px;margin:0 auto;background:var(--bg)}
+    .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#8fa0be;margin-bottom:12px;margin-top:28px}
     .section-title:first-child{margin-top:0}
 
     /* STATS */
     .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-    .stat-card{background:var(--card);border-radius:12px;padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07);border-left:4px solid var(--accent2)}
+    .stat-card{background:var(--card);border-radius:12px;padding:16px 18px;box-shadow:0 2px 12px rgba(0,0,0,.25);border-left:4px solid var(--red)}
     .stat-card.warn{border-left-color:var(--warn)}
     .stat-card.green{border-left-color:#22c55e}
     .stat-card.red{border-left-color:var(--red)}
@@ -51,7 +52,7 @@
     .stat-sub{font-size:11px;color:var(--muted);margin-top:4px}
 
     /* CARDS */
-    .card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+    .card{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 2px 16px rgba(0,0,0,.3)}
     .card-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px}
     .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
     .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
@@ -88,8 +89,8 @@
 
     /* MINI BAR */
     .mini-bar-wrap{display:flex;align-items:center;gap:6px}
-    .mini-bar-bg{flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
-    .mini-bar-fill{height:100%;border-radius:3px;background:var(--accent);transition:width .4s}
+    .mini-bar-bg{flex:1;height:6px;background:#dde8ff;border-radius:3px;overflow:hidden}
+    .mini-bar-fill{height:100%;border-radius:3px;background:var(--red);transition:width .4s}
 
     /* COMPLIANCE HEATMAP */
     .heatmap-grid{display:grid;gap:6px}
@@ -136,16 +137,16 @@
     .rank-other{background:#f0f4f8;color:var(--muted)}
     .year-tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
     .year-tab{padding:7px 16px;border:2px solid var(--border);border-radius:20px;background:#fff;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
-    .year-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .year-tab.active{background:var(--red);color:#fff;border-color:var(--red)}
 
     /* COMPARE */
     .compare-controls{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
     .compare-select{padding:8px 12px;border:2px solid #e2e8f0;border-radius:8px;font-size:13px;font-weight:600;outline:none;cursor:pointer}
-    .compare-select:focus{border-color:var(--accent)}
+    .compare-select:focus{border-color:var(--red)}
 
     /* UTIL */
-    .loading{display:flex;align-items:center;justify-content:center;height:200px;color:var(--muted);font-size:15px;gap:10px}
-    .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    .loading{display:flex;align-items:center;justify-content:center;height:200px;color:#8fa0be;font-size:15px;gap:10px}
+    .spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
     .empty{text-align:center;color:var(--muted);padding:40px;font-size:14px}
 
@@ -176,23 +177,24 @@
     .modal-section{margin-bottom:20px}
     .modal-section:last-child{margin-bottom:0}
     .modal-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px}
-    .ex-block{background:#f8fafc;border-radius:10px;padding:12px 14px;margin-bottom:8px}
+    .ex-block{background:#f0f5ff;border:1px solid #dde8ff;border-radius:10px;padding:12px 14px;margin-bottom:8px}
     .ex-block:last-child{margin-bottom:0}
     .ex-block-name{font-size:13px;font-weight:800;color:var(--navy);margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px}
     .sets-row{display:flex;flex-wrap:wrap;gap:6px}
-    .set-chip{background:#fff;border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--navy);min-width:60px;text-align:center}
+    .set-chip{background:#fff;border:2px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;color:var(--navy);min-width:70px;text-align:center}
     .set-chip .set-num{font-size:9px;font-weight:600;color:var(--muted);display:block;margin-bottom:1px}
     .set-chip .set-load{font-size:14px;font-weight:800}
     .set-chip .set-rpe{font-size:10px;color:var(--muted);margin-top:1px}
     .erg-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .erg-detail-item{background:#f8fafc;border-radius:10px;padding:12px 14px}
+    .erg-detail-item{background:#f0f5ff;border:1px solid #dde8ff;border-radius:10px;padding:12px 14px}
     .erg-detail-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:4px}
     .erg-detail-value{font-size:18px;font-weight:800;color:var(--navy)}
     .erg-detail-value.split{font-family:monospace;color:var(--accent)}
     .erg-notes{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;font-size:13px;color:#92400e;line-height:1.5}
     .intervals-box{background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;font-size:13px;color:#1e40af;font-family:monospace;line-height:1.6}
+    .empty{text-align:center;padding:40px;color:#8fa0be;font-size:14px}
     .clickable-row{cursor:pointer;transition:background .1s}
-    .clickable-row:hover td{background:#f0f6ff !important}
+    .clickable-row:hover td{background:#eef4ff !important}
 
   </style>
 </head>
@@ -1054,24 +1056,41 @@ async function openGymSession(athlete, date, session_type){
       <div class="modal-stat"><div class="modal-stat-val" style="font-size:16px">${s.total_load>0?s.total_load.toLocaleString()+'kg':'—'}</div><div class="modal-stat-lbl">Volume</div></div>
     `;
 
-    // Exercise blocks
+    // Exercise table blocks — one table per exercise, sets as rows
     let bodyHtml = '<div class="modal-section"><div class="modal-section-title">Exercises — in order performed</div>';
-    s.exercises.forEach(ex => {
-      bodyHtml += `<div class="ex-block"><div class="ex-block-name">${ex.name}</div><div class="sets-row">`;
-      ex.sets.forEach((set, i) => {
-        const load = set.load && set.load !== '—' ? set.load : null;
-        const reps = set.reps || null;
-        const rpe  = set.rpe  || null;
-        const loadStr = load ? `${load}kg` : (reps ? `${reps}` : '—');
-        const repStr  = load && reps ? `× ${reps}` : '';
-        bodyHtml += `
-          <div class="set-chip">
-            <span class="set-num">Set ${i+1}</span>
-            <span class="set-load">${loadStr}${repStr?'<span style="font-size:11px;font-weight:600;color:var(--muted)"> '+repStr+'</span>':''}</span>
-            ${rpe ? `<div class="set-rpe">RPE ${rpe}</div>` : ''}
-          </div>`;
-      });
-      bodyHtml += `</div></div>`;
+    s.exercises.forEach((ex, exIdx) => {
+      const hasLoad = ex.sets.some(st => st.load && st.load !== '—' && st.load !== null);
+      const hasRpe  = ex.sets.some(st => st.rpe);
+      bodyHtml += `
+        <div class="ex-block" style="margin-bottom:10px">
+          <div class="ex-block-name" style="display:flex;align-items:center;gap:8px">
+            <span style="background:var(--navy);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">${exIdx+1}</span>
+            ${ex.name}
+          </div>
+          <table style="width:100%;border-collapse:collapse;margin-top:8px">
+            <thead>
+              <tr style="border-bottom:2px solid var(--border)">
+                <th style="text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:4px 8px">Set</th>
+                ${hasLoad ? '<th style="text-align:right;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:4px 8px">Weight</th>' : ''}
+                <th style="text-align:right;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:4px 8px">Reps</th>
+                ${hasRpe ? '<th style="text-align:right;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:4px 8px">RPE</th>' : ''}
+              </tr>
+            </thead>
+            <tbody>
+              ${ex.sets.map((st, i) => {
+                const load = st.load && st.load !== '—' && st.load !== null ? st.load : null;
+                const rpe = st.rpe || null;
+                const rpeClass = (rpe||0)>=8.5?'rpe-high':(rpe||0)>=7.5?'rpe-mid':'rpe-low';
+                return `<tr style="border-bottom:1px solid var(--border)">
+                  <td style="padding:7px 8px;font-size:13px;font-weight:700;color:var(--muted)">Set ${i+1}</td>
+                  ${hasLoad ? `<td style="padding:7px 8px;text-align:right;font-size:14px;font-weight:800;color:var(--navy)">${load ? load+'<span style="font-size:11px;color:var(--muted)">kg</span>' : '—'}</td>` : ''}
+                  <td style="padding:7px 8px;text-align:right;font-size:14px;font-weight:800;color:var(--navy)">${st.reps || '—'}</td>
+                  ${hasRpe ? `<td style="padding:7px 8px;text-align:right">${rpe ? '<span class="rpe-badge '+rpeClass+'">'+rpe+'</span>' : '—'}</td>` : ''}
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>`;
     });
     bodyHtml += '</div>';
     document.getElementById('modalBody').innerHTML = bodyHtml;
