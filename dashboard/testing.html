@@ -106,13 +106,15 @@
     <p class="sec">Athlete Details</p>
     <div class="card">
       <div class="card-title">Who's being tested?</div>
-      <div class="card-sub">Tap your initials or type a name</div>
-
-      <div class="athlete-grid" id="athGrid"></div>
-      <div style="margin:10px 0 14px;text-align:center;font-size:12px;color:var(--muted)">— or type full name —</div>
-      <div class="field">
-        <label>Full Name</label>
-        <input type="text" id="athleteName" placeholder="e.g. Alex Fletcher" autocomplete="off"/>
+      <div class="two-col" style="margin-bottom:0">
+        <div class="field">
+          <label>First Name</label>
+          <input type="text" id="athleteFirst" placeholder="e.g. Alex" autocomplete="off" style="text-transform:capitalize"/>
+        </div>
+        <div class="field">
+          <label>Last Name</label>
+          <input type="text" id="athleteLast" placeholder="e.g. Fletcher" autocomplete="off" style="text-transform:capitalize"/>
+        </div>
       </div>
 
       <div class="field">
@@ -175,25 +177,10 @@
 
 <script>
 const API = 'https://superagent-84188511.base44.app/functions/submitTesting';
-const ATHLETES = ['AF','RR','JC','MA','TL','CC','SK','AS','HM','TD'];
 
-let selectedAthlete = null;
 let selectedYear = null;
 
-// Build athlete grid
-const grid = document.getElementById('athGrid');
-ATHLETES.forEach(a => {
-  const btn = document.createElement('button');
-  btn.className = 'ath-btn';
-  btn.textContent = a;
-  btn.onclick = () => {
-    document.querySelectorAll('.ath-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    selectedAthlete = a;
-    document.getElementById('athleteName').value = a;
-  };
-  grid.appendChild(btn);
-});
+// Athlete name entered via first/last name text fields
 
 function setYear(yr) {
   document.querySelectorAll('.yr-btn').forEach(b => b.classList.remove('active'));
@@ -218,10 +205,12 @@ async function api(endpoint, data) {
 }
 
 async function submitTesting() {
-  const athleteName = document.getElementById('athleteName').value.trim();
+  const athleteFirst = document.getElementById('athleteFirst').value.trim();
+  const athleteLast = document.getElementById('athleteLast').value.trim();
+  const athleteName = [athleteFirst, athleteLast].filter(Boolean).join(' ');
   const yearLevel = document.getElementById('yearLevel').value;
 
-  if (!athleteName) { showToast('⚠️ Select or enter an athlete name'); return; }
+  if (!athleteFirst) { showToast('⚠️ Enter athlete first name'); return; }
   if (!yearLevel) { showToast('⚠️ Select a year level'); return; }
 
   const btn = document.getElementById('submitBtn');
@@ -229,8 +218,8 @@ async function submitTesting() {
 
   const payload = {
     athlete_name: athleteName,
-    athlete_first: athleteName.includes(' ') ? athleteName.split(' ')[0] : athleteName,
-    athlete_last: athleteName.includes(' ') ? athleteName.split(' ').slice(1).join(' ') : '',
+    athlete_first: athleteFirst,
+    athlete_last: athleteLast,
     year_level: yearLevel,
     height: document.getElementById('height').value || null,
     weight: document.getElementById('weight').value || null,
@@ -245,7 +234,7 @@ async function submitTesting() {
     if (res.ok) {
       document.getElementById('formWrap').style.display = 'none';
       document.getElementById('successCard').style.display = 'block';
-      document.getElementById('successMsg').textContent = `Results for ${athleteName} (Year ${yearLevel}) saved to the leaderboard.`;
+      document.getElementById('successMsg').textContent = `Results for ${athleteFirst} ${athleteLast} (Year ${yearLevel}) saved to the leaderboard.`;
     } else {
       showToast('❌ Error saving. Try again.');
     }
@@ -259,13 +248,14 @@ async function submitTesting() {
 function resetForm() {
   document.getElementById('formWrap').style.display = 'block';
   document.getElementById('successCard').style.display = 'none';
-  document.getElementById('athleteName').value = '';
+  document.getElementById('athleteFirst').value = '';
+  document.getElementById('athleteLast').value = '';
   document.getElementById('yearLevel').value = '';
-  document.querySelectorAll('.ath-btn,.yr-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.yr-btn').forEach(b => b.classList.remove('active'));
   ['height','weight','hollowHold','pronePlank','sidePlankLeft','sidePlankRight'].forEach(id => {
     document.getElementById(id).value = '';
   });
-  selectedAthlete = null; selectedYear = null;
+  selectedYear = null;
   window.scrollTo({top:0, behavior:'smooth'});
 }
 </script>
