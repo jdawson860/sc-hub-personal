@@ -782,25 +782,22 @@ async function processImageFile(file) {
 
     document.getElementById('extractStatus').style.display = 'none';
 
-    if (res.ok && res.data) {
+    if (res.ok && res.data && Object.keys(res.data).length > 0) {
       const d = res.data;
-      // Show pretty extracted card
       document.getElementById('extractResults').style.display = 'block';
       document.getElementById('extractResults').innerHTML = `
         <div class="extract-card">
-          <h3>✅ Data Extracted Successfully</h3>
+          <h3>✅ Data Extracted — Review &amp; Submit</h3>
           <div class="extract-grid">
             ${d.total_distance ? `<div class="extract-item"><div class="ev">${d.total_distance}m</div><div class="el">Distance</div></div>` : ''}
             ${d.total_time ? `<div class="extract-item"><div class="ev">${d.total_time}</div><div class="el">Time</div></div>` : ''}
-            ${d.avg_split ? `<div class="extract-item"><div class="ev">${d.avg_split}</div><div class="el">Avg Split</div></div>` : ''}
+            ${d.avg_split ? `<div class="extract-item"><div class="ev">${d.avg_split}</div><div class="el">Avg Split /500m</div></div>` : ''}
             ${d.avg_heart_rate ? `<div class="extract-item"><div class="ev">${d.avg_heart_rate} bpm</div><div class="el">Avg HR</div></div>` : ''}
-            ${d.stroke_rate ? `<div class="extract-item"><div class="ev">${d.stroke_rate}</div><div class="el">Stroke Rate</div></div>` : ''}
-            ${d.workout_type ? `<div class="extract-item"><div class="ev">${d.workout_type}</div><div class="el">Type</div></div>` : ''}
+            ${d.stroke_rate ? `<div class="extract-item"><div class="ev">${d.stroke_rate} spm</div><div class="el">Stroke Rate</div></div>` : ''}
+            ${d.workout_type ? `<div class="extract-item"><div class="ev" style="font-size:14px">${d.workout_type}</div><div class="el">Type</div></div>` : ''}
           </div>
-          <p style="font-size:12px;color:#1a7a3c;margin-top:10px">Review and edit below before submitting.</p>
+          <p style="font-size:12px;color:#1a7a3c;margin-top:10px">✏️ Edit any field below then hit Submit.</p>
         </div>`;
-
-      // Populate form
       document.getElementById('extractForm').style.display = 'block';
       if (d.workout_type) document.getElementById('exType').value = d.workout_type;
       if (d.total_distance) document.getElementById('exDist').value = d.total_distance;
@@ -811,19 +808,31 @@ async function processImageFile(file) {
       if (d.intervals) document.getElementById('exIntervals').value = d.intervals;
       uploadedImageUrl = res.image_url || null;
     } else {
+      // Extraction unavailable — show friendly message and auto-open manual form
+      const msg = res.message || "Photo couldn't be read automatically. Please enter details below.";
       document.getElementById('extractResults').style.display = 'block';
       document.getElementById('extractResults').innerHTML = `
-        <div style="background:#fff3e0;border:2px solid var(--warn);border-radius:12px;padding:16px;margin-top:8px">
-          <b>⚠️ Couldn't extract all data automatically</b><br>
-          <span style="font-size:13px;color:var(--muted)">Please fill in the form below manually.</span>
+        <div style="background:#fff3e0;border:2px solid var(--warn);border-radius:12px;padding:16px;margin-top:8px;display:flex;gap:12px;align-items:flex-start">
+          <span style="font-size:22px">📋</span>
+          <div>
+            <b style="color:#92400e">Enter details manually</b><br>
+            <span style="font-size:13px;color:var(--muted)">${msg}</span>
+          </div>
         </div>`;
       document.getElementById('extractForm').style.display = 'block';
+      setTimeout(() => document.getElementById('extractForm').scrollIntoView({behavior:'smooth', block:'start'}), 300);
     }
   } catch(e) {
     document.getElementById('extractStatus').style.display = 'none';
     document.getElementById('extractResults').style.display = 'block';
-    document.getElementById('extractResults').innerHTML = `<div style="color:var(--red);padding:12px">Error processing image. Please fill in manually.</div>`;
+    document.getElementById('extractResults').innerHTML = `
+      <div style="background:#fff3e0;border:2px solid var(--warn);border-radius:12px;padding:16px;margin-top:8px;display:flex;gap:12px;align-items:flex-start">
+        <span style="font-size:22px">📋</span>
+        <div><b style="color:#92400e">Enter details manually</b><br>
+        <span style="font-size:13px;color:var(--muted)">Photo upload hit an error — fill in below.</span></div>
+      </div>`;
     document.getElementById('extractForm').style.display = 'block';
+    setTimeout(() => document.getElementById('extractForm').scrollIntoView({behavior:'smooth', block:'start'}), 300);
   }
 }
 

@@ -9,10 +9,19 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => null);
-    if (!body?.image_base64) return Response.json({ error: 'No image provided' }, { status: 400, headers: cors });
+    if (!body?.image_base64) {
+      return Response.json({ error: 'No image provided' }, { status: 400, headers: cors });
+    }
 
     const openaiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiKey) return Response.json({ error: 'OpenAI key not configured' }, { status: 500, headers: cors });
+    if (!openaiKey) {
+      return Response.json({
+        ok: false,
+        error: 'Vision AI not configured',
+        fallback: true,
+        message: 'Photo extraction unavailable — please use manual entry below.'
+      }, { status: 200, headers: cors });
+    }
 
     const prompt = `You are analyzing a photo of a Concept2 rowing ergometer screen showing a completed workout.
 Extract ALL available workout data from the screen and return it as a JSON object with these fields (omit any field not visible):
@@ -24,11 +33,14 @@ Extract ALL available workout data from the screen and return it as a JSON objec
 - stroke_rate: number (strokes per minute)
 - intervals: string describing interval structure if applicable (e.g. "8x500m")
 
-Respond ONLY with a valid JSON object. No explanation, no markdown, no code fences. Just the JSON.`;
+Respond ONLY with a valid JSON object. No explanation, no markdown, no code fences. Just the raw JSON.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${openaiKey}`,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
         model: 'gpt-4o',
         max_tokens: 300,
@@ -36,33 +48,58 @@ Respond ONLY with a valid JSON object. No explanation, no markdown, no code fenc
           role: 'user',
           content: [
             { type: 'text', text: prompt },
-            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${body.image_base64}`, detail: 'high' } }
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:image/jpeg;base64,${body.image_base64}`,
+                detail: 'high'
+              }
+            }
           ]
         }]
       })
     });
 
     if (!response.ok) {
-      const err = await response.text();
-      return Response.json({ ok: false, error: `OpenAI error: ${err}` }, { status: 500, headers: cors });
+      const errText = await response.text();
+      let userMessage = 'Photo extraction failed — please use manual entry.';
+
+      // Detect quota/billing errors specifically
+      if (errText.includes('insufficient_quota') || errText.includes('quota')) {
+        userMessage = 'Photo extraction is temporarily unavailable (API quota). Use manual entry below — your photo is saved above for reference.';
+      }
+
+      return Response.json({
+        ok: false,
+        fallback: true,
+        message: userMessage,
+        error: errText,
+      }, { status: 200, headers: cors });
     }
 
     const result = await response.json();
     const content = result.choices?.[0]?.message?.content?.trim() || '';
 
     // Parse the JSON response
-    let data = {};
+    let data: Record<string, unknown> = {};
     try {
-      data = JSON.parse(content);
+      const clean = content.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();
+      data = JSON.parse(clean);
     } catch {
-      // Try to extract JSON from the response
       const match = content.match(/\{[\s\S]*\}/);
-      if (match) data = JSON.parse(match[0]);
+      if (match) {
+        try { data = JSON.parse(match[0]); } catch { /* leave empty */ }
+      }
     }
 
     return Response.json({ ok: true, data }, { status: 200, headers: cors });
 
-  } catch (error) {
-    return Response.json({ ok: false, error: error.message }, { status: 500, headers: cors });
+  } catch (error: any) {
+    return Response.json({
+      ok: false,
+      fallback: true,
+      message: 'Photo extraction failed — please fill in the form manually.',
+      error: error.message,
+    }, { status: 200, headers: cors });
   }
 });
