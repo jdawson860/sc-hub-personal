@@ -286,7 +286,7 @@
         <button class="snav-btn" id="snav-water" onclick="switchTab('water')">🌊 Water</button>
         <button class="snav-btn" id="snav-testing" onclick="switchTab('testing')">📋 Testing</button>
         <button class="snav-btn" id="snav-wellness" onclick="switchTab('wellness')">💚 Wellness</button>
-        <button class="snav-btn" id="snav-compare" onclick="switchTab('compare')">⚖️ Compare</button>
+        <a href="compare.html" style="display:block;text-decoration:none"><button class="snav-btn" id="snav-compare" style="width:100%;text-align:left">⚖️ Compare</button></a>
         <button class="snav-btn" id="snav-cp" onclick="switchTab('cp')">⚡ Critical Power</button>
       </div>
       <div class="sidebar-athlete-sel" id="athSelWrap" style="display:none">
@@ -403,7 +403,7 @@ function switchView(view){
     document.getElementById('snav-water').style.display='none';
     document.getElementById('snav-testing').style.display='none';
     document.getElementById('snav-wellness').style.display='none';
-    document.getElementById('snav-compare').style.display='none';
+    document.getElementById('snav-compare')?.closest('a')?.style document.getElementById('snav-compare').style.display='none';document.getElementById('snav-compare').style.display='none'; (document.getElementById('snav-compare').closest('a').style.display='none');
     document.getElementById('snav-cp').style.display='none';
     athWrap.style.display='block';
     loadAthleteView();
@@ -413,7 +413,7 @@ function switchView(view){
     document.getElementById('snav-water').style.display='';
     document.getElementById('snav-testing').style.display='';
     document.getElementById('snav-wellness').style.display='';
-    document.getElementById('snav-compare').style.display='';
+    document.getElementById('snav-compare')?.closest('a')?.style document.getElementById('snav-compare').style.display='';document.getElementById('snav-compare').style.display=''; (document.getElementById('snav-compare').closest('a').style.display='');
     document.getElementById('snav-cp').style.display='';
     athWrap.style.display='none';
     switchTab(currentTab);
