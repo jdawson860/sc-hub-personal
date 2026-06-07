@@ -1,12 +1,26 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
+const SHEET_ID = "1_6BgfNQzfoxxRwf9oAYkto0FBX8ihUZgDFe3CRE-Xuk";
+const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
+const ERG_SHEET = "Erg_Session_Responses";
+
+async function appendToSheet(token: string, row: any[]) {
+  const url = `${SHEETS_API}/${SHEET_ID}/values/${encodeURIComponent(ERG_SHEET)}!A:M:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values: [row] }),
+  });
+  if (!res.ok) throw new Error(`Sheets append failed (${res.status}): ${await res.text()}`);
+  return await res.json();
+}
+
 Deno.serve(async (req) => {
   const cors = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
-
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
 
   try {
@@ -23,8 +37,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Missing required fields: athlete, workout_type' }, { status: 400, headers: cors });
     }
 
+    const now = new Date().toISOString();
+    const sessionTimestamp = timestamp || now;
+
+    // 1. Save to Base44 database
     const created = await base44.asServiceRole.entities.ErgSession.create({
-      timestamp: timestamp || new Date().toISOString(),
+      timestamp: sessionTimestamp,
       athlete: String(athlete),
       workout_type: String(workout_type),
       total_distance: total_distance ? Number(total_distance) : null,
@@ -38,9 +56,41 @@ Deno.serve(async (req) => {
       image_url: image_url ? String(image_url) : null,
     });
 
-    return Response.json({ ok: true, created }, { status: 200, headers: cors });
+    // 2. Mirror to Google Sheet (Erg_Session_Responses tab) for build-phase visibility
+    let sheetOk = false;
+    let sheetError: string | null = null;
+    try {
+      const { accessToken: sheetsToken } = await base44.asServiceRole.connectors.getConnection('googlesheets');
+      const row = [
+        sessionTimestamp,       // Timestamp
+        String(athlete),        // Athlete
+        String(workout_type),   // WorkoutType
+        total_distance ?? '',   // TotalDistance_m
+        total_time ?? '',       // TotalTime
+        avg_split ?? '',        // AvgSplit_500m
+        avg_heart_rate ?? '',   // AvgHeartRate_bpm
+        stroke_rate ?? '',      // StrokeRate_spm
+        rpe ?? '',              // RPE
+        intervals ?? '',        // Intervals
+        notes ?? '',            // Notes
+        image_url ?? '',        // ImageURL
+        now,                    // SubmittedAt
+      ];
+      await appendToSheet(sheetsToken, row);
+      sheetOk = true;
+    } catch (e: any) {
+      sheetError = e.message;
+      // Non-fatal — DB write already succeeded
+    }
 
-  } catch (error) {
+    return Response.json({
+      ok: true,
+      created,
+      sheet_synced: sheetOk,
+      ...(sheetError ? { sheet_error: sheetError } : {}),
+    }, { status: 200, headers: cors });
+
+  } catch (error: any) {
     return Response.json({ error: error.message }, { status: 500, headers: cors });
   }
 });
