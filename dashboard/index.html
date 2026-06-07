@@ -208,6 +208,14 @@
     .erg-detail-value.split{font-family:monospace;color:var(--accent)}
     .erg-notes{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;font-size:13px;color:#92400e;line-height:1.5}
     .intervals-box{background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;font-size:13px;color:#1e40af;font-family:monospace;line-height:1.6}
+    .interval-splits-table{width:100%;border-collapse:collapse;font-size:13px;border-radius:10px;overflow:hidden;border:1px solid #dde8ff}
+    .interval-splits-table thead tr{background:var(--navy);color:#fff}
+    .interval-splits-table th{padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;text-align:left}
+    .interval-splits-table td{padding:9px 10px;border-bottom:1px solid #eef2ff;font-size:13px;font-weight:600;color:var(--navy)}
+    .interval-splits-table tbody tr:last-child td{border-bottom:none}
+    .interval-splits-table tbody tr:nth-child(even){background:#f8faff}
+    .interval-splits-table .split-val{font-family:monospace;color:var(--accent);font-weight:700}
+    .interval-splits-table .int-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:var(--navy);color:#fff;border-radius:50%;font-size:11px;font-weight:800}
     .empty{text-align:center;padding:40px;color:#8fa0be;font-size:14px}
     .clickable-row{cursor:pointer;transition:background .1s}
     .clickable-row:hover td{background:#eef4ff !important}
@@ -1507,12 +1515,11 @@ async function openGymSession(athlete, date, session_type){
 function openErgSession(session){
   const modal = document.getElementById('sessionModal');
   const date = session.timestamp?.slice(0,10) || '—';
-  const wtKey=(session.workout_type||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,4);
 
   document.getElementById('modalTitle').innerHTML = `🚣 ${session.workout_type||'Erg Session'}`;
   document.getElementById('modalSubtitle').textContent = `${session.athlete} · ${date}`;
 
-  // Stats
+  // Stats bar
   const dist = session.total_distance ? (session.total_distance>=1000?(session.total_distance/1000).toFixed(2)+'km':session.total_distance+'m') : '—';
   const rpeClass = (session.rpe||0)>=8.5?'rpe-high':(session.rpe||0)>=7.5?'rpe-mid':'rpe-low';
   document.getElementById('modalStats').innerHTML = `
@@ -1525,7 +1532,6 @@ function openErgSession(session){
   // Body
   let bodyHtml = '<div class="modal-section"><div class="modal-section-title">Session Details</div>';
   bodyHtml += '<div class="erg-detail-grid">';
-
   const details = [
     {label:'Stroke Rate', value: session.stroke_rate ? session.stroke_rate+' spm' : '—'},
     {label:'Avg Heart Rate', value: session.avg_heart_rate ? session.avg_heart_rate+' bpm' : '—'},
@@ -1537,12 +1543,55 @@ function openErgSession(session){
   });
   bodyHtml += '</div></div>';
 
+  // ── Interval description pill ──────────────────────────────────────
   if(session.intervals){
-    bodyHtml += `<div class="modal-section"><div class="modal-section-title">Intervals</div><div class="intervals-box">${session.intervals}</div></div>`;
+    bodyHtml += `<div class="modal-section"><div class="modal-section-title">Interval Structure</div><div class="intervals-box">${session.intervals}</div></div>`;
   }
+
+  // ── Per-interval splits table ──────────────────────────────────────
+  let splits = [];
+  if (session.interval_splits) {
+    try { splits = JSON.parse(session.interval_splits); } catch(e) { splits = []; }
+  }
+  if (splits.length > 0) {
+    const hasHr = splits.some(s => s.heart_rate);
+    const hasSr = splits.some(s => s.stroke_rate);
+    bodyHtml += `<div class="modal-section"><div class="modal-section-title">Per-Interval Splits</div>
+      <table class="interval-splits-table">
+        <thead><tr>
+          <th>#</th>
+          <th>Distance</th>
+          <th>Time</th>
+          <th>Split /500m</th>
+          ${hasSr ? '<th>S/R</th>' : ''}
+          ${hasHr ? '<th>HR</th>' : ''}
+        </tr></thead>
+        <tbody>
+          ${splits.map((s,i) => {
+            const n = s.interval ?? i+1;
+            const dist = s.distance ? s.distance+'m' : '—';
+            const time = s.time || '—';
+            const split = s.split || '—';
+            return `<tr>
+              <td><span class="int-num">${n}</span></td>
+              <td>${dist}</td>
+              <td style="font-family:monospace">${time}</td>
+              <td class="split-val">${split}</td>
+              ${hasSr ? `<td>${s.stroke_rate ? s.stroke_rate+' spm' : '—'}</td>` : ''}
+              ${hasHr ? `<td>${s.heart_rate ? s.heart_rate+' bpm' : '—'}</td>` : ''}
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }
+
+  // ── Notes ──────────────────────────────────────────────────────────
   if(session.notes){
     bodyHtml += `<div class="modal-section"><div class="modal-section-title">Notes</div><div class="erg-notes">${session.notes}</div></div>`;
   }
+
+  // ── Session image ──────────────────────────────────────────────────
   if(session.image_url){
     bodyHtml += `<div class="modal-section"><div class="modal-section-title">Session Image</div><img src="${session.image_url}" style="width:100%;border-radius:10px;margin-top:4px" /></div>`;
   }
