@@ -528,49 +528,6 @@
     </div>
   </div>
 </div>
-
-
-<!-- ═══════════════════════════════════════
-     ONBOARDING OVERLAY (first use)
-═══════════════════════════════════════ -->
-<div id="onboardOverlay" class="overlay hidden" style="z-index:500">
-  <div class="overlay-card" style="max-width:420px;width:92%">
-    <div style="text-align:center;margin-bottom:20px">
-      <img src="https://media.base44.com/images/public/6a2139cf1719e3fb84188511/dbd88bf6d_Cranbrooklogo.jpg" style="width:60px;height:60px;object-fit:contain;margin-bottom:10px" alt="Cranbrook"/>
-      <h2 style="font-size:20px;font-weight:900;color:var(--navy);margin-bottom:6px">Welcome to the Cranbrook S&C Hub</h2>
-      <p style="font-size:13px;color:var(--muted)">Tell us a bit about yourself — this is saved once and used to personalise your experience.</p>
-    </div>
-
-    <div class="field" style="margin-bottom:12px">
-      <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:6px">Full Name</label>
-      <input type="text" id="onboardName" placeholder="e.g. Alex Fletcher" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:16px;outline:none"/>
-    </div>
-    <div class="field" style="margin-bottom:12px">
-      <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:6px">Year Level</label>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
-        <button class="yr-btn" onclick="setOnboardYear('9')">Year 9</button>
-        <button class="yr-btn" onclick="setOnboardYear('10')">Year 10</button>
-        <button class="yr-btn" onclick="setOnboardYear('11')">Year 11</button>
-        <button class="yr-btn" onclick="setOnboardYear('12')">Year 12</button>
-      </div>
-      <input type="hidden" id="onboardYear"/>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-      <div class="field">
-        <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:6px">Height (cm)</label>
-        <input type="number" id="onboardHeight" inputmode="decimal" placeholder="e.g. 185" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:16px;outline:none"/>
-      </div>
-      <div class="field">
-        <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:6px">Weight (kg)</label>
-        <input type="number" id="onboardWeight" inputmode="decimal" placeholder="e.g. 78.5" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:16px;outline:none"/>
-      </div>
-    </div>
-    <button class="btn btn-primary" onclick="saveOnboarding()" style="width:100%;padding:15px;border:none;border-radius:12px;background:var(--blue);color:#fff;font-size:16px;font-weight:800;cursor:pointer">Let's Go →</button>
-    <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:10px">You can update these anytime</p>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════
      WELLNESS CHECK-IN PAGE
 ═══════════════════════════════════════ -->
 <div class="page" id="page-wellness">
@@ -693,7 +650,7 @@ function buildAthGrid() {
   ).join('');
 }
 
-function selectAthlete(ath, showOverlay=true) {
+function selectAthlete(ath) {
   currentAthlete = ath;
   localStorage.setItem('cranbrook_athlete', ath);
   document.getElementById('overlay').classList.add('hidden');
@@ -706,7 +663,6 @@ function selectAthlete(ath, showOverlay=true) {
   // Reset history cache on athlete change
   historyLoaded = false;
   // Check if first time
-  if(showOverlay) checkOnboarding(ath);
 }
 
 function changeAthlete() {
@@ -1269,52 +1225,6 @@ async function loadHistory() {
 
 // History cache reset is handled in selectAthlete directly
 
-
-// ── ONBOARDING ────────────────────────────────────────────────────────
-let onboardYear = null;
-
-function setOnboardYear(yr) {
-  onboardYear = yr;
-  document.querySelectorAll('#onboardOverlay .yr-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
-}
-
-async function checkOnboarding(athlete) {
-  try {
-    const res = await api('athleteProfile', { action: 'get', athlete_id: athlete });
-    if (!res.profile || !res.profile.onboarded) {
-      // Show onboarding
-      document.getElementById('onboardOverlay').classList.remove('hidden');
-    }
-  } catch(e) {
-    // Don't block on error — just skip onboarding
-  }
-}
-
-async function saveOnboarding() {
-  const name = document.getElementById('onboardName').value.trim();
-  const year = document.getElementById('onboardYear').value || onboardYear;
-  if (!name) { showToast('Enter your full name'); return; }
-  if (!year) { showToast('Select your year level'); return; }
-  if (!currentAthlete) { showToast('Select your initials first'); return; }
-
-  const payload = {
-    action: 'save',
-    athlete_id: currentAthlete,
-    full_name: name,
-    year_level: year,
-    height: document.getElementById('onboardHeight').value || null,
-    weight: document.getElementById('onboardWeight').value || null,
-  };
-
-  try {
-    await api('athleteProfile', payload);
-    document.getElementById('onboardOverlay').classList.add('hidden');
-    showToast(`Welcome, ${name.split(' ')[0]}! 🎉`, 3000);
-  } catch(e) {
-    showToast('Error saving — try again');
-  }
-}
 
 // ── WELLNESS ──────────────────────────────────────────────────────────
 const wellnessRatings = { sleep: 0, soreness: 0, motivation: 0 };
