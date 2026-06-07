@@ -305,39 +305,43 @@
           <div class="field">
             <label>Interval Description</label>
             <input type="text" id="ergIntDesc" placeholder="e.g. 8×500m / 2min rest"/>
-            <div class="hint">Describe the interval set</div>
+            <div class="hint">Describe the interval set (e.g. 4×4:00 / 3:00r)</div>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase">Interval Splits</div>
-            <button class="btn btn-secondary btn-sm" onclick="addIntervalRow()">+ Interval</button>
-          </div>
-          <div style="display:grid;grid-template-columns:36px 1fr 1fr 1fr;gap:6px;margin-bottom:6px">
-            <span style="font-size:10px;font-weight:700;color:var(--muted);text-align:center">#</span>
-            <span style="font-size:10px;font-weight:700;color:var(--muted)">Distance (m)</span>
-            <span style="font-size:10px;font-weight:700;color:var(--muted)">Time</span>
-            <span style="font-size:10px;font-weight:700;color:var(--muted)">Split /500m</span>
-          </div>
-          <div id="intervalRows"></div>
-          <div class="field" style="margin-top:12px">
+          <div class="field">
             <label>Rest / Recovery</label>
             <input type="text" id="ergRestTime" placeholder="e.g. 2:00 rest"/>
           </div>
-          <p class="sec">Summary</p>
+          <!-- Per-interval splits table -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.7px">Per-Interval Splits</div>
+            <button class="btn btn-secondary btn-sm" onclick="addIntervalRow()" type="button">+ Add Row</button>
+          </div>
+          <table class="ex-interval-table" id="manIntervalTable" style="margin-bottom:14px">
+            <thead><tr>
+              <th>#</th>
+              <th>Distance (m)</th>
+              <th>Time (mm:ss)</th>
+              <th>Split /500m</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="intervalRows"></tbody>
+          </table>
+          <p class="sec">Session Summary</p>
           <div class="field">
             <label>Total Distance (m)</label>
-            <input type="number" id="ergDistInt" placeholder="Auto-calculated or enter manually" inputmode="numeric"/>
+            <input type="number" id="ergDistInt" placeholder="e.g. 4667" inputmode="numeric"/>
           </div>
           <div class="field">
             <label>Average Split (/500m)</label>
-            <input type="text" id="ergSplitInt" placeholder="e.g. 1:40.5"/>
+            <input type="text" id="ergSplitInt" placeholder="e.g. 1:42.8"/>
           </div>
           <div class="field">
             <label>Average Heart Rate (bpm)</label>
             <input type="number" id="ergHrInt" placeholder="e.g. 175" inputmode="numeric"/>
           </div>
           <div class="field">
-            <label>Stroke Rate</label>
-            <input type="number" id="ergSrInt" placeholder="e.g. 24" inputmode="numeric"/>
+            <label>Stroke Rate (spm)</label>
+            <input type="number" id="ergSrInt" placeholder="e.g. 28" inputmode="numeric"/>
           </div>
         </div>
 
@@ -910,17 +914,24 @@ function updateErgForm() {
 }
 
 function addIntervalRow() {
-  intervalCount++;
-  const n = intervalCount;
-  const row = document.createElement('div');
-  row.className = 'interval-row';
-  row.innerHTML = `
-    <div class="int-num">${n}</div>
-    <input class="set-input" type="number" inputmode="numeric" placeholder="m" id="int-dist-${n}"/>
-    <input class="set-input" type="text" placeholder="mm:ss" id="int-time-${n}"/>
-    <input class="set-input" type="text" placeholder="/500m" id="int-split-${n}"/>
-    <button class="del-set" onclick="this.parentElement.remove()">×</button>`;
-  document.getElementById('intervalRows').appendChild(row);
+  const tbody = document.getElementById('intervalRows');
+  const n = tbody.children.length + 1;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><span class="int-num">${n}</span></td>
+    <td><input type="number" inputmode="numeric" placeholder="m" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px"/></td>
+    <td><input type="text" placeholder="mm:ss" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px"/></td>
+    <td><input type="text" placeholder="1:42.8" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:13px"/></td>
+    <td><button class="del-set" onclick="this.closest('tr').remove();renumberIntervalRows()" type="button">×</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function renumberIntervalRows() {
+  const rows = document.getElementById('intervalRows').children;
+  Array.from(rows).forEach((tr, i) => {
+    const badge = tr.querySelector('.int-num');
+    if (badge) badge.textContent = i + 1;
+  });
 }
 
 async function submitErgManual() {
@@ -929,17 +940,24 @@ async function submitErgManual() {
   const btn = document.getElementById('submitErgBtn');
   btn.disabled = true; btn.textContent = '⏳ Submitting…';
 
-  // Build intervals string from rows
+  // Build intervals string + per-interval splits JSON from rows
   let intervalsStr = '';
+  let intervalSplitsJson = null;
   if (isIntervals) {
     const rows = document.getElementById('intervalRows').children;
-    const parts = [];
-    for (const row of rows) {
-      const inputs = row.querySelectorAll('input');
-      const dist = inputs[0].value, time = inputs[1].value, split = inputs[2].value;
-      if (dist || time || split) parts.push(`${dist}m / ${time} (${split}/500m)`);
-    }
-    intervalsStr = document.getElementById('ergIntDesc').value || parts.join(' | ');
+    const splitData = [];
+    Array.from(rows).forEach((tr, i) => {
+      const inputs = tr.querySelectorAll('input');
+      const dist = inputs[0]?.value?.trim();
+      const time = inputs[1]?.value?.trim();
+      const split = inputs[2]?.value?.trim();
+      if (dist || time || split) {
+        splitData.push({ interval: i + 1, distance: dist ? parseInt(dist) : null, time: time || null, split: split || null });
+      }
+    });
+    if (splitData.length) intervalSplitsJson = JSON.stringify(splitData);
+    intervalsStr = document.getElementById('ergIntDesc').value ||
+      splitData.map(s => `${s.distance||'?'}m / ${s.time||'?'} (${s.split||'?'}/500m)`).join(' | ');
   }
 
   const body = {
@@ -952,6 +970,7 @@ async function submitErgManual() {
     stroke_rate: isIntervals ? (document.getElementById('ergSrInt').value||null) : (document.getElementById('ergSr').value||null),
     rpe: document.getElementById('ergRpe').value || null,
     intervals: intervalsStr || null,
+    interval_splits: intervalSplitsJson,
     notes: document.getElementById('ergNotes').value || null,
   };
 
@@ -977,7 +996,6 @@ function resetErgForm() {
   document.getElementById('ergRpe').value='';
   document.getElementById('ergType').value='Single Distance';
   document.getElementById('intervalRows').innerHTML='';
-  intervalCount=0;
   updateErgForm();
 }
 
