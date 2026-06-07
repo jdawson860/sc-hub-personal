@@ -641,6 +641,11 @@ function renderErgView(data){
       </table>
     </div>
 
+    <div class="section-title">Best Splits — Leaderboard</div>
+    <div class="card" style="margin-bottom:0">
+      <div id="ergLeaderboard"><div style="color:var(--muted);text-align:center;padding:20px">No splits logged yet</div></div>
+    </div>
+
     <div class="section-title">Recent Erg Sessions</div>
     <div class="card">
       <table class="data-table">
@@ -711,6 +716,42 @@ function renderErgView(data){
       `;
       sSbody.appendChild(tr);
     });
+  }
+
+  // Erg leaderboard — best avg_split per athlete ranked
+  const lbEl = document.getElementById('ergLeaderboard');
+  if(lbEl && allSessions.filter(s=>s.avg_split).length > 0){
+    // Group by athlete and find personal best split per athlete
+    const athleteSplits = {};
+    allSessions.forEach(s=>{
+      if(!s.avg_split||!s.athlete) return;
+      const parts = s.avg_split.split(':');
+      if(parts.length!==2) return;
+      const secs = parseFloat(parts[0])*60+parseFloat(parts[1]);
+      if(!athleteSplits[s.athlete]||secs<athleteSplits[s.athlete].secs){
+        athleteSplits[s.athlete]={secs, split:s.avg_split, type:s.workout_type, date:s.timestamp?.slice(0,10)};
+      }
+    });
+    const ranked = Object.entries(athleteSplits)
+      .sort((a,b)=>a[1].secs-b[1].secs)
+      .slice(0,10);
+
+    const rankBadge = (i) => {
+      if(i===0) return '<span class="rank-badge rank-1">1</span>';
+      if(i===1) return '<span class="rank-badge rank-2">2</span>';
+      if(i===2) return '<span class="rank-badge rank-3">3</span>';
+      return `<span class="rank-badge rank-other">${i+1}</span>`;
+    };
+    lbEl.innerHTML = `<table class="data-table"><thead><tr>
+      <th>Rank</th><th>Athlete</th><th>Best Split /500m</th><th>Workout Type</th><th>Date</th>
+    </tr></thead><tbody>${ranked.map(([ath,d],i)=>`
+      <tr>
+        <td>${rankBadge(i)}</td>
+        <td><span class="athlete-name">${ath}</span></td>
+        <td><span class="split-badge" style="font-size:15px">${d.split}</span></td>
+        <td><span class="wt-badge wt-other">${d.type||'—'}</span></td>
+        <td style="color:var(--muted);font-size:12px">${d.date||'—'}</td>
+      </tr>`).join('')}</tbody></table>`;
   }
 
   // Distance bar chart
@@ -1221,6 +1262,54 @@ function openErgSession(session){
 }
 
 // ═══════════════════════════════════════════════════
+// CSV EXPORT
+// ═══════════════════════════════════════════════════
+function exportCSV(){
+  if(!coachData) return;
+  const sums = coachData.athlete_summaries||[];
+  const rows = [['Athlete','Sessions','Avg RPE','High RPE Sets','ACWR','Weekly Load','Days Since Last','Last Session']];
+  sums.forEach(a=>{
+    rows.push([
+      a.athlete,
+      a.total_sessions||0,
+      a.avg_rpe||'',
+      a.high_rpe_sets||0,
+      a.acwr?a.acwr.toFixed(2):'',
+      a.weekly_load||0,
+      a.days_since_last!==null?a.days_since_last:'',
+      a.last_session_date||''
+    ]);
+  });
+  const csv = rows.map(r=>r.map(v=>JSON.stringify(v??'')).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`cranbrook_sc_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════════
+// WEBHOOK HEALTH CHECK
+// ═══════════════════════════════════════════════════
+// Checked once on init — if data is older than 8h, show stale warning
+function checkDataFreshness(data){
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncText');
+  if(!dot||!txt) return;
+  // Use the most recent session timestamp across all athletes as freshness proxy
+  const sums = data.athlete_summaries||[];
+  const minDays = sums.length ? Math.min(...sums.filter(a=>a.days_since_last!==null).map(a=>a.days_since_last)) : null;
+  if(minDays===null){
+    dot.className='sync-dot'; txt.textContent='No data';
+  } else if(minDays>1){
+    dot.className='sync-dot stale'; txt.textContent=`Data: ${minDays}d old`;
+  } else {
+    dot.className='sync-dot fresh'; txt.textContent='Data up to date';
+  }
+  lastSyncedAt = new Date();
+}
+
+// ═══════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════
 async function init(){
@@ -1230,9 +1319,13 @@ async function init(){
       const sel=document.getElementById('athleteSelect');
       sel.innerHTML=coachData.athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
     }
+    checkDataFreshness(coachData);
+    document.getElementById('csvBtn').style.display='flex';
     renderCoachView(coachData);
   } catch(e){
     document.getElementById('mainContent').innerHTML=`<div class="empty">Failed to load: ${e.message}</div>`;
+    const dot=document.getElementById('syncDot');
+    if(dot){ dot.className='sync-dot stale'; document.getElementById('syncText').textContent='Load failed'; }
   }
 }
 

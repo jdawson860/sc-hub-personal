@@ -61,14 +61,14 @@
     .set-row{display:grid;grid-template-columns:40px 1fr 1fr 80px 32px;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
     .set-row:last-child{border-bottom:none}
     .set-num{font-size:12px;font-weight:800;color:var(--muted);text-align:center}
-    .set-input{padding:8px 10px;border:2px solid var(--border);border-radius:8px;font-size:14px;font-weight:700;text-align:center;width:100%;outline:none;background:#fff;transition:border .2s}
+    .set-input{padding:10px 10px;border:2px solid var(--border);border-radius:8px;font-size:15px;font-weight:700;text-align:center;width:100%;outline:none;background:#fff;transition:border .2s;-webkit-appearance:none}
     .set-input:focus{border-color:var(--blue)}
     .set-input.rpe-input{color:var(--navy)}
     .del-set{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:4px;border-radius:6px;line-height:1;opacity:.6;transition:opacity .2s}
     .del-set:hover{opacity:1}
 
     /* BUTTONS */
-    .btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;transition:all .2s;text-align:center}
+    .btn{display:block;width:100%;padding:16px;border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer;transition:all .2s;text-align:center;-webkit-tap-highlight-color:transparent}
     .btn-primary{background:var(--blue);color:#fff}
     .btn-primary:hover{background:#1244c0}
     .btn-primary:active{transform:scale(.98)}
@@ -135,7 +135,7 @@
 <!-- ATHLETE SELECTOR OVERLAY -->
 <div class="overlay" id="overlay">
   <div class="ath-picker">
-    <div class="ath-picker-logo">🚣</div>
+    <div class="ath-picker-logo"><img src="https://media.base44.com/images/public/6a2139cf1719e3fb84188511/dbd88bf6d_Cranbrooklogo.jpg" alt="Cranbrook" style="width:80px;height:80px;object-fit:contain"/></div>
     <h2>Cranbrook Rowing</h2>
     <p>Who are you?</p>
     <div class="ath-grid" id="athGrid"></div>
@@ -147,7 +147,7 @@
 <header class="hdr">
   <div class="hdr-r1">
     <div class="brand">
-      <div class="logo">🚣</div>
+      <div class="logo" style="background:none;padding:0"><img src="https://media.base44.com/images/public/6a2139cf1719e3fb84188511/dbd88bf6d_Cranbrooklogo.jpg" alt="Cranbrook" style="width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 1px 3px rgba(0,0,0,.3))"/></div>
       <div>
         <div class="brand-name">Cranbrook Rowing</div>
         <div class="brand-sub">Athlete Hub</div>
@@ -349,6 +349,7 @@
         </div>
       </div>
       <button class="btn btn-primary" id="submitErgBtn" onclick="submitErgManual()">Submit Erg Session ✓</button>
+  <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:10px">Saves to dashboard + Google Sheet</p>
     </div>
 
     <!-- PHOTO ERG FORM -->
@@ -721,7 +722,8 @@ async function submitErgManual() {
   try {
     const res = await api('submitErg', body);
     if (res.ok) {
-      showToast('✅ Erg session logged!', 4000);
+      const sheetMsg = res.sheet_synced ? ' + saved to Sheet ✓' : '';
+      showToast(`✅ Erg session logged!${sheetMsg}`, 4000);
       resetErgForm();
     } else {
       showToast('❌ Error. Try again.');
