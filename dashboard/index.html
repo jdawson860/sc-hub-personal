@@ -64,6 +64,10 @@
     .data-table td{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
     .data-table tr:last-child td{border-bottom:none}
     .data-table tr:hover td{background:#f8fafc;cursor:pointer}
+    .row-optimal td{background:rgba(34,197,94,.06)!important}
+    .row-caution td{background:rgba(245,158,11,.07)!important}
+    .row-danger td{background:rgba(230,57,70,.08)!important}
+    .row-low td{background:rgba(59,130,246,.06)!important}
     .athlete-name{font-weight:700;color:var(--navy);font-size:14px}
 
     /* BADGES */
@@ -147,6 +151,17 @@
 
     /* UTIL */
     .loading{display:flex;align-items:center;justify-content:center;height:200px;color:#8fa0be;font-size:15px;gap:10px}
+    .sync-indicator{font-size:11px;color:#8fa0be;display:flex;align-items:center;gap:5px;white-space:nowrap}
+    .sync-dot{width:7px;height:7px;border-radius:50%;background:#8fa0be;flex-shrink:0;transition:background .3s}
+    .sync-dot.fresh{background:#22c55e}
+    .sync-dot.stale{background:#f59e0b}
+    .csv-btn{padding:7px 14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .2s}
+    .csv-btn:hover{background:rgba(255,255,255,.2)}
+    .trend-up{color:#22c55e;font-weight:800;font-size:13px}
+    .trend-down{color:#e63946;font-weight:800;font-size:13px}
+    .trend-flat{color:#f59e0b;font-weight:800;font-size:13px}
+    .trend-new{color:#8b5cf6;font-weight:800;font-size:11px}
+    .pb-pill{display:inline-block;background:#fef3c7;color:#92400e;border-radius:10px;font-size:10px;font-weight:800;padding:1px 6px;margin-left:4px}
     .spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.2);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite}
     @keyframes spin{to{transform:rotate(360deg)}}
     .empty{text-align:center;color:var(--muted);padding:40px;font-size:14px}
@@ -209,6 +224,10 @@
       <div class="header-sub">Strength & Conditioning Dashboard</div>
     </div>
   </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="sync-indicator" id="syncIndicator"><div class="sync-dot" id="syncDot"></div><span id="syncText">Checking…</span></div>
+    <button class="csv-btn" id="csvBtn" onclick="exportCSV()" style="display:none">⬇ Export CSV</button>
+  </div>
   <div class="view-toggle">
     <button class="view-btn active" id="btnCoach" onclick="switchView('coach')">Coach</button>
     <button class="view-btn" id="btnAthlete" onclick="switchView('athlete')">Athlete</button>
@@ -260,15 +279,35 @@ let charts      = {};
 
 function destroyCharts(){ Object.values(charts).forEach(c=>c.destroy()); charts={}; }
 
+let lastSyncedAt = null;
+
 async function fetchData(url, payload){
   const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload||{}) });
+  lastSyncedAt = new Date();
+  updateSyncIndicator();
   return res.json();
 }
+
+function updateSyncIndicator(){
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncText');
+  if(!dot||!txt||!lastSyncedAt) return;
+  const secAgo = Math.round((new Date()-lastSyncedAt)/1000);
+  const minAgo = Math.floor(secAgo/60);
+  const label = secAgo<10?'Just synced':minAgo<1?`${secAgo}s ago`:minAgo===1?'1 min ago':`${minAgo} min ago`;
+  const fresh = minAgo < 5;
+  dot.className = 'sync-dot '+(fresh?'fresh':'stale');
+  txt.textContent = label;
+}
+
+// Refresh sync indicator every 30s
+setInterval(updateSyncIndicator, 30000);
 
 function switchView(view){
   currentView = view;
   document.getElementById('btnCoach').classList.toggle('active', view==='coach');
   document.getElementById('btnAthlete').classList.toggle('active', view==='athlete');
+  document.getElementById('csvBtn').style.display = view==='coach' ? 'flex' : 'none';
 
   // Show/hide tab bar and athlete selector
   const snav = document.getElementById('subnav');
@@ -401,6 +440,13 @@ function renderCoachView(data){
     const acwrCls = !acwrVal?'acwr-none':acwrVal<0.8?'acwr-low':acwrVal<=1.3?'acwr-optimal':acwrVal<=1.5?'acwr-caution':'acwr-danger';
     const tr = document.createElement('tr');
     tr.onclick=()=>{ switchView('athlete'); document.getElementById('athleteSelect').value=a.athlete; loadAthleteView(); };
+    // ACWR row highlight
+    if(acwrVal){
+      if(acwrVal<0.8) tr.classList.add('row-low');
+      else if(acwrVal<=1.3) tr.classList.add('row-optimal');
+      else if(acwrVal<=1.5) tr.classList.add('row-caution');
+      else tr.classList.add('row-danger');
+    }
     tr.innerHTML=`
       <td><span class="athlete-name">${a.athlete}</span></td>
       <td style="color:${ds>7?'var(--red)':'var(--text)'};font-weight:${ds>7?700:400}">${lastStr}</td>
@@ -912,7 +958,7 @@ function renderAthleteView(data){
         <div class="section-title">Personal Bests</div>
         <div class="card">
           <table class="pb-table">
-            <thead><tr><th>Exercise</th><th>Best Load</th><th>Reps</th><th>Date</th></tr></thead>
+            <thead><tr><th>Exercise</th><th>Best Load</th><th>Reps</th><th>Trend</th><th>Date</th></tr></thead>
             <tbody id="pbBody"></tbody>
           </table>
         </div>
@@ -944,14 +990,39 @@ function renderAthleteView(data){
     <div class="exercise-grid" id="exerciseGrid"></div>
   `;
 
-  // PBs
+  // PBs with trend arrows
   const pbBody=document.getElementById('pbBody');
   if(pbs.length===0){
-    pbBody.innerHTML='<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:20px">No load data yet</td></tr>';
+    pbBody.innerHTML='<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">No load data yet</td></tr>';
   } else {
+    // Build last-3-session loads per exercise for trends
+    const exLoads={};
+    logs.forEach(r=>{
+      const load=parseFloat(r.load);
+      if(!isNaN(load)&&load>0){
+        if(!exLoads[r.exercise]) exLoads[r.exercise]=[];
+        exLoads[r.exercise].push({load,date:r.timestamp?.slice(0,10)||''});
+      }
+    });
+    // Sort by date and get last 3
+    Object.keys(exLoads).forEach(ex=>{
+      exLoads[ex].sort((a,b)=>b.date.localeCompare(a.date));
+    });
+
     pbs.slice(0,10).forEach(([ex,pb],i)=>{
+      const recentLoads=(exLoads[ex]||[]).slice(0,3).map(r=>r.load);
+      let trend='';
+      if(recentLoads.length<2){
+        trend='<span class="trend-new">NEW</span>';
+      } else {
+        const diff=recentLoads[0]-recentLoads[1];
+        if(diff>0) trend=`<span class="trend-up">↑ +${diff.toFixed(1)}kg</span>`;
+        else if(diff<0) trend=`<span class="trend-down">↓ ${diff.toFixed(1)}kg</span>`;
+        else trend=`<span class="trend-flat">→ Flat</span>`;
+      }
+      const isPB=recentLoads.length>=1&&recentLoads[0]>=pb.load;
       const tr=document.createElement('tr');
-      tr.innerHTML=`<td style="font-size:11px;font-weight:600">${i===0?'<span class="pb-crown">🏆</span>':''}${ex}</td><td class="pb-val">${pb.load}kg</td><td style="color:var(--muted)">${pb.reps||'—'}</td><td style="color:var(--muted);font-size:12px">${pb.date||'—'}</td>`;
+      tr.innerHTML=`<td style="font-size:11px;font-weight:600">${i===0?'<span class="pb-crown">🏆</span>':''}${ex}${isPB?'<span class="pb-pill">PB</span>':''}</td><td class="pb-val">${pb.load}kg</td><td style="color:var(--muted)">${pb.reps||'—'}</td><td>${trend}</td><td style="color:var(--muted);font-size:12px">${pb.date||'—'}</td>`;
       pbBody.appendChild(tr);
     });
   }
