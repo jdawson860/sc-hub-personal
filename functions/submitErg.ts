@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
     const {
       timestamp, athlete, workout_type, total_distance, total_time,
-      avg_split, avg_heart_rate, stroke_rate, rpe, intervals, notes, image_url
+      avg_split, avg_heart_rate, stroke_rate, rpe, intervals, interval_splits, notes, image_url
     } = body;
 
     if (!athlete || !workout_type) {
@@ -52,6 +52,7 @@ Deno.serve(async (req) => {
       stroke_rate: stroke_rate ? Number(stroke_rate) : null,
       rpe: rpe ? Number(rpe) : null,
       intervals: intervals ? String(intervals) : null,
+      interval_splits: interval_splits ? String(interval_splits) : null,
       notes: notes ? String(notes) : null,
       image_url: image_url ? String(image_url) : null,
     });

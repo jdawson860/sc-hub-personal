@@ -37,6 +37,9 @@
     "intervals": {
       "type": "string"
     },
+    "interval_splits": {
+      "type": "string"
+    },
     "notes": {
       "type": "string"
     },

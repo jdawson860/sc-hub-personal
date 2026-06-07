@@ -24,14 +24,29 @@ Deno.serve(async (req) => {
     }
 
     const prompt = `You are analyzing a photo of a Concept2 rowing ergometer screen showing a completed workout.
-Extract ALL available workout data from the screen and return it as a JSON object with these fields (omit any field not visible):
+
+Extract ALL available workout data and return it as a single JSON object with these fields (omit any field not visible):
+
+Top-level fields:
 - workout_type: one of "Single Distance", "Single Time", "Intervals", "Custom"
 - total_distance: number in metres (e.g. 2000)
 - total_time: string in mm:ss.t format (e.g. "6:42.3")
 - avg_split: string in m:ss.t format per 500m (e.g. "1:41.0")
 - avg_heart_rate: number in bpm
 - stroke_rate: number (strokes per minute)
-- intervals: string describing interval structure if applicable (e.g. "8x500m")
+- rest_time: string for rest/recovery between intervals (e.g. "3:00")
+- intervals: string describing interval structure (e.g. "4x4:00 / 3:00r")
+
+Per-interval data (IMPORTANT — include this if the screen shows individual interval results):
+- interval_splits: array of objects, one per interval, each with:
+  - interval: number (1, 2, 3 ...)
+  - distance: number in metres (e.g. 1048)
+  - time: string in mm:ss.t format (e.g. "4:00.0")
+  - split: string in m:ss.t format per 500m (e.g. "1:54.3")
+  - stroke_rate: number if shown (optional)
+  - heart_rate: number if shown (optional)
+
+If this is an interval workout, always try to extract interval_splits — even if only distance or split is visible per interval. Extract as many fields as you can see per interval.
 
 Respond ONLY with a valid JSON object. No explanation, no markdown, no code fences. Just the raw JSON.`;
 
@@ -43,7 +58,7 @@ Respond ONLY with a valid JSON object. No explanation, no markdown, no code fenc
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        max_tokens: 300,
+        max_tokens: 600,
         messages: [{
           role: 'user',
           content: [
@@ -63,12 +78,9 @@ Respond ONLY with a valid JSON object. No explanation, no markdown, no code fenc
     if (!response.ok) {
       const errText = await response.text();
       let userMessage = 'Photo extraction failed — please use manual entry.';
-
-      // Detect quota/billing errors specifically
       if (errText.includes('insufficient_quota') || errText.includes('quota')) {
         userMessage = 'Photo extraction is temporarily unavailable (API quota). Use manual entry below — your photo is saved above for reference.';
       }
-
       return Response.json({
         ok: false,
         fallback: true,
@@ -80,7 +92,6 @@ Respond ONLY with a valid JSON object. No explanation, no markdown, no code fenc
     const result = await response.json();
     const content = result.choices?.[0]?.message?.content?.trim() || '';
 
-    // Parse the JSON response
     let data: Record<string, unknown> = {};
     try {
       const clean = content.replace(/^```json?\s*/i, '').replace(/```\s*$/i, '').trim();

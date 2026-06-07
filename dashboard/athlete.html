@@ -111,6 +111,12 @@
 
     /* INTERVAL ROWS */
     .interval-row{display:grid;grid-template-columns:36px 1fr 1fr 1fr 28px;gap:6px;align-items:center;margin-bottom:6px}
+    .ex-interval-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+    .ex-interval-table th{background:var(--navy);color:#fff;padding:6px 8px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+    .ex-interval-table td{padding:6px 8px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .ex-interval-table tr:last-child td{border-bottom:none}
+    .ex-interval-table input{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:4px 6px;font-size:13px;outline:none;background:#fff}
+    .ex-interval-table input:focus{border-color:var(--blue)}
     .int-num{font-size:11px;font-weight:800;color:var(--muted);text-align:center;background:var(--bg);border-radius:6px;padding:6px 0}
 
     /* TOAST */
@@ -401,7 +407,24 @@
           <div class="field"><label>Avg Split (/500m)</label><input type="text" id="exSplit"/></div>
           <div class="field"><label>Avg Heart Rate</label><input type="number" id="exHr" inputmode="numeric"/></div>
           <div class="field"><label>Stroke Rate</label><input type="number" id="exSr" inputmode="numeric"/></div>
-          <div class="field"><label>Intervals</label><input type="text" id="exIntervals" placeholder="If applicable"/></div>
+          <div class="field"><label>Intervals / Description</label><input type="text" id="exIntervals" placeholder="e.g. 4x4:00 / 3:00r"/></div>
+          <!-- Per-interval split rows (auto-populated from photo) -->
+          <div id="exIntervalSection" style="display:none;margin-bottom:12px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)">Per-Interval Data</div>
+              <button class="btn btn-secondary btn-sm" onclick="addExIntervalRow()" type="button">+ Add Row</button>
+            </div>
+            <table class="ex-interval-table" id="exIntervalTable">
+              <thead><tr>
+                <th>#</th>
+                <th>Distance (m)</th>
+                <th>Time (mm:ss)</th>
+                <th>Split /500m</th>
+                <th></th>
+              </tr></thead>
+              <tbody id="exIntervalBody"></tbody>
+            </table>
+          </div>
           <div class="field"><label>RPE</label>
             <select id="exRpe">
               <option value="">— Select —</option>
@@ -627,6 +650,7 @@ let currentSession = null;
 let exercises = []; // [{name, sets:[{reps,load,rpe}]}]
 let intervalCount = 0;
 let uploadedImageUrl = null;
+let extractedIntervalSplits = [];
 
 // ── INIT ──────────────────────────────────────────────────────────────
 function init() {
@@ -986,19 +1010,49 @@ async function processImageFile(file) {
 
     if (res.ok && res.data && Object.keys(res.data).length > 0) {
       const d = res.data;
+      extractedIntervalSplits = Array.isArray(d.interval_splits) ? d.interval_splits : [];
+
+      // Build interval splits table HTML if we have per-interval data
+      let splitsTableHtml = '';
+      if (extractedIntervalSplits.length > 0) {
+        const hasHr = extractedIntervalSplits.some(s => s.heart_rate);
+        const hasSr = extractedIntervalSplits.some(s => s.stroke_rate);
+        splitsTableHtml = `
+          <div style="margin-top:14px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:6px">Per-Interval Splits</div>
+            <table class="ex-interval-table">
+              <thead><tr>
+                <th>#</th><th>Distance</th><th>Time</th><th>Split /500m</th>
+                ${hasSr ? '<th>S/R</th>' : ''}${hasHr ? '<th>HR</th>' : ''}
+              </tr></thead>
+              <tbody>${extractedIntervalSplits.map((s,i) => `
+                <tr>
+                  <td style="font-weight:700;color:var(--navy)">${s.interval ?? i+1}</td>
+                  <td>${s.distance ? s.distance+'m' : '—'}</td>
+                  <td>${s.time || '—'}</td>
+                  <td>${s.split || '—'}</td>
+                  ${hasSr ? `<td>${s.stroke_rate || '—'}</td>` : ''}
+                  ${hasHr ? `<td>${s.heart_rate ? s.heart_rate+' bpm' : '—'}</td>` : ''}
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`;
+      }
+
       document.getElementById('extractResults').style.display = 'block';
       document.getElementById('extractResults').innerHTML = `
         <div class="extract-card">
           <h3>✅ Data Extracted — Review &amp; Submit</h3>
           <div class="extract-grid">
-            ${d.total_distance ? `<div class="extract-item"><div class="ev">${d.total_distance}m</div><div class="el">Distance</div></div>` : ''}
-            ${d.total_time ? `<div class="extract-item"><div class="ev">${d.total_time}</div><div class="el">Time</div></div>` : ''}
+            ${d.total_distance ? `<div class="extract-item"><div class="ev">${d.total_distance}m</div><div class="el">Total Distance</div></div>` : ''}
+            ${d.total_time ? `<div class="extract-item"><div class="ev">${d.total_time}</div><div class="el">Total Time</div></div>` : ''}
             ${d.avg_split ? `<div class="extract-item"><div class="ev">${d.avg_split}</div><div class="el">Avg Split /500m</div></div>` : ''}
             ${d.avg_heart_rate ? `<div class="extract-item"><div class="ev">${d.avg_heart_rate} bpm</div><div class="el">Avg HR</div></div>` : ''}
             ${d.stroke_rate ? `<div class="extract-item"><div class="ev">${d.stroke_rate} spm</div><div class="el">Stroke Rate</div></div>` : ''}
             ${d.workout_type ? `<div class="extract-item"><div class="ev" style="font-size:14px">${d.workout_type}</div><div class="el">Type</div></div>` : ''}
           </div>
-          <p style="font-size:12px;color:#1a7a3c;margin-top:10px">✏️ Edit any field below then hit Submit.</p>
+          ${splitsTableHtml}
+          <p style="font-size:12px;color:#1a7a3c;margin-top:12px">✏️ Edit any field below then hit Submit.</p>
         </div>`;
       document.getElementById('extractForm').style.display = 'block';
       if (d.workout_type) document.getElementById('exType').value = d.workout_type;
@@ -1008,6 +1062,9 @@ async function processImageFile(file) {
       if (d.avg_heart_rate) document.getElementById('exHr').value = d.avg_heart_rate;
       if (d.stroke_rate) document.getElementById('exSr').value = d.stroke_rate;
       if (d.intervals) document.getElementById('exIntervals').value = d.intervals;
+      if (d.rest_time) document.getElementById('exIntervals').value = d.intervals || '';
+      // Render editable per-interval rows if we have split data
+      renderExIntervalRows(extractedIntervalSplits);
       uploadedImageUrl = res.image_url || null;
     } else {
       // Extraction unavailable — show friendly message and auto-open manual form
@@ -1047,8 +1104,69 @@ function fileToBase64(file) {
   });
 }
 
+function renderExIntervalRows(splits) {
+  const tbody = document.getElementById('exIntervalBody');
+  const section = document.getElementById('exIntervalSection');
+  if (!tbody || !section) return;
+  tbody.innerHTML = '';
+  if (!splits || splits.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  splits.forEach((s, i) => {
+    const n = i + 1;
+    const tr = document.createElement('tr');
+    tr.dataset.idx = n;
+    tr.innerHTML = `
+      <td style="font-weight:700;color:var(--navy);text-align:center">${n}</td>
+      <td><input type="number" inputmode="numeric" id="exInt-dist-${n}" value="${s.distance || ''}" placeholder="m"/></td>
+      <td><input type="text" id="exInt-time-${n}" value="${s.time || ''}" placeholder="mm:ss"/></td>
+      <td><input type="text" id="exInt-split-${n}" value="${s.split || ''}" placeholder="m:ss.t"/></td>
+      <td><button onclick="this.closest('tr').remove();renumberExIntervals()" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 4px">×</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function addExIntervalRow() {
+  const tbody = document.getElementById('exIntervalBody');
+  const section = document.getElementById('exIntervalSection');
+  if (!tbody) return;
+  section.style.display = 'block';
+  const n = tbody.children.length + 1;
+  const tr = document.createElement('tr');
+  tr.dataset.idx = n;
+  tr.innerHTML = `
+    <td style="font-weight:700;color:var(--navy);text-align:center">${n}</td>
+    <td><input type="number" inputmode="numeric" id="exInt-dist-${n}" placeholder="m"/></td>
+    <td><input type="text" id="exInt-time-${n}" placeholder="mm:ss"/></td>
+    <td><input type="text" id="exInt-split-${n}" placeholder="m:ss.t"/></td>
+    <td><button onclick="this.closest('tr').remove();renumberExIntervals()" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 4px">×</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function renumberExIntervals() {
+  const rows = document.getElementById('exIntervalBody').children;
+  Array.from(rows).forEach((tr, i) => {
+    tr.firstElementChild.textContent = i + 1;
+  });
+}
+
+function readExIntervalRows() {
+  const rows = document.getElementById('exIntervalBody')?.children || [];
+  const result = [];
+  Array.from(rows).forEach((tr, i) => {
+    const n = i + 1;
+    const dist = document.getElementById(`exInt-dist-${n}`)?.value;
+    const time = document.getElementById(`exInt-time-${n}`)?.value;
+    const split = document.getElementById(`exInt-split-${n}`)?.value;
+    if (dist || time || split) {
+      result.push({ interval: n, distance: dist ? parseInt(dist) : null, time: time || null, split: split || null });
+    }
+  });
+  return result;
+}
+
 async function submitErgPhoto() {
   if (!currentAthlete) { showToast('Select your name first'); return; }
+  const intervalRows = readExIntervalRows();
   const body = {
     athlete: currentAthlete,
     workout_type: document.getElementById('exType').value || 'Custom',
@@ -1058,6 +1176,7 @@ async function submitErgPhoto() {
     avg_heart_rate: document.getElementById('exHr').value || null,
     stroke_rate: document.getElementById('exSr').value || null,
     intervals: document.getElementById('exIntervals').value || null,
+    interval_splits: intervalRows.length > 0 ? JSON.stringify(intervalRows) : null,
     rpe: document.getElementById('exRpe').value || null,
     notes: document.getElementById('exNotes').value || null,
     image_url: uploadedImageUrl,
@@ -1072,6 +1191,9 @@ async function submitErgPhoto() {
       document.getElementById('uploadZone').classList.remove('has-image');
       document.getElementById('extractResults').style.display = 'none';
       document.getElementById('extractForm').style.display = 'none';
+      document.getElementById('exIntervalBody').innerHTML = '';
+      document.getElementById('exIntervalSection').style.display = 'none';
+      extractedIntervalSplits = [];
       document.getElementById('extractStatus').style.display = 'none';
       uploadedImageUrl = null;
     } else { showToast('❌ Error. Try again.'); }
