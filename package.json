@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@base44/sdk": "^0.8.31"
+  }
+}
