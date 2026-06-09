@@ -383,12 +383,26 @@ async function runScExercise(athletes, out) {
 
     statRows.push({ ath, pb, latestLoad: latest?.avgLoad, latestRpe: latest?.avgRpe, sessions: pts.length, pts, idx });
 
+    // Compute linear regression trend line
+    const trendPts = pts.map((p,i) => ({ i, y: parseFloat(p.avgLoad) })).filter(p => !isNaN(p.y));
+    let trendData;
+    if (trendPts.length >= 2) {
+      const n = trendPts.length;
+      const sumX = trendPts.reduce((a,p)=>a+p.i,0), sumY = trendPts.reduce((a,p)=>a+p.y,0);
+      const sumXY = trendPts.reduce((a,p)=>a+p.i*p.y,0), sumXX = trendPts.reduce((a,p)=>a+p.i*p.i,0);
+      const denom = n*sumXX - sumX*sumX;
+      const m = denom ? (n*sumXY - sumX*sumY)/denom : 0;
+      const b = (sumY - m*sumX)/n;
+      trendData = pts.map((p,i) => ({ x: p.date.slice(5), y: parseFloat((m*i+b).toFixed(1)) }));
+    } else {
+      trendData = pts.map(p => ({ x: p.date.slice(5), y: parseFloat(p.avgLoad) || null }));
+    }
     datasets.push({
       label: ath,
-      data: pts.map(p => ({ x: p.date.slice(5), y: parseFloat(p.avgLoad) || null })),
+      data: trendData,
       borderColor: COLORS[idx],
       backgroundColor: COLORS_BG[idx],
-      fill: false, tension: .35, pointRadius: 4, borderWidth: 2.5, spanGaps: true,
+      fill: false, tension: 0.4, pointRadius: 0, borderWidth: 2.5, spanGaps: true,
     });
   });
 
