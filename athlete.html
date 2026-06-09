@@ -547,6 +547,14 @@
 ═══════════════════════════════════════ -->
 <div class="page" id="page-history">
   <div class="wrap">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <select id="historyTypeSelect" onchange="filterHistoryView()" style="flex:1;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:15px;font-weight:700;color:var(--text);background:#fff;outline:none;cursor:pointer;-webkit-appearance:none">
+        <option value="all">All Sessions</option>
+        <option value="sc">💪 S&amp;C Sessions</option>
+        <option value="erg">🚣 Erg Sessions</option>
+        <option value="water">🌊 Water Sessions</option>
+      </select>
+    </div>
     <div id="historyContent">
       <div style="text-align:center;padding:60px 20px;color:var(--muted)">
         <div style="font-size:32px;margin-bottom:12px">⏳</div>
@@ -622,7 +630,7 @@
         </div>
       </div>
 
-      <button class="btn btn-primary" id="submitWellnessBtn" onclick="submitWellness()">Submit Check-In ❤️</button>
+      <button class="btn btn-primary" id="submitWellnessBtn" onclick="submitWellness()">Submit Check-In ✓</button>
       <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:10px">Shared with your coach — do this before each training day</p>
     </div>
   </div>
@@ -1317,33 +1325,25 @@ async function submitWater() {
 
 // ── HISTORY ──────────────────────────────────────────────────────────
 let historyLoaded = false;
+let _historyScSessions = [];
+let _historyErgSessions = [];
+let _historyWaterSessions = [];
 
-async function loadHistory() {
+function filterHistoryView() {
+  const filter = document.getElementById('historyTypeSelect')?.value || 'all';
   const el = document.getElementById('historyContent');
-  if (!currentAthlete) {
-    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Select your name first</div>';
-    return;
-  }
-  if (historyLoaded) return; // cache until athlete changes
-  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:32px;margin-bottom:12px">⏳</div><div style="font-size:14px;font-weight:600">Loading…</div></div>';
+  if (!el) return;
 
-  try {
-    const [scData, ergData, waterData] = await Promise.all([
-      api('getDashboardData', { view: 'athlete', athlete: currentAthlete }),
-      api('getErgData', { view: 'athlete', athlete: currentAthlete }),
-      api('getWaterData', { athlete: currentAthlete }),
-    ]);
+  const sc = _historyScSessions;
+  const erg = _historyErgSessions;
+  const water = _historyWaterSessions;
 
-    const sessions = scData.sessionHistory || [];
-    const ergSessions = (ergData.sessions || []).slice(0, 20);
-    const waterSessions = (waterData.sessions || []).slice(0, 20);
+  let html = '';
 
-    let html = `<div style="margin-bottom:8px"><span style="font-size:13px;color:var(--muted);font-weight:600">${currentAthlete}'s Session History</span></div>`;
-
-    // S&C sessions
-    if (sessions.length > 0) {
-      html += `<p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:16px 0 8px">💪 S&C Sessions (${sessions.length})</p>`;
-      sessions.forEach(s => {
+  if (filter === 'all' || filter === 'sc') {
+    if (sc.length > 0) {
+      html += `<p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 8px">💪 S&C Sessions (${sc.length})</p>`;
+      sc.forEach(s => {
         const rpeClass = (s.avgRpe||0)>=8.5?'color:#e63946':(s.avgRpe||0)>=7.5?'color:#f59e0b':'color:#22c55e';
         const exList = (s.exercises||[]).slice(0,4).join(', ') + (s.exercises?.length>4?` +${s.exercises.length-4}`:'');
         html += `<div onclick="openEditSession('${s.date}','${s.session_type}')" style="background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.07);cursor:pointer;transition:box-shadow .15s" onmouseover="this.style.boxShadow='0 4px 12px rgba(7,18,43,.15)'" onmouseout="this.style.boxShadow='0 1px 4px rgba(0,0,0,.07)'">
@@ -1362,12 +1362,15 @@ async function loadHistory() {
           </div>
         </div>`;
       });
+    } else if (filter === 'sc') {
+      html += '<div style="text-align:center;padding:40px;color:var(--muted)">No S&C sessions logged yet</div>';
     }
+  }
 
-    // Erg sessions
-    if (ergSessions.length > 0) {
-      html += `<p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:16px 0 8px">🚣 Erg Sessions (${ergSessions.length})</p>`;
-      ergSessions.forEach(s => {
+  if (filter === 'all' || filter === 'erg') {
+    if (erg.length > 0) {
+      html += `<p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:${filter==='all'?'16px':'0'} 0 8px">🚣 Erg Sessions (${erg.length})</p>`;
+      erg.forEach(s => {
         const dist = s.total_distance ? (s.total_distance>=1000?(s.total_distance/1000).toFixed(1)+'km':s.total_distance+'m') : '—';
         html += `<div style="background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.07)">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
@@ -1381,12 +1384,15 @@ async function loadHistory() {
           </div>
         </div>`;
       });
+    } else if (filter === 'erg') {
+      html += '<div style="text-align:center;padding:40px;color:var(--muted)">No erg sessions logged yet</div>';
     }
+  }
 
-    // Water sessions
-    if (waterSessions.length > 0) {
-      html += `<p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:16px 0 8px">🌊 Water Sessions (${waterSessions.length})</p>`;
-      waterSessions.forEach(s => {
+  if (filter === 'all' || filter === 'water') {
+    if (water.length > 0) {
+      html += `<p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:${filter==='all'?'16px':'0'} 0 8px">🌊 Water Sessions (${water.length})</p>`;
+      water.forEach(s => {
         html += `<div style="background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,.07)">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span style="font-weight:800;font-size:14px">${s.timestamp?.slice(0,10)||'—'}</span>
@@ -1401,14 +1407,44 @@ async function loadHistory() {
           ${s.athlete_notes?`<div style="font-size:11px;color:var(--muted);margin-top:6px;font-style:italic">"${s.athlete_notes}"</div>`:''}
         </div>`;
       });
+    } else if (filter === 'water') {
+      html += '<div style="text-align:center;padding:40px;color:var(--muted)">No water sessions logged yet</div>';
     }
+  }
 
-    if (!sessions.length && !ergSessions.length && !waterSessions.length) {
-      html = '<div style="text-align:center;padding:60px 20px;color:var(--muted)"><div style="font-size:36px;margin-bottom:12px">📭</div><div style="font-weight:700;font-size:15px">No sessions yet</div><div style="font-size:13px;margin-top:6px">Log a session to see your history here</div></div>';
-    }
+  if (!html) {
+    html = '<div style="text-align:center;padding:60px 20px;color:var(--muted)"><div style="font-size:36px;margin-bottom:12px">📭</div><div style="font-weight:700;font-size:15px">No sessions yet</div><div style="font-size:13px;margin-top:6px">Log a session to see your history here</div></div>';
+  }
 
-    el.innerHTML = html;
+  el.innerHTML = html;
+}
+
+async function loadHistory() {
+  const el = document.getElementById('historyContent');
+  if (!currentAthlete) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Select your name first</div>';
+    return;
+  }
+  if (historyLoaded) return; // cache until athlete changes
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:32px;margin-bottom:12px">⏳</div><div style="font-size:14px;font-weight:600">Loading…</div></div>';
+
+  try {
+    const [scData, ergData, waterData] = await Promise.all([
+      api('getDashboardData', { view: 'athlete', athlete: currentAthlete }),
+      api('getErgData', { view: 'athlete', athlete: currentAthlete }),
+      api('getWaterData', { athlete: currentAthlete }),
+    ]);
+
+    _historyScSessions = scData.sessionHistory || [];
+    _historyErgSessions = (ergData.sessions || []);
+    _historyWaterSessions = (waterData.sessions || []);
+
+    const sessions = _historyScSessions;
+    const ergSessions = _historyErgSessions;
+    const waterSessions = _historyWaterSessions;
+
     historyLoaded = true;
+    filterHistoryView();
   } catch(e) {
     el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">Failed to load history: ${e.message}</div>`;
   }
@@ -1461,7 +1497,7 @@ async function submitWellness() {
   } catch(e) {
     showToast('❌ Network error. Try again.');
   }
-  btn.disabled = false; btn.textContent = 'Submit Check-In ❤️';
+  btn.disabled = false; btn.textContent = 'Submit Check-In ✓';
 }
 
 function resetWellness() {

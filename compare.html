@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cranbrook SC — Athlete Comparison</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#07122b; --royal:#1a56db; --sky:#3b82f6; --red:#e63946;
+    --bg:#f0f4f8; --card:#fff; --border:#e2e8f0; --muted:#6b7280;
+    --text:#1a202c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--text);min-height:100vh}
+
+  /* ── HEADER ── */
+  .header{background:var(--navy);padding:0 24px;display:flex;align-items:center;gap:16px;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+  .header-logo{color:#fff;font-size:17px;font-weight:800;letter-spacing:.5px;white-space:nowrap}
+  .header-logo span{color:var(--red)}
+  .back-btn{color:#94a3b8;text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border:1px solid rgba(255,255,255,.15);border-radius:6px;transition:all .2s;white-space:nowrap}
+  .back-btn:hover{color:#fff;border-color:rgba(255,255,255,.4)}
+  .header-spacer{flex:1}
+  .page-title{color:#94a3b8;font-size:13px;font-weight:600}
+
+  /* ── LAYOUT ── */
+  .page{max-width:1200px;margin:0 auto;padding:24px 20px}
+
+  /* ── ATHLETE SELECTOR CARD ── */
+  .ath-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+  .ath-col label{display:block;font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px}
+  .ath-col select{width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;outline:none;cursor:pointer;background:#fff;transition:border-color .2s}
+  .ath-col select:focus{border-color:var(--royal)}
+
+  /* ── MODE TABS ── */
+  .mode-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}
+  .mode-btn{padding:9px 20px;border:2px solid var(--border);border-radius:24px;background:#fff;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
+  .mode-btn.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .mode-btn:hover:not(.active){border-color:var(--royal);color:var(--royal)}
+
+  /* ── CARDS ── */
+  .card{background:#fff;border-radius:14px;padding:20px;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+  .card-title{font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+  .section-label{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:22px 0 10px;padding-left:2px}
+
+  /* ── CONTROLS ROW ── */
+  .controls-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:16px 20px}
+  .ctrl-group label{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+  .ctrl-group input, .ctrl-group select{padding:9px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-weight:600;outline:none;background:#fff}
+  .ctrl-group input:focus, .ctrl-group select:focus{border-color:var(--royal)}
+  .run-btn{padding:10px 24px;background:var(--red);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;transition:opacity .2s;white-space:nowrap}
+  .run-btn:hover{opacity:.88}
+
+  /* ── STAT CARDS ── */
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+  .stat-card{background:#fff;border-radius:12px;padding:16px;border-left:4px solid #ccc;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .stat-card .ath-name{font-size:11px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+  .stat-card .stat-main{font-size:24px;font-weight:800;color:var(--navy);line-height:1.1}
+  .stat-card .stat-sub{font-size:11px;color:var(--muted);margin-top:3px}
+  .stat-card .stat-detail{font-size:12px;margin-top:6px}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+  /* ── COMPARISON TABLE ── */
+  .cmp-table{width:100%;border-collapse:collapse;font-size:13px}
+  .cmp-table th{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:10px 14px;border-bottom:2px solid var(--border);text-align:left;background:#f8fafc}
+  .cmp-table td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+  .cmp-table tr:last-child td{border-bottom:none}
+  .cmp-table tr:hover td{background:#f8fafc}
+  .best-val{font-weight:800;color:var(--navy)}
+  .trophy{font-size:12px;margin-left:4px}
+  .pb-badge{display:inline-block;font-size:9px;padding:2px 6px;border-radius:8px;font-weight:700;background:#fef3c7;color:#d97706;margin-left:5px}
+  .na-val{color:#c0c0c0;font-style:italic}
+
+  /* ── CHART WRAPPER ── */
+  .chart-wrap{position:relative;padding:20px}
+
+  /* ── LOADING / EMPTY ── */
+  .spinner{display:inline-block;width:28px;height:28px;border:3px solid rgba(26,86,219,.15);border-top-color:var(--royal);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-box{text-align:center;padding:60px 20px;color:var(--muted)}
+  .empty-box{text-align:center;padding:40px;color:var(--muted);font-size:13px}
+
+  /* ── PB TRACK ── */
+  .pb-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .pb-row:last-child{border-bottom:none}
+  .pb-label{font-size:13px;font-weight:600;flex:1}
+  .pb-val{font-size:13px;font-weight:700}
+  .pb-hist{font-size:11px;color:var(--muted);margin-left:auto}
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:640px){
+    .page{padding:16px 12px}
+    .ath-grid{grid-template-columns:1fr 1fr}
+    .controls-row{flex-direction:column;align-items:stretch}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="index.html" class="back-btn">← Coach Dashboard</a>
+  <div class="header-logo">CRANBROOK <span>SC</span></div>
+  <div class="header-spacer"></div>
+  <div class="page-title">⚖️ Athlete Comparison</div>
+</div>
+
+<div class="page">
+
+  <!-- ── ATHLETE SELECTORS ── -->
+  <div class="section-label">Select Athletes to Compare (up to 4)</div>
+  <div class="card" style="padding:18px 20px">
+    <div class="ath-grid" id="athSelectors">
+      <div style="text-align:center;padding:20px;color:var(--muted)">Loading athletes…</div>
+    </div>
+  </div>
+
+  <!-- ── MODE TABS ── -->
+  <div class="mode-tabs">
+    <button class="mode-btn active" id="btn-sc-exercise" onclick="setMode('sc-exercise')">💪 S&C Exercise</button>
+    <button class="mode-btn" id="btn-sc-totals"   onclick="setMode('sc-totals')">📊 S&C Totals</button>
+    <button class="mode-btn" id="btn-erg"          onclick="setMode('erg')">🚣 Erg</button>
+    <button class="mode-btn" id="btn-water"        onclick="setMode('water')">🌊 Water</button>
+    <button class="mode-btn" id="btn-testing"      onclick="setMode('testing')">📋 Testing</button>
+    <button class="mode-btn" id="btn-pbs"          onclick="setMode('pbs')">🏆 PBs &amp; Time Trials</button>
+  </div>
+
+  <!-- ── CONTROLS ── -->
+  <div class="card" id="controlsCard" style="padding:0">
+    <div class="controls-row" id="controlsRow">
+      <!-- Injected per mode -->
+    </div>
+  </div>
+
+  <!-- ── OUTPUT ── -->
+  <div id="output">
+    <div class="loading-box"><div class="spinner"></div><br>Loading data…</div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════════════════════
+const API_SC    = 'https://superagent-84188511.base44.app/functions/getDashboardData';
+const API_ERG   = 'https://superagent-84188511.base44.app/functions/getErgData';
+const API_TEST  = 'https://superagent-84188511.base44.app/functions/getTestingData';
+const API_WATER = 'https://superagent-84188511.base44.app/functions/getWaterData';
+
+const COLORS    = ['#1a56db','#e63946','#22c55e','#f59e0b'];
+const COLORS_BG = ['rgba(26,86,219,.14)','rgba(230,57,70,.14)','rgba(34,197,94,.14)','rgba(245,158,11,.14)'];
+const ATHLETES  = ['AF','RR','JC','MA','TL','CC','SK','AS','HM','TD'];
+
+const SESSION_EXERCISES = {
+  'Lower A': ['Trap Bar Deadlift','Barbell Back Squat','Romanian Deadlift','Leg Press','Nordic Curl','Calf Raise'],
+  'Lower B': ['Barbell Back Squat','Bulgarian Split Squat','Trap Bar Deadlift','Leg Curl','GHD Hold','Hip Thrust'],
+  'Upper A': ['Bench Press','Bench Pull','Chin Up','Dumbbell Row','Shoulder Press','Biceps Curl'],
+  'Upper B': ['Incline Bench Press','Bent Over Row','Lat Pulldown','Cable Row','Tricep Pushdown','Face Pull'],
+};
+const ALL_EXERCISES = [...new Set(Object.values(SESSION_EXERCISES).flat())];
+
+let _mode = 'sc-exercise';
+let _charts = {};
+let _cache = {};
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async () => {
+  buildAthleteSelectors();
+  await prefetchData();
+  setMode('sc-exercise');
+});
+
+function buildAthleteSelectors() {
+  const opts = `<option value="">— None —</option>` +
+    ATHLETES.map(a => `<option value="${a}">${a}</option>`).join('');
+  document.getElementById('athSelectors').innerHTML = [0,1,2,3].map(i => `
+    <div class="ath-col">
+      <label style="color:${COLORS[i]}">
+        <span class="dot" style="background:${COLORS[i]}"></span>
+        Athlete ${i+1}
+      </label>
+      <select id="ath${i}" onchange="runCurrent()">${opts}</select>
+    </div>
+  `).join('');
+  // Defaults: first two selected
+  document.getElementById('ath0').value = ATHLETES[0];
+  document.getElementById('ath1').value = ATHLETES[1];
+}
+
+async function prefetchData() {
+  try {
+    const [sc, erg, water, test] = await Promise.all([
+      post(API_SC, {}),
+      post(API_ERG, {}),
+      post(API_WATER, {}),
+      post(API_TEST, {}),
+    ]);
+    _cache.sc    = sc;
+    _cache.erg   = erg;
+    _cache.water = water;
+    _cache.test  = test;
+  } catch(e) {
+    console.warn('Prefetch failed', e);
+  }
+}
+
+async function post(url, body) {
+  const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error(`${url} → ${r.status}`);
+  return r.json();
+}
+
+function getSelectedAthletes() {
+  return [0,1,2,3].map(i => document.getElementById(`ath${i}`)?.value).filter(Boolean);
+}
+
+function destroyCharts() {
+  Object.values(_charts).forEach(c => { try { c.destroy(); } catch(_){} });
+  _charts = {};
+}
+
+function setMode(mode) {
+  _mode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`btn-${mode}`)?.classList.add('active');
+  renderControls(mode);
+  runCurrent();
+}
+
+function runCurrent() { run(_mode); }
+
+// ══════════════════════════════════════════════════════════════
+// CONTROLS
+// ══════════════════════════════════════════════════════════════
+function renderControls(mode) {
+  const today = new Date().toISOString().slice(0,10);
+  const d28   = new Date(); d28.setDate(d28.getDate()-28);
+  const from28 = d28.toISOString().slice(0,10);
+
+  const ctrl = document.getElementById('controlsRow');
+  const card = document.getElementById('controlsCard');
+
+  if (mode === 'sc-exercise') {
+    ctrl.innerHTML = `
+      <div class="ctrl-group">
+        <label>Session Type</label>
+        <select id="ctrlSessionType" onchange="updateExerciseList()">
+          <option value="">All</option>
+          ${Object.keys(SESSION_EXERCISES).map(s=>`<option>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>Exercise</label>
+        <select id="ctrlExercise">
+          ${ALL_EXERCISES.map(e=>`<option>${e}</option>`).join('')}
+        </select>
+      </div>
+      <button class="run-btn" onclick="run('sc-exercise')">Compare →</button>
+    `;
+    card.style.display = '';
+  } else if (mode === 'sc-totals') {
+    ctrl.innerHTML = `
+      <div class="ctrl-group"><label>From</label><input type="date" id="ctrlFrom" value="${from28}"></div>
+      <div class="ctrl-group"><label>To</label><input type="date" id="ctrlTo" value="${today}"></div>
+      <div class="ctrl-group">
+        <label>Session Type</label>
+        <select id="ctrlSessionType">
+          <option value="">All</option>
+          ${Object.keys(SESSION_EXERCISES).map(s=>`<option>${s}</option>`).join('')}
+        </select>
+      </div>
+      <button class="run-btn" onclick="run('sc-totals')">Compare →</button>
+    `;
+    card.style.display = '';
+  } else if (mode === 'erg') {
+    ctrl.innerHTML = `
+      <div class="ctrl-group"><label>From</label><input type="date" id="ctrlFrom" value="${from28}"></div>
+      <div class="ctrl-group"><label>To</label><input type="date" id="ctrlTo" value="${today}"></div>
+      <div class="ctrl-group">
+        <label>Workout Type</label>
+        <select id="ctrlErgType">
+          <option value="">All</option>
+          <option>Time Trial</option><option>Steady State</option><option>Intervals</option><option>Race Piece</option>
+        </select>
+      </div>
+      <button class="run-btn" onclick="run('erg')">Compare →</button>
+    `;
+    card.style.display = '';
+  } else if (mode === 'water') {
+    ctrl.innerHTML = `
+      <div class="ctrl-group"><label>From</label><input type="date" id="ctrlFrom" value="${from28}"></div>
+      <div class="ctrl-group"><label>To</label><input type="date" id="ctrlTo" value="${today}"></div>
+      <button class="run-btn" onclick="run('water')">Compare →</button>
+    `;
+    card.style.display = '';
+  } else if (mode === 'testing') {
+    ctrl.innerHTML = ``;
+    card.style.display = 'none';
+  } else if (mode === 'pbs') {
+    ctrl.innerHTML = ``;
+    card.style.display = 'none';
+  }
+}
+
+function updateExerciseList() {
+  const st = document.getElementById('ctrlSessionType')?.value;
+  const exSel = document.getElementById('ctrlExercise');
+  if (!exSel) return;
+  const list = st ? SESSION_EXERCISES[st] : ALL_EXERCISES;
+  exSel.innerHTML = list.map(e=>`<option>${e}</option>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// RUNNER
+// ══════════════════════════════════════════════════════════════
+async function run(mode) {
+  destroyCharts();
+  const athletes = getSelectedAthletes();
+  const out = document.getElementById('output');
+
+  if (!athletes.length) {
+    out.innerHTML = `<div class="empty-box">Select at least one athlete above to compare.</div>`;
+    return;
+  }
+
+  out.innerHTML = `<div class="loading-box"><div class="spinner"></div><br>Loading…</div>`;
+
+  try {
+    if      (mode === 'sc-exercise') await runScExercise(athletes, out);
+    else if (mode === 'sc-totals')   await runScTotals(athletes, out);
+    else if (mode === 'erg')         await runErg(athletes, out);
+    else if (mode === 'water')       await runWater(athletes, out);
+    else if (mode === 'testing')     await runTesting(athletes, out);
+    else if (mode === 'pbs')         await runPbs(athletes, out);
+  } catch(e) {
+    out.innerHTML = `<div class="card"><div style="color:var(--red);text-align:center;padding:40px">${e.message}</div></div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// S&C EXERCISE COMPARISON
+// ══════════════════════════════════════════════════════════════
+async function runScExercise(athletes, out) {
+  const exercise = document.getElementById('ctrlExercise')?.value || ALL_EXERCISES[0];
+
+  const results = await Promise.all(athletes.map(a =>
+    post(API_SC, { view:'athlete', athlete:a })
+  ));
+
+  const datasets = [];
+  const statRows = [];
+
+  results.forEach((d, idx) => {
+    const ath = athletes[idx];
+    const ep = (d.exerciseProgressions || d.logs ? null : null);
+    // Use logs directly for flexibility
+    const logs = (d.logs || []).filter(l => l.exercise?.toLowerCase() === exercise.toLowerCase());
+
+    // Group by date
+    const byDate = {};
+    logs.forEach(l => {
+      const date = l.timestamp?.slice(0,10);
+      if (!date) return;
+      if (!byDate[date]) byDate[date] = { loads:[], rpes:[] };
+      const load = parseFloat(l.load);
+      if (!isNaN(load) && load > 0) byDate[date].loads.push(load);
+      if (l.rpe) byDate[date].rpes.push(parseFloat(l.rpe));
+    });
+
+    const pts = Object.entries(byDate).sort(([a],[b])=>a.localeCompare(b)).map(([date, v]) => ({
+      date,
+      avgLoad: v.loads.length ? (v.loads.reduce((a,b)=>a+b,0)/v.loads.length).toFixed(1) : null,
+      maxLoad: v.loads.length ? Math.max(...v.loads) : null,
+      avgRpe:  v.rpes.length  ? (v.rpes.reduce((a,b)=>a+b,0)/v.rpes.length).toFixed(1)  : null,
+      sets: Object.values(byDate[date]).length,
+    }));
+
+    const allLoads = pts.map(p => parseFloat(p.maxLoad)).filter(v => !isNaN(v));
+    const pb       = allLoads.length ? Math.max(...allLoads) : null;
+    const latest   = pts.length ? pts[pts.length-1] : null;
+
+    statRows.push({ ath, pb, latestLoad: latest?.avgLoad, latestRpe: latest?.avgRpe, sessions: pts.length, pts, idx });
+
+    // Compute linear regression trend line
+    const trendPts = pts.map((p,i) => ({ i, y: parseFloat(p.avgLoad) })).filter(p => !isNaN(p.y));
+    let trendData;
+    if (trendPts.length >= 2) {
+      const n = trendPts.length;
+      const sumX = trendPts.reduce((a,p)=>a+p.i,0), sumY = trendPts.reduce((a,p)=>a+p.y,0);
+      const sumXY = trendPts.reduce((a,p)=>a+p.i*p.y,0), sumXX = trendPts.reduce((a,p)=>a+p.i*p.i,0);
+      const denom = n*sumXX - sumX*sumX;
+      const m = denom ? (n*sumXY - sumX*sumY)/denom : 0;
+      const b = (sumY - m*sumX)/n;
+      trendData = pts.map((p,i) => ({ x: p.date.slice(5), y: parseFloat((m*i+b).toFixed(1)) }));
+    } else {
+      trendData = pts.map(p => ({ x: p.date.slice(5), y: parseFloat(p.avgLoad) || null }));
+    }
+    datasets.push({
+      label: ath,
+      data: trendData,
+      borderColor: COLORS[idx],
+      backgroundColor: COLORS_BG[idx],
+      fill: false, tension: 0.4, pointRadius: 0, borderWidth: 2.5, spanGaps: true,
+    });
+  });
+
+  const bestPbIdx = indexOfBest(statRows.map(r => r.pb));
+
+  // Stat cards
+  let html = statCardsHTML(statRows.map((r,i) => ({
+    color: COLORS[i], ath: r.ath,
+    main: r.pb != null ? r.pb+'kg' : '—',
+    sub: `PB load · ${r.sessions} sessions`,
+    detail: `Latest: <strong>${r.latestLoad ?? '—'}kg</strong> · RPE ${r.latestRpe ?? '—'}`,
+    isBest: i === bestPbIdx,
+  })));
+
+  html += `<div class="section-label">${exercise} — Load Progression</div>`;
+  html += `<div class="card"><div class="chart-wrap"><canvas id="chart1" height="90"></canvas></div></div>`;
+
+  html += `<div class="section-label">Detailed Breakdown</div>`;
+  html += `<div class="card" style="padding:0;overflow:hidden">
+    <table class="cmp-table">
+      <thead><tr><th>Athlete</th><th>PB Load</th><th>Latest Avg Load</th><th>Latest RPE</th><th>Sessions</th></tr></thead>
+      <tbody>
+        ${statRows.map((r,i)=>`<tr>
+          <td><span class="dot" style="background:${COLORS[i]};margin-right:6px"></span><strong>${r.ath}</strong></td>
+          <td class="${i===bestPbIdx?'best-val':''}">${r.pb!=null?r.pb+'kg':'—'}${i===bestPbIdx?'<span class="trophy">🏆</span>':''}</td>
+          <td>${r.latestLoad!=null?r.latestLoad+'kg':'—'}</td>
+          <td>${r.latestRpe??'—'}</td>
+          <td>${r.sessions}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+
+  out.innerHTML = html;
+
+  const ctx = document.getElementById('chart1')?.getContext('2d');
+  if (ctx) {
+    _charts.chart1 = new Chart(ctx, {
+      type:'line', data:{ datasets },
+      options:{
+        responsive:true,
+        interaction:{ mode:'index', intersect:false },
+        plugins:{ legend:{ labels:{ color:'#6b7280', boxWidth:12 } } },
+        scales:{
+          y:{ grid:{color:'rgba(0,0,0,.05)'}, ticks:{color:'#6b7280'}, title:{display:true,text:'Avg Load (kg)',color:'#6b7280'} },
+          x:{ type:'category', grid:{display:false}, ticks:{color:'#6b7280', maxTicksLimit:12} }
+        }
+      }
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// S&C TOTALS COMPARISON
+// ══════════════════════════════════════════════════════════════
+async function runScTotals(athletes, out) {
+  const from = document.getElementById('ctrlFrom')?.value;
+  const to   = document.getElementById('ctrlTo')?.value;
+  const st   = document.getElementById('ctrlSessionType')?.value;
+
+  const results = await Promise.all(athletes.map(a =>
+    post(API_SC, { view:'athlete', athlete:a })
+  ));
+
+  const summaries = results.map((d, idx) => {
+    let logs = d.logs || [];
+    if (from) logs = logs.filter(l => l.timestamp >= from);
+    if (to)   logs = logs.filter(l => l.timestamp <= to + 'T23:59:59');
+    if (st)   logs = logs.filter(l => l.session_type === st);
+
+    const ath = athletes[idx];
+    const sessionKeys = new Set(logs.map(l => l.timestamp?.slice(0,10)+'_'+l.session_type));
+    const sessions   = sessionKeys.size;
+    const totalSets  = logs.length;
+    const totalReps  = logs.reduce((a,l) => a + (parseFloat(l.reps)||0), 0);
+    const logsWithLoad = logs.filter(l => parseFloat(l.load) > 0);
+    const totalVol   = logs.reduce((a,l) => {
+      const load = parseFloat(l.load); return a + (isNaN(load)||load<=0?0 : load*(parseFloat(l.reps)||1));
+    }, 0);
+    const avgRpe    = logs.length ? +(logs.reduce((a,l)=>a+(parseFloat(l.rpe)||0),0)/logs.length).toFixed(1) : null;
+    const avgLoad   = logsWithLoad.length ? +(logsWithLoad.reduce((a,l)=>a+(parseFloat(l.load)||0),0)/logsWithLoad.length).toFixed(1) : null;
+
+    // Weekly trend: volume by week
+    const byWeek = {};
+    logs.forEach(l => {
+      const d = new Date(l.timestamp);
+      const wd = new Date(d); wd.setDate(d.getDate() - d.getDay());
+      const wk = wd.toISOString().slice(0,10);
+      if (!byWeek[wk]) byWeek[wk] = 0;
+      const load = parseFloat(l.load); const reps = parseFloat(l.reps)||1;
+      if (!isNaN(load) && load>0) byWeek[wk] += load*reps;
+    });
+    const weeklyVol = Object.entries(byWeek).sort(([a],[b])=>a.localeCompare(b)).map(([w,v])=>({w,v:Math.round(v)}));
+
+    return { ath, sessions, totalSets, totalReps, totalVol:Math.round(totalVol), avgRpe, avgLoad, weeklyVol };
+  });
+
+  const metrics = [
+    { key:'sessions',  label:'Sessions',          suffix:'',  lowerBetter:false },
+    { key:'totalSets', label:'Total Sets',         suffix:'',  lowerBetter:false },
+    { key:'totalReps', label:'Total Reps',         suffix:'',  lowerBetter:false },
+    { key:'totalVol',  label:'Volume Load (kg)',   suffix:'kg',lowerBetter:false },
+    { key:'avgLoad',   label:'Avg Load per Set',   suffix:'kg',lowerBetter:false },
+    { key:'avgRpe',    label:'Avg RPE',            suffix:'',  lowerBetter:false },
+  ];
+
+  const range = from && to ? `${from} → ${to}` : 'All time';
+  const bestVolIdx = indexOfBest(summaries.map(s=>s.totalVol));
+
+  let html = statCardsHTML(summaries.map((s,i)=>({
+    color: COLORS[i], ath: s.ath,
+    main: s.sessions+'',
+    sub: `sessions · ${s.totalSets} sets`,
+    detail: `Vol: <strong>${s.totalVol.toLocaleString()}kg</strong> · Avg RPE ${s.avgRpe??'—'}`,
+    isBest: i===bestVolIdx,
+  })));
+
+  html += `<div class="section-label">S&C Totals — ${range}${st?' · '+st:''}</div>`;
+  html += `<div class="card"><div class="chart-wrap"><canvas id="chart1" height="70"></canvas></div></div>`;
+
+  html += `<div class="section-label">Weekly Volume Trend</div>`;
+  html += `<div class="card"><div class="chart-wrap"><canvas id="chart2" height="80"></canvas></div></div>`;
+
+  html += `<div class="section-label">Full Metrics Breakdown</div>`;
+  let tableHTML = `<table class="cmp-table"><thead><tr><th>Metric</th>
+    ${summaries.map((s,i)=>`<th><span class="dot" style="background:${COLORS[i]};margin-right:5px"></span>${s.ath}</th>`).join('')}
+  </tr></thead><tbody>`;
+  metrics.forEach(m => {
+    const vals = summaries.map(s=>parseFloat(s[m.key])||0);
+    const bestIdx = indexOfBest(vals, m.lowerBetter);
+    tableHTML += `<tr><td style="font-weight:700;color:var(--navy)">${m.label}</td>`;
+    summaries.forEach((s,i)=>{
+      const v=s[m.key]; const isBest=i===bestIdx&&v!=null;
+      tableHTML+=`<td class="${isBest?'best-val':''}">${v!=null?(Number(v).toLocaleString())+(m.suffix?m.suffix:''):''} ${isBest?'🏆':''}</td>`;
+    });
+    tableHTML += '</tr>';
+  });
+  tableHTML += '</tbody></table>';
+  html += `<div class="card" style="padding:0;overflow:hidden">${tableHTML}</div>`;
+
+  out.innerHTML = html;
+
+  // Bar chart: summary metrics
+  const chart1ctx = document.getElementById('chart1')?.getContext('2d');
+  if (chart1ctx) {
+    _charts.chart1 = new Chart(chart1ctx, {
+      type:'bar',
+      data:{
+        labels:['Sessions','Total Sets','Total Reps','Avg RPE×10'],
+        datasets: summaries.map((s,i)=>({
+          label:s.ath,
+          data:[s.sessions,s.totalSets,s.totalReps,Math.round((s.avgRpe||0)*10)],
+          backgroundColor:COLORS_BG[i], borderColor:COLORS[i], borderWidth:2, borderRadius:6,
+        }))
+      },
+      options:{
+        responsive:true, plugins:{legend:{labels:{color:'#6b7280',boxWidth:12}}},
+        scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#6b7280'}},x:{grid:{display:false},ticks:{color:'#6b7280'}}}
+      }
+    });
+  }
+
+  // Line: weekly volume trend
+  const chart2ctx = document.getElementById('chart2')?.getContext('2d');
+  if (chart2ctx) {
+    const allWeeks = [...new Set(summaries.flatMap(s=>s.weeklyVol.map(w=>w.w)))].sort();
+    _charts.chart2 = new Chart(chart2ctx, {
+      type:'line',
+      data:{
+        labels:allWeeks.map(w=>w.slice(5)),
+        datasets: summaries.map((s,i)=>({
+          label:s.ath,
+          data:allWeeks.map(w=>{const pt=s.weeklyVol.find(v=>v.w===w); return pt?pt.v:null;}),
+          borderColor:COLORS[i], backgroundColor:COLORS_BG[i],
+          fill:false, tension:.35, pointRadius:3, borderWidth:2.5, spanGaps:true,
+        }))
+      },
+      options:{
+        responsive:true,
+        interaction:{mode:'index',intersect:false},
+        plugins:{legend:{labels:{color:'#6b7280',boxWidth:12}}},
+        scales:{
+          y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#6b7280'},title:{display:true,text:'Volume Load (kg)',color:'#6b7280'}},
+          x:{grid:{display:false},ticks:{color:'#6b7280',maxTicksLimit:12}}
+        }
+      }
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// ERG COMPARISON
+// ══════════════════════════════════════════════════════════════
+async function runErg(athletes, out) {
+  const from   = document.getElementById('ctrlFrom')?.value;
+  const to     = document.getElementById('ctrlTo')?.value;
+  const ergType= document.getElementById('ctrlErgType')?.value;
+
+  const data = _cache.erg || await post(API_ERG, {});
+  const allSessions = data.sessions || data.ergSessions || [];
+
+  const summaries = athletes.map((ath,idx) => {
+    let rows = allSessions.filter(s => s.athlete === ath);
+    if (from) rows = rows.filter(s => s.timestamp >= from);
+    if (to)   rows = rows.filter(s => s.timestamp <= to+'T23:59:59');
+    if (ergType) rows = rows.filter(s => s.workout_type?.toLowerCase().includes(ergType.toLowerCase()));
+
+    const sessions = rows.length;
+    const totalDist = rows.reduce((a,s) => a+(parseFloat(s.total_distance)||0), 0);
+    const splits = rows.map(s => splitToSecs(s.avg_split)).filter(v=>v>0);
+    const avgSplit = splits.length ? splits.reduce((a,b)=>a+b,0)/splits.length : null;
+    const bestSplit= splits.length ? Math.min(...splits) : null;
+    const avgHR    = rows.filter(s=>s.avg_heart_rate).length ?
+      rows.filter(s=>s.avg_heart_rate).reduce((a,s)=>a+(parseFloat(s.avg_heart_rate)||0),0)/rows.filter(s=>s.avg_heart_rate).length : null;
+    const avgRpe   = rows.filter(s=>s.rpe).length ?
+      rows.filter(s=>s.rpe).reduce((a,s)=>a+(parseFloat(s.rpe)||0),0)/rows.filter(s=>s.rpe).length : null;
+
+    // PB split (fastest ever)
+    const allSplits = allSessions.filter(s=>s.athlete===ath).map(s=>splitToSecs(s.avg_split)).filter(v=>v>0);
+    const pbSplit   = allSplits.length ? Math.min(...allSplits) : null;
+
+    // Time series: avg split over time
+    const sorted = [...rows].sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
+    const timeSeries = sorted.map(s=>({
+      date: s.timestamp?.slice(0,10), split:splitToSecs(s.avg_split), dist:parseFloat(s.total_distance)||0
+    }));
+
+    return { ath, idx, sessions, totalDist:Math.round(totalDist), avgSplit, bestSplit, pbSplit, avgHR:avgHR?+avgHR.toFixed(0):null, avgRpe:avgRpe?+avgRpe.toFixed(1):null, timeSeries };
+  });
+
+  const bestSplitIdx = indexOfBest(summaries.map(s=>s.bestSplit), true); // lower = better
+  const bestPbIdx    = indexOfBest(summaries.map(s=>s.pbSplit), true);
+
+  let html = statCardsHTML(summaries.map((s,i)=>({
+    color:COLORS[i], ath:s.ath,
+    main: s.bestSplit ? secsToSplit(s.bestSplit)+'/500m' : '—',
+    sub: `Best split in period · ${s.sessions} sessions`,
+    detail: `PB: <strong>${s.pbSplit?secsToSplit(s.pbSplit)+'<small>/500m</small>':'—'}</strong> · ${Math.round(s.totalDist/1000)}km total`,
+    isBest: i===bestSplitIdx,
+  })));
+
+  html += `<div class="section-label">Avg Split Over Time</div>`;
+  html += `<div class="card"><div class="chart-wrap"><canvas id="chart1" height="90"></canvas></div></div>`;
+
+  html += `<div class="section-label">Erg Metrics Breakdown</div>`;
+  const metrics = [
+    {key:'sessions',   label:'Sessions',        suffix:'',     lowerBetter:false},
+    {key:'totalDist',  label:'Total Distance',  suffix:'m',    lowerBetter:false},
+    {key:'avgSplit',   label:'Avg Split',       fmt:secsToSplit,lowerBetter:true,suffix:'/500m'},
+    {key:'bestSplit',  label:'Best Split',      fmt:secsToSplit,lowerBetter:true,suffix:'/500m'},
+    {key:'pbSplit',    label:'All-Time PB Split',fmt:secsToSplit,lowerBetter:true,suffix:'/500m'},
+    {key:'avgHR',      label:'Avg Heart Rate',  suffix:'bpm',  lowerBetter:false},
+    {key:'avgRpe',     label:'Avg RPE',         suffix:'',     lowerBetter:false},
+  ];
+  let tableHTML = `<table class="cmp-table"><thead><tr><th>Metric</th>
+    ${summaries.map((s,i)=>`<th><span class="dot" style="background:${COLORS[i]};margin-right:5px"></span>${s.ath}</th>`).join('')}
+  </tr></thead><tbody>`;
+  metrics.forEach(m=>{
+    const vals = summaries.map(s=>parseFloat(s[m.key])||null);
+    const valid = vals.filter(v=>v!=null);
+    const bestVal = valid.length?(m.lowerBetter?Math.min(...valid):Math.max(...valid)):null;
+    const bestIdx = vals.indexOf(bestVal);
+    tableHTML+=`<tr><td style="font-weight:700;color:var(--navy)">${m.label}</td>`;
+    summaries.forEach((s,i)=>{
+      const v=s[m.key]; const isBest=i===bestIdx&&v!=null;
+      const disp=v!=null?(m.fmt?m.fmt(v)+(m.suffix?m.suffix:''):v+(m.suffix?m.suffix:'')):null;
+      tableHTML+=`<td class="${isBest?'best-val':''}">${disp??'<span class="na-val">—</span>'}${isBest?'<span class="trophy">🏆</span>':''}</td>`;
+    });
+    tableHTML+='</tr>';
+  });
+  tableHTML+='</tbody></table>';
+  html+=`<div class="card" style="padding:0;overflow:hidden">${tableHTML}</div>`;
+
+  out.innerHTML = html;
+
+  // Line chart: avg split over time
+  const ctx1 = document.getElementById('chart1')?.getContext('2d');
+  if (ctx1) {
+    _charts.chart1 = new Chart(ctx1, {
+      type:'line',
+      data:{
+        datasets: summaries.map((s,i)=>({
+          label:s.ath,
+          data: s.timeSeries.map(p=>({x:p.date?.slice(5), y:p.split>0?p.split:null})),
+          borderColor:COLORS[i], backgroundColor:COLORS_BG[i],
+          fill:false, tension:.35, pointRadius:4, borderWidth:2.5, spanGaps:true,
+        }))
+      },
+      options:{
+        responsive:true,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{labels:{color:'#6b7280',boxWidth:12}},
+          tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${secsToSplit(ctx.raw?.y)}/500m`}}
+        },
+        scales:{
+          y:{
+            grid:{color:'rgba(0,0,0,.05)'},
+            ticks:{color:'#6b7280',callback:v=>secsToSplit(v)},
+            title:{display:true,text:'Avg Split (/500m)',color:'#6b7280'},
+            reverse:true,
+          },
+          x:{type:'category',grid:{display:false},ticks:{color:'#6b7280',maxTicksLimit:12}}
+        }
+      }
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// WATER COMPARISON
+// ══════════════════════════════════════════════════════════════
+async function runWater(athletes, out) {
+  const from = document.getElementById('ctrlFrom')?.value;
+  const to   = document.getElementById('ctrlTo')?.value;
+
+  const data = _cache.water || await post(API_WATER, {});
+  const allRows = data.sessions || data.waterSessions || [];
+
+  const summaries = athletes.map((ath,idx)=>{
+    let rows = allRows.filter(s=>s.athlete===ath);
+    if (from) rows=rows.filter(s=>s.timestamp>=from);
+    if (to)   rows=rows.filter(s=>s.timestamp<=to+'T23:59:59');
+
+    const sessions = rows.length;
+    const totalDist= rows.reduce((a,s)=>a+(parseFloat(s.distance)||0),0);
+    const splits   = rows.map(s=>splitToSecs(s.avg_split)).filter(v=>v>0);
+    const avgSplit = splits.length?splits.reduce((a,b)=>a+b,0)/splits.length:null;
+    const bestSplit= splits.length?Math.min(...splits):null;
+    const avgHR    = rows.filter(s=>s.avg_heart_rate).length?
+      rows.filter(s=>s.avg_heart_rate).reduce((a,s)=>a+(parseFloat(s.avg_heart_rate)||0),0)/rows.filter(s=>s.avg_heart_rate).length:null;
+    const avgRpe   = rows.filter(s=>s.rpe).length?
+      rows.filter(s=>s.rpe).reduce((a,s)=>a+(parseFloat(s.rpe)||0),0)/rows.filter(s=>s.rpe).length:null;
+    const sorted = [...rows].sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
+    const timeSeries = sorted.map(s=>({date:s.timestamp?.slice(0,10),dist:parseFloat(s.distance)||0}));
+    return {ath,idx,sessions,totalDist:Math.round(totalDist),avgSplit,bestSplit,avgHR:avgHR?+avgHR.toFixed(0):null,avgRpe:avgRpe?+avgRpe.toFixed(1):null,timeSeries};
+  });
+
+  const bestDistIdx  = indexOfBest(summaries.map(s=>s.totalDist));
+  const bestSplitIdx = indexOfBest(summaries.map(s=>s.bestSplit),true);
+
+  let html = statCardsHTML(summaries.map((s,i)=>({
+    color:COLORS[i],ath:s.ath,
+    main:`${Math.round((s.totalDist||0)/1000)}km`,
+    sub:`total distance · ${s.sessions} sessions`,
+    detail:`Best split: <strong>${s.bestSplit?secsToSplit(s.bestSplit)+'/500m':'—'}</strong>`,
+    isBest:i===bestDistIdx,
+  })));
+
+  html+=`<div class="section-label">Distance per Session Over Time</div>`;
+  html+=`<div class="card"><div class="chart-wrap"><canvas id="chart1" height="80"></canvas></div></div>`;
+
+  const metrics=[
+    {key:'sessions',  label:'Sessions',         suffix:'',     lowerBetter:false},
+    {key:'totalDist', label:'Total Distance',   suffix:'m',    lowerBetter:false},
+    {key:'avgSplit',  label:'Avg Split',        fmt:secsToSplit,lowerBetter:true,suffix:'/500m'},
+    {key:'bestSplit', label:'Best Split',       fmt:secsToSplit,lowerBetter:true,suffix:'/500m'},
+    {key:'avgHR',     label:'Avg Heart Rate',   suffix:'bpm',  lowerBetter:false},
+    {key:'avgRpe',    label:'Avg RPE',          suffix:'',     lowerBetter:false},
+  ];
+  let tableHTML=`<table class="cmp-table"><thead><tr><th>Metric</th>
+    ${summaries.map((s,i)=>`<th><span class="dot" style="background:${COLORS[i]};margin-right:5px"></span>${s.ath}</th>`).join('')}
+  </tr></thead><tbody>`;
+  metrics.forEach(m=>{
+    const vals=summaries.map(s=>parseFloat(s[m.key])||null);
+    const valid=vals.filter(v=>v!=null);
+    const bestVal=valid.length?(m.lowerBetter?Math.min(...valid):Math.max(...valid)):null;
+    const bestIdx=vals.indexOf(bestVal);
+    tableHTML+=`<tr><td style="font-weight:700;color:var(--navy)">${m.label}</td>`;
+    summaries.forEach((s,i)=>{
+      const v=s[m.key];const isBest=i===bestIdx&&v!=null;
+      const disp=v!=null?(m.fmt?m.fmt(v)+(m.suffix?m.suffix:''):v+(m.suffix?m.suffix:'')):null;
+      tableHTML+=`<td class="${isBest?'best-val':''}">${disp??'<span class="na-val">—</span>'}${isBest?'<span class="trophy">🏆</span>':''}</td>`;
+    });
+    tableHTML+='</tr>';
+  });
+  tableHTML+='</tbody></table>';
+  html+=`<div class="section-label">Full Breakdown</div><div class="card" style="padding:0;overflow:hidden">${tableHTML}</div>`;
+
+  out.innerHTML=html;
+
+  const ctx1=document.getElementById('chart1')?.getContext('2d');
+  if(ctx1){
+    _charts.chart1=new Chart(ctx1,{
+      type:'bar',
+      data:{
+        labels:summaries.map(s=>s.ath),
+        datasets:[{
+          label:'Total Distance (m)',
+          data:summaries.map(s=>s.totalDist),
+          backgroundColor:summaries.map((_,i)=>COLORS_BG[i]),
+          borderColor:summaries.map((_,i)=>COLORS[i]),
+          borderWidth:2,borderRadius:8,
+        }]
+      },
+      options:{
+        responsive:true,plugins:{legend:{display:false}},
+        scales:{
+          y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#6b7280'},title:{display:true,text:'Distance (m)',color:'#6b7280'}},
+          x:{grid:{display:false},ticks:{color:'#6b7280'}}
+        }
+      }
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// TESTING COMPARISON
+// ══════════════════════════════════════════════════════════════
+async function runTesting(athletes, out) {
+  const data = _cache.test || await post(API_TEST, {});
+  const allResults = data.results || [];
+
+  const summaries = athletes.map((ath,idx)=>{
+    const rows = allResults.filter(r=>
+      r.athlete_name?.toLowerCase().includes(ath.toLowerCase()) ||
+      `${r.athlete_first||''} ${r.athlete_last||''}`.toLowerCase().includes(ath.toLowerCase())
+    ).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+    const latest = rows[0]||null;
+    return {
+      ath,idx,latest,
+      date:latest?.timestamp?.slice(0,10)??'—',
+      height:latest?.height??null,
+      weight:latest?.weight??null,
+      hollow_hold:latest?.hollow_hold??null,
+      prone_plank:latest?.prone_plank??null,
+      side_plank_l:latest?.side_plank_left??null,
+      side_plank_r:latest?.side_plank_right??null,
+      history: rows,
+    };
+  });
+
+  const metrics=[
+    {key:'height',     label:'Height (cm)',          lowerBetter:false},
+    {key:'weight',     label:'Weight (kg)',           lowerBetter:false},
+    {key:'hollow_hold',label:'Hollow Hold (s)',       lowerBetter:false},
+    {key:'prone_plank',label:'Prone Plank (s)',       lowerBetter:false},
+    {key:'side_plank_l',label:'Side Plank Left (s)',  lowerBetter:false},
+    {key:'side_plank_r',label:'Side Plank Right (s)', lowerBetter:false},
+  ];
+
+  const bestHollowIdx=indexOfBest(summaries.map(s=>s.hollow_hold));
+
+  let html=statCardsHTML(summaries.map((s,i)=>({
+    color:COLORS[i],ath:s.ath,
+    main:s.hollow_hold!=null?s.hollow_hold+'s':'No data',
+    sub:`Hollow hold · ${s.date}`,
+    detail:`${s.height!=null?s.height+'cm':'—'} · ${s.weight!=null?s.weight+'kg':'—'}`,
+    isBest:i===bestHollowIdx,
+  })));
+
+  let tableHTML=`<table class="cmp-table"><thead><tr><th>Test</th>
+    ${summaries.map((s,i)=>`<th><span class="dot" style="background:${COLORS[i]};margin-right:5px"></span>${s.ath}</th>`).join('')}
+  </tr></thead><tbody>`;
+  metrics.forEach(m=>{
+    const vals=summaries.map(s=>parseFloat(s[m.key])||null);
+    const valid=vals.filter(v=>v!=null);
+    const bestVal=valid.length?(m.lowerBetter?Math.min(...valid):Math.max(...valid)):null;
+    const bestIdx=vals.indexOf(bestVal);
+    tableHTML+=`<tr><td style="font-weight:700;color:var(--navy)">${m.label}</td>`;
+    summaries.forEach((s,i)=>{
+      const v=s[m.key];const isBest=i===bestIdx&&v!=null;
+      tableHTML+=`<td class="${isBest?'best-val':''}">${v!=null?v:'<span class="na-val">—</span>'}${isBest?'<span class="trophy">🏆</span>':''}</td>`;
+    });
+    tableHTML+='</tr>';
+  });
+  tableHTML+='</tbody></table>';
+
+  html+=`<div class="section-label">Latest Testing Results</div>`;
+  html+=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:18px">${tableHTML}</div>`;
+  html+=`<div class="section-label">Core Testing Chart</div>`;
+  html+=`<div class="card"><div class="chart-wrap"><canvas id="chart1" height="80"></canvas></div></div>`;
+
+  out.innerHTML=html;
+
+  const ctx1=document.getElementById('chart1')?.getContext('2d');
+  if(ctx1&&summaries.some(s=>s.hollow_hold!=null)){
+    _charts.chart1=new Chart(ctx1,{
+      type:'bar',
+      data:{
+        labels:['Hollow Hold (s)','Prone Plank (s)','Side Plank L (s)','Side Plank R (s)'],
+        datasets:summaries.map((s,i)=>({
+          label:s.ath,
+          data:[s.hollow_hold,s.prone_plank,s.side_plank_l,s.side_plank_r],
+          backgroundColor:COLORS_BG[i],borderColor:COLORS[i],borderWidth:2,borderRadius:6,
+        }))
+      },
+      options:{
+        responsive:true,plugins:{legend:{labels:{color:'#6b7280',boxWidth:12}}},
+        scales:{
+          y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#6b7280'},title:{display:true,text:'Seconds',color:'#6b7280'}},
+          x:{grid:{display:false},ticks:{color:'#6b7280'}}
+        }
+      }
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// PBs & TIME TRIALS
+// ══════════════════════════════════════════════════════════════
+async function runPbs(athletes, out) {
+  const [scData, ergData, testData] = await Promise.all([
+    Promise.all(athletes.map(a=>post(API_SC,{view:'athlete',athlete:a}))),
+    _cache.erg || post(API_ERG,{}),
+    _cache.test || post(API_TEST,{}),
+  ]);
+
+  const allErg  = ergData.sessions || ergData.ergSessions || [];
+  const allTest = testData.results || [];
+
+  // Build PB table per athlete
+  const pbRows = [];
+
+  // ── S&C PBs per exercise ──
+  ALL_EXERCISES.forEach(ex => {
+    const row = { label: ex, category:'💪 S&C', vals:[] };
+    scData.forEach((d,idx) => {
+      const logs = (d.logs||[]).filter(l=>l.exercise?.toLowerCase()===ex.toLowerCase());
+      const loads = logs.map(l=>parseFloat(l.load)).filter(v=>v>0&&!isNaN(v));
+      row.vals.push({ ath:athletes[idx], idx, val: loads.length?Math.max(...loads):null, unit:'kg' });
+    });
+    if (row.vals.some(v=>v.val!=null)) pbRows.push(row);
+  });
+
+  // ── Erg PBs ──
+  const ergMetrics = [
+    { key:'avg_split', label:'Best Erg Avg Split', lowerBetter:true, fmt:secsToSplit, unit:'/500m' },
+    { key:'total_distance', label:'Longest Erg Session', lowerBetter:false, fmt:null, unit:'m' },
+  ];
+  ergMetrics.forEach(m=>{
+    const row={label:m.label,category:'🚣 Erg',vals:[]};
+    athletes.forEach((ath,idx)=>{
+      const rows=allErg.filter(s=>s.athlete===ath).map(s=>{
+        if(m.key==='avg_split') return splitToSecs(s.avg_split);
+        return parseFloat(s[m.key])||0;
+      }).filter(v=>v>0);
+      const best=rows.length?(m.lowerBetter?Math.min(...rows):Math.max(...rows)):null;
+      row.vals.push({ath,idx,val:best,unit:m.unit,fmt:m.fmt});
+    });
+    if(row.vals.some(v=>v.val!=null)) pbRows.push(row);
+  });
+
+  // ── Testing PBs ──
+  const testMetrics=[
+    {key:'hollow_hold',label:'Hollow Hold PB',unit:'s'},
+    {key:'prone_plank',label:'Prone Plank PB',unit:'s'},
+    {key:'side_plank_left',label:'Side Plank L PB',unit:'s'},
+    {key:'side_plank_right',label:'Side Plank R PB',unit:'s'},
+  ];
+  testMetrics.forEach(m=>{
+    const row={label:m.label,category:'📋 Testing',vals:[]};
+    athletes.forEach((ath,idx)=>{
+      const rows=allTest.filter(r=>
+        r.athlete_name?.toLowerCase().includes(ath.toLowerCase())||
+        `${r.athlete_first||''} ${r.athlete_last||''}`.toLowerCase().includes(ath.toLowerCase())
+      ).map(r=>parseFloat(r[m.key])).filter(v=>v>0&&!isNaN(v));
+      row.vals.push({ath,idx,val:rows.length?Math.max(...rows):null,unit:m.unit});
+    });
+    if(row.vals.some(v=>v.val!=null)) pbRows.push(row);
+  });
+
+  // Render grouped table
+  let html=`<div class="section-label">Personal Bests & Time Trial Comparison</div>`;
+
+  const categories=['💪 S&C','🚣 Erg','📋 Testing'];
+  categories.forEach(cat=>{
+    const catRows=pbRows.filter(r=>r.category===cat);
+    if(!catRows.length) return;
+    html+=`<div class="section-label" style="margin-top:24px">${cat}</div>`;
+    html+=`<div class="card" style="padding:0;overflow:hidden;margin-bottom:18px">
+      <table class="cmp-table">
+        <thead><tr><th>Metric</th>
+          ${athletes.map((a,i)=>`<th><span class="dot" style="background:${COLORS[i]};margin-right:5px"></span>${a}</th>`).join('')}
+        </tr></thead>
+        <tbody>`;
+    catRows.forEach(row=>{
+      const vals=row.vals.map(v=>v.val);
+      const valid=vals.filter(v=>v!=null);
+      const lowerBetter=row.label.includes('Split');
+      const bestVal=valid.length?(lowerBetter?Math.min(...valid):Math.max(...valid)):null;
+      const bestIdx=vals.indexOf(bestVal);
+      html+=`<tr><td style="font-weight:700;color:var(--navy)">${row.label}</td>`;
+      row.vals.forEach((v,i)=>{
+        const isBest=i===bestIdx&&v.val!=null;
+        const disp=v.val!=null?(v.fmt?v.fmt(v.val)+v.unit:v.val+v.unit):null;
+        html+=`<td class="${isBest?'best-val':''}">${disp??'<span class="na-val">—</span>'}${isBest?'<span class="trophy">🏆</span>':''}</td>`;
+      });
+      html+='</tr>';
+    });
+    html+=`</tbody></table></div>`;
+  });
+
+  out.innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════
+function statCardsHTML(cards) {
+  return `<div class="stat-grid">${cards.map(c=>`
+    <div class="stat-card" style="border-left-color:${c.color}">
+      <div class="ath-name" style="color:${c.color}">
+        <span class="dot" style="background:${c.color}"></span>${c.ath}
+        ${c.isBest?'<span class="pb-badge">🏆 Best</span>':''}
+      </div>
+      <div class="stat-main">${c.main}</div>
+      <div class="stat-sub">${c.sub}</div>
+      <div class="stat-detail">${c.detail}</div>
+    </div>`).join('')}</div>`;
+}
+
+function indexOfBest(vals, lowerBetter=false) {
+  const valid = vals.filter(v => v != null && !isNaN(parseFloat(v)));
+  if (!valid.length) return -1;
+  const best = lowerBetter ? Math.min(...valid) : Math.max(...valid);
+  return vals.indexOf(vals.find(v=>parseFloat(v)===parseFloat(best)));
+}
+
+function splitToSecs(split) {
+  if (!split) return 0;
+  const s = String(split).trim();
+  const m = s.match(/^(\d+):(\d{2})(?:\.(\d+))?$/);
+  if (m) return parseInt(m[1])*60 + parseInt(m[2]) + (m[3]?parseFloat('0.'+m[3]):0);
+  const f = parseFloat(s);
+  return isNaN(f) ? 0 : f;
+}
+
+function secsToSplit(secs) {
+  if (!secs || secs<=0) return '—';
+  const m = Math.floor(secs/60);
+  const s = Math.round(secs%60);
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+</script>
+</body>
+</html>

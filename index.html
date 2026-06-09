@@ -286,8 +286,9 @@
         <button class="snav-btn" id="snav-water" onclick="switchTab('water')">🌊 Water</button>
         <button class="snav-btn" id="snav-testing" onclick="switchTab('testing')">📋 Testing</button>
         <button class="snav-btn" id="snav-wellness" onclick="switchTab('wellness')">💚 Wellness</button>
-        <button class="snav-btn" id="snav-compare" onclick="switchTab('compare')">⚖️ Compare</button>
+        <a href="compare.html" style="display:block;text-decoration:none"><button class="snav-btn" id="snav-compare" style="width:100%;text-align:left">⚖️ Compare</button></a>
         <button class="snav-btn" id="snav-cp" onclick="switchTab('cp')">⚡ Critical Power</button>
+        <button class="snav-btn" id="snav-coretesting" onclick="switchTab('coretesting')">🧪 Core Testing</button>
       </div>
       <div class="sidebar-athlete-sel" id="athSelWrap" style="display:none">
         <label>Athlete</label>
@@ -403,7 +404,7 @@ function switchView(view){
     document.getElementById('snav-water').style.display='none';
     document.getElementById('snav-testing').style.display='none';
     document.getElementById('snav-wellness').style.display='none';
-    document.getElementById('snav-compare').style.display='none';
+    document.getElementById('snav-compare')?.closest('a')?.style document.getElementById('snav-compare').style.display='none';document.getElementById('snav-compare').style.display='none'; (document.getElementById('snav-compare').closest('a').style.display='none');
     document.getElementById('snav-cp').style.display='none';
     athWrap.style.display='block';
     loadAthleteView();
@@ -413,7 +414,7 @@ function switchView(view){
     document.getElementById('snav-water').style.display='';
     document.getElementById('snav-testing').style.display='';
     document.getElementById('snav-wellness').style.display='';
-    document.getElementById('snav-compare').style.display='';
+    document.getElementById('snav-compare')?.closest('a')?.style document.getElementById('snav-compare').style.display='';document.getElementById('snav-compare').style.display=''; (document.getElementById('snav-compare').closest('a').style.display='');
     document.getElementById('snav-cp').style.display='';
     athWrap.style.display='none';
     switchTab(currentTab);
@@ -439,6 +440,7 @@ function switchTab(tab){
   else if(tab==='wellness') loadWellnessView();
   else if(tab==='compare') loadCompareView();
   else if(tab==='cp') loadCPView();
+  else if(tab==='coretesting') loadCoreTestingView();
 }
 
 // ═══════════════════════════════════════════════════
@@ -471,7 +473,6 @@ function renderCoachView(data){
       <div class="stat-card green"><div class="stat-label">Active This Week</div><div class="stat-value">${squad.active_this_week||0}<span style="font-size:14px;color:var(--muted)">/${squad.total_athletes||0}</span></div><div class="stat-sub">Athletes trained</div></div>
       <div class="stat-card"><div class="stat-label">Total Sets</div><div class="stat-value">${squad.total_sessions||0}</div><div class="stat-sub">All time</div></div>
       <div class="stat-card warn"><div class="stat-label">Avg Squad RPE</div><div class="stat-value">${squad.avg_rpe||'—'}</div><div class="stat-sub">All sets</div></div>
-      <div class="stat-card purple"><div class="stat-label">Overload Flags</div><div class="stat-value" id="overloadCount">—</div><div class="stat-sub">Load spikes >10%</div></div>
     </div>
 
     <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
@@ -499,23 +500,21 @@ function renderCoachView(data){
       <table class="data-table">
         <thead><tr>
           <th>Athlete</th><th>Last Session</th><th>Sessions</th>
-          <th>Session Types</th><th>Avg RPE</th><th>RPE≥9</th><th>ACWR</th><th>Wk Volume</th>
+          <th>Session Types</th><th>RPE≥9</th><th>ACWR</th><th>Wk Volume</th>
         </tr></thead>
         <tbody id="athleteTableBody"></tbody>
       </table>
     </div>
-
-    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
-      <span>⚠️ Progressive Overload Flags — This Week vs Last Week</span>
-      <span style="font-size:11px;color:var(--page-muted);font-weight:400">Athletes where load increased >10%</span>
-    </div>
-    <div class="card" id="overloadFlagsPanel">
-      <div style="color:var(--muted);text-align:center;padding:12px;font-size:13px">Loading…</div>
     </div>
 
-    <div class="section-title">Squad ACWR — Acute:Chronic Workload Ratio</div>
+    <div class="section-title">ACWR — Acute:Chronic Workload Ratio</div>
     <div class="card">
-      <div class="card-title">Rolling 7-day acute ÷ 28-day chronic — optimal 0.8–1.3</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+        <div class="card-title" style="margin-bottom:0">Rolling 7-day acute ÷ 28-day chronic — optimal 0.8–1.3</div>
+        <select id="acwrAthleteSelect" onchange="onAcwrAthleteChange()" style="background:#f0f4f8;border:2px solid var(--border);color:var(--navy);padding:7px 12px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;outline:none;min-width:130px">
+          <option value="squad">Whole Squad</option>
+        </select>
+      </div>
       <div class="acwr-zone-bar" style="margin-bottom:16px"><div class="acwr-zone-marker" id="squadACWRMarker" style="left:50%"></div></div>
       <div class="acwr-zones-label"><span>Under (&lt;0.8)</span><span>Optimal (0.8–1.3)</span><span>Caution</span><span>Danger (&gt;1.5)</span></div>
       <br/><canvas id="squadACWRChart" height="70"></canvas>
@@ -536,9 +535,6 @@ function renderCoachView(data){
 
   // Squad load calendar
   renderSquadCalendar(data.squadCalendar || []);
-
-  // Overload flags
-  renderOverloadFlags(data.overloadFlags || []);
 
   // Athlete table
   const tbody = document.getElementById('athleteTableBody');
@@ -566,8 +562,7 @@ function renderCoachView(data){
       <td style="color:${ds>7?'var(--red)':'var(--text)'};font-weight:${ds>7?700:400}">${lastStr}</td>
       <td><div class="mini-bar-wrap"><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${Math.round((a.total_sessions||0)/maxSess*100)}%"></div></div><span style="font-size:13px;font-weight:700">${a.total_sessions||0}</span></div></td>
       <td>${badges||'<span style="color:var(--muted)">—</span>'}</td>
-      <td><span class="rpe-badge ${rpeClass}">${a.avg_rpe||'—'}</span></td>
-      <td style="color:${(a.high_rpe_sets||0)>3?'var(--red)':'var(--text)'};font-weight:${(a.high_rpe_sets||0)>3?700:400}">${a.high_rpe_sets||0}</td>
+      <td style="color:\${(a.high_rpe_sets||0)>3?'var(--red)':'var(--text)'};font-weight:\${(a.high_rpe_sets||0)>3?700:400}">\${a.high_rpe_sets||0}</td>
       <td><span class="acwr-badge ${acwrCls}">${acwrVal?acwrVal.toFixed(2):'—'}</span></td>
       <td><span style="font-size:12px;color:var(--muted)">${a.weekly_load>0?a.weekly_load.toLocaleString()+'kg':'—'}</span></td>
     `;
@@ -576,6 +571,31 @@ function renderCoachView(data){
 
   // Squad ACWR (aggregate from per-athlete)
   const squadACWR = buildSquadACWR(sums);
+  
+  // Populate ACWR athlete dropdown
+  const acwrSel = document.getElementById('acwrAthleteSelect');
+  if (acwrSel) {
+    // Keep 'Whole Squad' option, add athletes
+    while (acwrSel.options.length > 1) acwrSel.remove(1);
+    sums.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.athlete;
+      opt.textContent = a.athlete;
+      acwrSel.appendChild(opt);
+    });
+  }
+  
+  window._acwrSquadData = squadACWR;
+  window._acwrAthleteData = {};
+  sums.forEach(a => {
+    window._acwrAthleteData[a.athlete] = (a.acwr_history || []).map(p => ({
+      date: p.date,
+      acwr: p.acwr || 0,
+      acute: p.acute || 0,
+      chronic: p.chronic || 0,
+    }));
+  });
+  
   renderACWRChart('squadACWRChart','squadACWRMarker',squadACWR);
 
   // RPE trend
@@ -661,36 +681,7 @@ function renderSquadCalendar(calData) {
   `;
 }
 
-// ── OVERLOAD FLAGS ────────────────────────────────────────────────────
-function renderOverloadFlags(flags) {
-  const panel = document.getElementById('overloadFlagsPanel');
-  if (!panel) return;
-  const countEl = document.getElementById('overloadCount');
-  if (countEl) countEl.textContent = flags.length || '0';
-  if (!flags.length) {
-    panel.innerHTML = '<div style="color:#22c55e;font-size:13px;font-weight:700;text-align:center;padding:16px">✅ No load spikes detected this week — good progressive overload across the squad</div>';
-    return;
-  }
-  panel.innerHTML = `
-    <table class="data-table">
-      <thead><tr><th>Athlete</th><th>Exercise</th><th>Last Week</th><th>This Week</th><th>Change</th><th>Risk</th></tr></thead>
-      <tbody>
-        ${flags.map(f => {
-          const risk = f.pct > 30 ? 'red' : f.pct > 20 ? 'warn' : 'green';
-          const riskLabel = f.pct > 30 ? '🔴 High' : f.pct > 20 ? '🟡 Moderate' : '🟢 OK';
-          return `<tr>
-            <td><span class="athlete-name">${f.athlete}</span></td>
-            <td style="font-size:12px;font-weight:600">${f.exercise}</td>
-            <td style="color:var(--muted)">${f.prevWeekLoad.toLocaleString()}kg</td>
-            <td style="font-weight:700">${f.thisWeekLoad.toLocaleString()}kg</td>
-            <td><span style="font-weight:800;color:${risk==='red'?'var(--red)':risk==='warn'?'var(--warn)':'var(--green)'}">+${f.pct}%</span></td>
-            <td>${riskLabel}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
-  `;
-}
+// Overload flags removed
 
 function buildSquadRpeTrend(sums){
   // Returns last 30 days of per-athlete avg RPE trend (use acwr_history as a proxy for activity)
@@ -715,6 +706,14 @@ function buildSquadACWR(sums){
     acute: v.acute.length ? Math.round(v.acute.reduce((a,b)=>a+b,0)/v.acute.length) : 0,
     chronic: v.chronic.length ? Math.round(v.chronic.reduce((a,b)=>a+b,0)/v.chronic.length) : 0,
   }));
+}
+
+function onAcwrAthleteChange() {
+  const sel = document.getElementById('acwrAthleteSelect');
+  const val = sel?.value || 'squad';
+  if (charts['squadACWRChart']) { charts['squadACWRChart'].destroy(); delete charts['squadACWRChart']; }
+  const data = val === 'squad' ? (window._acwrSquadData || []) : (window._acwrAthleteData?.[val] || []);
+  renderACWRChart('squadACWRChart','squadACWRMarker', data);
 }
 
 function renderACWRChart(canvasId, markerId, acwrData){
@@ -748,6 +747,59 @@ function renderACWRChart(canvasId, markerId, acwrData){
     const marker=document.getElementById(markerId);
     if(marker) marker.style.left=Math.min(Math.max((latest.acwr/2)*100,2),98)+'%';
   }
+}
+
+
+// ── ERG SESSION FILTER ────────────────────────────────────────────────
+function filterErgSessions() {
+  const sSbody = document.getElementById('ergSessionsBody');
+  const countEl = document.getElementById('ergFilterCount');
+  if (!sSbody) return;
+  
+  const athFilter = document.getElementById('ergFilterAthlete')?.value || '';
+  const dayFilter = parseInt(document.getElementById('ergFilterDate')?.value || '0');
+  
+  let sessions = window._ergAllSessions || [];
+  
+  if (athFilter) sessions = sessions.filter(s => s.athlete === athFilter);
+  
+  if (dayFilter > 0) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - dayFilter);
+    const cutStr = cutoff.toISOString().slice(0,10);
+    sessions = sessions.filter(s => (s.timestamp || '').slice(0,10) >= cutStr);
+  }
+  
+  if (countEl) countEl.textContent = sessions.length + ' session' + (sessions.length !== 1 ? 's' : '');
+  
+  if (sessions.length === 0) {
+    sSbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px">No sessions match your filters</td></tr>';
+    return;
+  }
+  
+  sSbody.innerHTML = '';
+  sessions.forEach(s => {
+    const date = s.timestamp?.slice(0,10) || '—';
+    const rpeClass = (s.rpe||0)>=8.5?'rpe-high':(s.rpe||0)>=7.5?'rpe-mid':'rpe-low';
+    const wtKey = (s.workout_type||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,4);
+    const dist = s.total_distance ? `${(s.total_distance/1000).toFixed(1)}km` : '—';
+    const tr = document.createElement('tr');
+    tr.className = 'clickable-row';
+    tr.onclick = () => openErgSession(s);
+    tr.title = 'Click to view full session';
+    tr.innerHTML = `
+      <td style="font-weight:600">${date}</td>
+      <td><span class="athlete-name">${s.athlete||'—'}</span></td>
+      <td>${s.workout_type?`<span class="wt-badge wt-${wtKey}">${s.workout_type}</span>`:'—'}</td>
+      <td>${dist}</td>
+      <td style="font-family:monospace">${s.total_time||'—'}</td>
+      <td>${s.avg_split?`<span class="split-badge">${s.avg_split}</span>`:'—'}</td>
+      <td style="color:var(--muted)">${s.avg_heart_rate?s.avg_heart_rate+'bpm':'—'}</td>
+      <td>${s.rpe?`<span class="rpe-badge ${rpeClass}">${s.rpe}</span>`:'—'}</td>
+      <td style="color:var(--accent);font-size:11px;font-weight:600">View →</td>
+    `;
+    sSbody.appendChild(tr);
+  });
 }
 
 function renderRpeTrendChart(rpeTrend, sums, athletes){
@@ -862,14 +914,23 @@ function renderErgView(data){
         <tbody id="ergTableBody"></tbody>
       </table>
     </div>
-
-    <div class="section-title">Best Splits — Leaderboard</div>
-    <div class="card" style="margin-bottom:0">
-      <div id="ergLeaderboard"><div style="color:var(--muted);text-align:center;padding:20px">No splits logged yet</div></div>
     </div>
 
     <div class="section-title">Recent Erg Sessions</div>
     <div class="card">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+        <select id="ergFilterAthlete" onchange="filterErgSessions()" style="background:#f0f4f8;border:2px solid var(--border);color:var(--navy);padding:7px 12px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;outline:none;min-width:120px">
+          <option value="">All Athletes</option>
+        </select>
+        <select id="ergFilterDate" onchange="filterErgSessions()" style="background:#f0f4f8;border:2px solid var(--border);color:var(--navy);padding:7px 12px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;outline:none;min-width:160px">
+          <option value="">All Time</option>
+          <option value="7">Last 7 days</option>
+          <option value="14">Last 14 days</option>
+          <option value="28">Last 28 days</option>
+          <option value="90">Last 90 days</option>
+        </select>
+        <span id="ergFilterCount" style="font-size:12px;color:var(--muted);margin-left:4px"></span>
+      </div>
       <table class="data-table">
         <thead><tr>
           <th>Date</th><th>Athlete</th><th>Type</th><th>Distance</th><th>Time</th><th>Avg Split</th><th>HR</th><th>RPE</th><th></th>
@@ -911,287 +972,20 @@ function renderErgView(data){
     });
   }
 
+  // Store all sessions for filter
+  window._ergAllSessions = allSessions;
+  
+  // Populate athlete filter dropdown
+  const ergAthSel = document.getElementById('ergFilterAthlete');
+  if (ergAthSel) {
+    while (ergAthSel.options.length > 1) ergAthSel.remove(1);
+    const athSet = [...new Set(allSessions.map(s=>s.athlete).filter(Boolean))].sort();
+    athSet.forEach(a => { const o=document.createElement('option');o.value=a;o.textContent=a;ergAthSel.appendChild(o); });
+  }
+  
   // Recent sessions table
   const sSbody=document.getElementById('ergSessionsBody');
-  if(allSessions.length===0){
-    sSbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px">No sessions yet</td></tr>';
-  } else {
-    allSessions.slice(0,30).forEach(s=>{
-      const date=s.timestamp?.slice(0,10)||'—';
-      const rpeClass=(s.rpe||0)>=8.5?'rpe-high':(s.rpe||0)>=7.5?'rpe-mid':'rpe-low';
-      const wtKey=(s.workout_type||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,4);
-      const dist=s.total_distance?`${(s.total_distance/1000).toFixed(1)}km`:'—';
-      const tr=document.createElement('tr');
-      tr.className='clickable-row';
-      tr.onclick=()=>openErgSession(s);
-      tr.title='Click to view full session';
-      tr.innerHTML=`
-        <td style="font-weight:600">${date}</td>
-        <td><span class="athlete-name">${s.athlete||'—'}</span></td>
-        <td>${s.workout_type?`<span class="wt-badge wt-${wtKey}">${s.workout_type}</span>`:'—'}</td>
-        <td>${dist}</td>
-        <td style="font-family:monospace">${s.total_time||'—'}</td>
-        <td>${s.avg_split?`<span class="split-badge">${s.avg_split}</span>`:'—'}</td>
-        <td style="color:var(--muted)">${s.avg_heart_rate?s.avg_heart_rate+'bpm':'—'}</td>
-        <td>${s.rpe?`<span class="rpe-badge ${rpeClass}">${s.rpe}</span>`:'—'}</td>
-        <td style="color:var(--accent);font-size:11px;font-weight:600">View →</td>
-      `;
-      sSbody.appendChild(tr);
-    });
-  }
-
-  // Erg leaderboard — best avg_split per athlete ranked
-  const lbEl = document.getElementById('ergLeaderboard');
-  if(lbEl && allSessions.filter(s=>s.avg_split).length > 0){
-    // Group by athlete and find personal best split per athlete
-    const athleteSplits = {};
-    allSessions.forEach(s=>{
-      if(!s.avg_split||!s.athlete) return;
-      const parts = s.avg_split.split(':');
-      if(parts.length!==2) return;
-      const secs = parseFloat(parts[0])*60+parseFloat(parts[1]);
-      if(!athleteSplits[s.athlete]||secs<athleteSplits[s.athlete].secs){
-        athleteSplits[s.athlete]={secs, split:s.avg_split, type:s.workout_type, date:s.timestamp?.slice(0,10)};
-      }
-    });
-    const ranked = Object.entries(athleteSplits)
-      .sort((a,b)=>a[1].secs-b[1].secs)
-      .slice(0,10);
-
-    const rankBadge = (i) => {
-      if(i===0) return '<span class="rank-badge rank-1">1</span>';
-      if(i===1) return '<span class="rank-badge rank-2">2</span>';
-      if(i===2) return '<span class="rank-badge rank-3">3</span>';
-      return `<span class="rank-badge rank-other">${i+1}</span>`;
-    };
-    lbEl.innerHTML = `<table class="data-table"><thead><tr>
-      <th>Rank</th><th>Athlete</th><th>Best Split /500m</th><th>Workout Type</th><th>Date</th>
-    </tr></thead><tbody>${ranked.map(([ath,d],i)=>`
-      <tr>
-        <td>${rankBadge(i)}</td>
-        <td><span class="athlete-name">${ath}</span></td>
-        <td><span class="split-badge" style="font-size:15px">${d.split}</span></td>
-        <td><span class="wt-badge wt-other">${d.type||'—'}</span></td>
-        <td style="color:var(--muted);font-size:12px">${d.date||'—'}</td>
-      </tr>`).join('')}</tbody></table>`;
-  }
-
-  // Distance bar chart
-  if(athletes.length>0){
-    setTimeout(()=>{
-      const ctx=document.getElementById('ergDistChart')?.getContext('2d');
-      if(!ctx) return;
-      const colors=['#1a56db','#22c55e','#f59e0b','#e63946','#8b5cf6','#06b6d4','#ec4899','#10b981'];
-      charts['ergDist']=new Chart(ctx,{
-        type:'bar',
-        data:{labels:sums.map(s=>s.athlete),datasets:[{label:'Distance (m)',data:sums.map(s=>s.total_distance||0),backgroundColor:sums.map((_,i)=>colors[i%colors.length]+'cc'),borderRadius:8}]},
-        options:{responsive:true,plugins:{legend:{display:false}},scales:{
-          y:{grid:{color:'#f0f4f8'},ticks:{font:{size:11},callback:v=>v>=1000?`${(v/1000).toFixed(0)}k`:v}},
-          x:{grid:{display:false},ticks:{font:{size:12}}}
-        }}
-      });
-    },100);
-  }
-}
-
-// ═══════════════════════════════════════════════════
-// TESTING VIEW
-// ═══════════════════════════════════════════════════
-async function loadTestingView(){
-  destroyCharts();
-  document.getElementById('mainContent').innerHTML='<div class="loading"><div class="spinner"></div> Loading testing data…</div>';
-  try{
-    const data=await fetchData(API_TEST,{});
-    renderTestingView(data);
-  } catch(e){
-    document.getElementById('mainContent').innerHTML=`<div class="empty">Error loading testing data: ${e.message}</div>`;
-  }
-}
-
-let testingData=null;
-let activeYearTab=null;
-
-function renderTestingView(data){
-  testingData=data;
-  const yearGroups=data.yearGroups||[];
-
-  if(yearGroups.length===0){
-    document.getElementById('mainContent').innerHTML='<div class="empty">No testing data yet — collect results via the Testing form</div>';
-    return;
-  }
-
-  activeYearTab=yearGroups[0].yearLevel;
-
-  document.getElementById('mainContent').innerHTML=`
-    <div class="section-title">Core Testing Results</div>
-    <div class="stats-grid" style="margin-bottom:20px">
-      <div class="stat-card green"><div class="stat-label">Year Groups</div><div class="stat-value">${yearGroups.length}</div><div class="stat-sub">Tested</div></div>
-      <div class="stat-card"><div class="stat-label">Total Athletes</div><div class="stat-value">${yearGroups.reduce((a,g)=>a+g.athleteCount,0)}</div><div class="stat-sub">Records</div></div>
-      <div class="stat-card purple"><div class="stat-label">Tests Conducted</div><div class="stat-value">4</div><div class="stat-sub">Metrics tracked</div></div>
-    </div>
-    <div class="year-tabs" id="yearTabs"></div>
-    <div id="yearContent"></div>
-  `;
-
-  // Year tabs
-  const tabsEl=document.getElementById('yearTabs');
-  yearGroups.forEach(g=>{
-    const btn=document.createElement('button');
-    btn.className='year-tab'+(g.yearLevel===activeYearTab?' active':'');
-    btn.textContent=`Year ${g.yearLevel}`;
-    btn.onclick=()=>selectYearTab(g.yearLevel);
-    tabsEl.appendChild(btn);
-  });
-
-  renderYearContent(activeYearTab);
-}
-
-function selectYearTab(yr){
-  activeYearTab=yr;
-  document.querySelectorAll('.year-tab').forEach(b=>{
-    b.classList.toggle('active',b.textContent===`Year ${yr}`);
-  });
-  renderYearContent(yr);
-}
-
-function renderYearContent(yr){
-  const group=(testingData.yearGroups||[]).find(g=>g.yearLevel===yr);
-  if(!group){ document.getElementById('yearContent').innerHTML=''; return; }
-
-  const {overallRanking, metricRankings}=group;
-  const METRICS=[
-    {key:'hollow_hold',label:'Hollow Hold',unit:'s'},
-    {key:'prone_plank',label:'Prone Plank',unit:'s'},
-    {key:'side_plank_left',label:'Side Plank Left',unit:'s'},
-    {key:'side_plank_right',label:'Side Plank Right',unit:'s'},
-  ];
-
-  let html=`
-    <div class="section-title">Overall Ranking — Year ${yr}</div>
-    <div class="card" style="margin-bottom:20px">
-      <table class="data-table">
-        <thead><tr>
-          <th>Rank</th><th>Athlete</th>
-          ${METRICS.map(m=>`<th>${m.label}</th>`).join('')}
-          <th>Tests</th><th>Avg Rank</th>
-        </tr></thead>
-        <tbody>
-          ${overallRanking.map(a=>{
-            const rankBadgeClass=a.overallRank===1?'rank-1':a.overallRank===2?'rank-2':a.overallRank===3?'rank-3':'rank-other';
-            const scores=METRICS.map(m=>{
-              const sc=a.scores[m.key];
-              return `<td style="font-weight:700">${sc!=null?sc+m.unit:'—'}</td>`;
-            }).join('');
-            return `<tr>
-              <td><span class="rank-badge ${rankBadgeClass}">${a.overallRank}</span></td>
-              <td><span class="athlete-name">${a.athlete}</span></td>
-              ${scores}
-              <td style="color:var(--muted)">${a.testsCompleted}/4</td>
-              <td style="color:var(--muted)">${a.avgRank}</td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="section-title">Metric Leaderboards — Year ${yr}</div>
-    <div class="two-col">
-      ${metricRankings.map(metric=>`
-        <div class="card">
-          <div class="card-title">${metric.label} (${metric.unit}) — higher is better</div>
-          <table class="pb-table">
-            <thead><tr><th>Rank</th><th>Athlete</th><th>Score</th></tr></thead>
-            <tbody>
-              ${metric.rankings.slice(0,10).map(r=>{
-                const rankBadgeClass=r.rank===1?'rank-1':r.rank===2?'rank-2':r.rank===3?'rank-3':'rank-other';
-                return `<tr>
-                  <td><span class="rank-badge ${rankBadgeClass}">${r.rank}</span></td>
-                  <td style="font-weight:700">${r.athlete}</td>
-                  <td class="pb-val">${r.score}${metric.unit}</td>
-                </tr>`;
-              }).join('')}
-              ${metric.rankings.length===0?'<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">No data</td></tr>':''}
-            </tbody>
-          </table>
-        </div>
-      `).join('')}
-    </div>
-
-    <div class="section-title">Visual Comparison — Year ${yr}</div>
-    <div class="card">
-      <div class="card-title">All metrics per athlete (seconds)</div>
-      <canvas id="testingChart" height="100"></canvas>
-    </div>
-  `;
-
-  document.getElementById('yearContent').innerHTML=html;
-
-  // Radar/bar chart for all athletes in this year group
-  setTimeout(()=>{
-    const ctx=document.getElementById('testingChart')?.getContext('2d');
-    if(!ctx) return;
-    const athletes=overallRanking.map(a=>a.athlete);
-    const colors=['#1a56db','#22c55e','#f59e0b','#e63946','#8b5cf6','#06b6d4'];
-    charts['testing']=new Chart(ctx,{
-      type:'bar',
-      data:{
-        labels:METRICS.map(m=>m.label),
-        datasets:athletes.map((ath,i)=>({
-          label:ath,
-          data:METRICS.map(m=>{
-            const a=overallRanking.find(r=>r.athlete===ath);
-            return a?.scores[m.key]||0;
-          }),
-          backgroundColor:colors[i%colors.length]+'bb',
-          borderRadius:5,
-        }))
-      },
-      options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{font:{size:11},boxWidth:12}}},
-        scales:{
-          y:{grid:{color:'#f0f4f8'},ticks:{font:{size:11}},title:{display:true,text:'seconds',font:{size:11}}},
-          x:{grid:{display:false},ticks:{font:{size:12}}}
-        }
-      }
-    });
-  },100);
-}
-
-// ═══════════════════════════════════════════════════
-// ATHLETE VIEW (coach's athlete drill-down)
-// ═══════════════════════════════════════════════════
-async function loadAthleteView(){
-  const athlete=document.getElementById('athleteSelect')?.value;
-  if(!athlete||athlete==='Loading…') return;
-  destroyCharts();
-  document.getElementById('mainContent').innerHTML='<div class="loading"><div class="spinner"></div> Loading athlete data…</div>';
-  try{
-    const data=await fetchData(API_SC,{view:'athlete',athlete});
-    renderAthleteView(data);
-  } catch(e){
-    document.getElementById('mainContent').innerHTML=`<div class="empty">Error: ${e.message}</div>`;
-  }
-}
-
-function renderAthleteView(data){
-  const { athlete, exerciseProgressions, sessionHistory } = data;
-  const logs = data.logs || [];
-  const totalSets = logs.length;
-  const sessions = (sessionHistory||[]).length;
-  const rpeArr = logs.filter(r=>r.rpe).map(r=>r.rpe);
-  const avgRpe = rpeArr.length ? (rpeArr.reduce((a,b)=>a+b,0)/rpeArr.length).toFixed(1) : '—';
-  const latestACWR = data.latestACWR;
-  const acwrVal = latestACWR?.acwr;
-  const acwrStatVal = acwrVal ? acwrVal.toFixed(2) : '—';
-  const acwrStatClass = !acwrVal?'':acwrVal<0.8?'':acwrVal<=1.3?'green':acwrVal<=1.5?'warn':'red';
-  const acwrStatSub = !acwrVal?'Not enough data':acwrVal<0.8?'Under-training':acwrVal<=1.3?'Optimal zone':acwrVal<=1.5?'Caution':'⚠️ Danger zone';
-
-  const pbMap={};
-  logs.forEach(r=>{
-    const load=parseFloat(r.load);
-    if(!isNaN(load)&&load>0){
-      if(!pbMap[r.exercise]||load>pbMap[r.exercise].load)
-        pbMap[r.exercise]={load,date:r.timestamp?.slice(0,10),reps:r.reps};
-    }
+  filterErgSessions(); // initial render
   });
   const pbs=Object.entries(pbMap).sort((a,b)=>b[1].load-a[1].load);
 
@@ -2875,12 +2669,11 @@ const CP_LABELS = {
  * Fit 2-parameter critical power model: P(t) = W'/t + CP
  * Using least-squares on the linearised form: P*t = W' + CP*t
  * i.e. regress y = P*t against x = t → slope=CP, intercept=W'
- * Exclude the 7-stroke max (too short, anaerobic spike) from regression,
- * use it as a Pmax sanity check only.
+ * Include Pmax (7-stroke max), 3min, 12min, and 30min in regression.
  */
 function fitCriticalPower(data) {
-  // Use 3min, 12min, 30min for regression
-  const pts = ['threeMin','twelveMin','thirtyMin'].map(k => ({
+  // Use all 4 test points including 7-stroke Pmax
+  const pts = ['sevenStroke','threeMin','twelveMin','thirtyMin'].map(k => ({
     t: CP_DURATIONS[k],
     P: data[k]
   }));
@@ -2909,7 +2702,7 @@ function loadCPView() {
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
       <div>
         <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:2px">⚡ Critical Power</div>
-        <div style="font-size:12px;color:#8fa0be">2-parameter CP model fitted from 4 maximal rowing tests</div>
+        <div style="font-size:12px;color:#8fa0be">2-parameter CP model fitted from 7-stroke max, 3 min, 12 min &amp; 30 min R20</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#8fa0be">Athlete</label>
@@ -2982,7 +2775,7 @@ function loadCPView() {
         <div style="margin-top:20px;padding:14px;background:#f8fafc;border-radius:10px;border-left:4px solid #1a56db">
           <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Model</div>
           <div style="font-size:13px;color:var(--navy);font-family:monospace" id="cpEquation">P(t) = W'/t + CP</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:6px">Fit from 3 min, 12 min & 30 min R20 efforts. 7-stroke max used as Pmax reference only.</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">Fit from all 4 tests: 7-stroke max (Pmax), 3 min, 12 min & 30 min R20 efforts.</div>
         </div>
         <div style="margin-top:16px;padding:14px;background:#fff3e0;border-radius:10px;border-left:4px solid #f59e0b">
           <div style="font-size:11px;font-weight:700;color:#e65100;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Interpretation</div>
@@ -3047,22 +2840,16 @@ function renderCPAthlete(ath) {
   document.getElementById('cpInterpretation').innerHTML = interp;
 
   // Build test results table
-  const tests = ['threeMin','twelveMin','thirtyMin'];
+  const tests = ['sevenStroke','threeMin','twelveMin','thirtyMin'];
   const testRows = ['sevenStroke','threeMin','twelveMin','thirtyMin'].map(k => {
     const t = CP_DURATIONS[k];
     const actual = data[k];
     let pred = '—', residual = '—', residStyle = '';
-    if (tests.includes(k)) {
-      const predW = (Wprime / t) + CP;
-      const res = actual - predW;
-      pred = Math.round(predW);
-      residual = (res >= 0 ? '+' : '') + Math.round(res) + 'W';
-      residStyle = res > 5 ? 'color:#22c55e;font-weight:700' : res < -5 ? 'color:#e63946;font-weight:700' : 'color:var(--muted)';
-    } else {
-      pred = 'Pmax ref';
-      residual = '—';
-      residStyle = 'color:#8fa0be;font-style:italic';
-    }
+    const predW = (Wprime / t) + CP;
+    const res = actual - predW;
+    pred = Math.round(predW);
+    residual = (res >= 0 ? '+' : '') + Math.round(res) + 'W';
+    residStyle = res > 5 ? 'color:#22c55e;font-weight:700' : res < -5 ? 'color:#e63946;font-weight:700' : 'color:var(--muted)';
     return `<tr>
       <td style="font-weight:700">${CP_LABELS[k]}</td>
       <td style="color:var(--muted)">${t < 60 ? t+'s' : (t/60)+'min'}</td>
@@ -3168,11 +2955,35 @@ function renderCPAthlete(ath) {
         y: {
           title: { display: true, text: 'Power (W)', color: '#5a6a8a', font: { weight: '700' } },
           grid: { color: 'rgba(0,0,0,.06)' },
-          ticks: { color: '#5a6a8a', callback: val => val + 'W' }
+          ticks: { color: '#5a6a8a', callback: val => val + 'W' },
+          min: (() => {
+            const allPow = [...measuredPts.map(p => p.y), ...cpCurve.map(p => p.y), CP];
+            return Math.floor((Math.min(...allPow) - 50) / 10) * 10;
+          })(),
+          max: (() => {
+            const allPow = [...measuredPts.map(p => p.y), ...cpCurve.map(p => p.y)];
+            return Math.ceil((Math.max(...allPow) + 50) / 10) * 10;
+          })()
         }
       }
     }
   });
+}
+
+
+// ── CORE TESTING INLINE ─────────────────────────────────────────────
+function loadCoreTestingView() {
+  document.getElementById('mainContent').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <div>
+        <h2 style="color:#fff;font-size:20px;font-weight:800;margin-bottom:4px">🧪 Core Testing Entry</h2>
+        <div style="font-size:12px;color:#8fa0be">Enter athlete testing results — saves to dashboard &amp; Google Sheets</div>
+      </div>
+    </div>
+    <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.3)">
+      <iframe src="testing.html" style="width:100%;height:calc(100vh - 180px);min-height:600px;border:none;display:block" title="Core Testing Entry"></iframe>
+    </div>
+  `;
 }
 
 </script>
