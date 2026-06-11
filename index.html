@@ -986,6 +986,42 @@ function renderErgView(data){
   // Recent sessions table
   const sSbody=document.getElementById('ergSessionsBody');
   filterErgSessions(); // initial render
+}
+
+
+async function loadAthleteView(){
+  const athlete=document.getElementById('athleteSelect')?.value;
+  if(!athlete||athlete==='Loading…') return;
+  destroyCharts();
+  document.getElementById('mainContent').innerHTML='<div class="loading"><div class="spinner"></div> Loading athlete data…</div>';
+  try{
+    const data=await fetchData(API_SC,{view:'athlete',athlete});
+    renderAthleteView(data);
+  } catch(e){
+    document.getElementById('mainContent').innerHTML=`<div class="empty">Error: ${e.message}</div>`;
+  }
+}
+
+function renderAthleteView(data){
+  const { athlete, exerciseProgressions, sessionHistory } = data;
+  const logs = data.logs || [];
+  const totalSets = logs.length;
+  const sessions = (sessionHistory||[]).length;
+  const rpeArr = logs.filter(r=>r.rpe).map(r=>r.rpe);
+  const avgRpe = rpeArr.length ? (rpeArr.reduce((a,b)=>a+b,0)/rpeArr.length).toFixed(1) : '—';
+  const latestACWR = data.latestACWR;
+  const acwrVal = latestACWR?.acwr;
+  const acwrStatVal = acwrVal ? acwrVal.toFixed(2) : '—';
+  const acwrStatClass = !acwrVal?'':acwrVal<0.8?'':acwrVal<=1.3?'green':acwrVal<=1.5?'warn':'red';
+  const acwrStatSub = !acwrVal?'Not enough data':acwrVal<0.8?'Under-training':acwrVal<=1.3?'Optimal zone':acwrVal<=1.5?'Caution':'⚠️ Danger zone';
+
+  const pbMap={};
+  logs.forEach(r=>{
+    const load=parseFloat(r.load);
+    if(!isNaN(load)&&load>0){
+      if(!pbMap[r.exercise]||load>pbMap[r.exercise].load)
+        pbMap[r.exercise]={load,date:r.timestamp?.slice(0,10),reps:r.reps};
+    }
   });
   const pbs=Object.entries(pbMap).sort((a,b)=>b[1].load-a[1].load);
 
@@ -1150,6 +1186,8 @@ function renderErgView(data){
     },60*idx+100);
   });
 }
+
+
 
 
 // ═══════════════════════════════════════════════════
