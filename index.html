@@ -404,7 +404,7 @@ function switchView(view){
     document.getElementById('snav-water').style.display='none';
     document.getElementById('snav-testing').style.display='none';
     document.getElementById('snav-wellness').style.display='none';
-    document.getElementById('snav-compare')?.closest('a')?.style document.getElementById('snav-compare').style.display='none';document.getElementById('snav-compare').style.display='none'; (document.getElementById('snav-compare').closest('a').style.display='none');
+    const cmpA1 = document.getElementById('snav-compare')?.closest('a'); if(cmpA1) cmpA1.style.display='none';
     document.getElementById('snav-cp').style.display='none';
     athWrap.style.display='block';
     loadAthleteView();
@@ -414,7 +414,7 @@ function switchView(view){
     document.getElementById('snav-water').style.display='';
     document.getElementById('snav-testing').style.display='';
     document.getElementById('snav-wellness').style.display='';
-    document.getElementById('snav-compare')?.closest('a')?.style document.getElementById('snav-compare').style.display='';document.getElementById('snav-compare').style.display=''; (document.getElementById('snav-compare').closest('a').style.display='');
+    const cmpA2 = document.getElementById('snav-compare')?.closest('a'); if(cmpA2) cmpA2.style.display='';
     document.getElementById('snav-cp').style.display='';
     athWrap.style.display='none';
     switchTab(currentTab);
