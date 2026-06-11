@@ -1144,7 +1144,7 @@ function renderAthleteView(data){
   (sessionHistory||[]).forEach(s=>{
     const cls=s.session_type==='Lower A'?'sb-la':s.session_type==='Lower B'?'sb-lb':s.session_type==='Upper A'?'sb-ua':'sb-ub';
     const rpeClass=(s.avgRpe||0)>=8.5?'rpe-high':(s.avgRpe||0)>=7.5?'rpe-mid':'rpe-low';
-    const exList=s.exercises.slice(0,4).join(', ')+(s.exercises.length>4?` +${s.exercises.length-4}`:'');
+    const exArr=s.exercises||[];const exList=exArr.slice(0,4).join(', ')+(exArr.length>4?` +${exArr.length-4}`:'');
     const tr=document.createElement('tr');
     tr.className='clickable-row';
     tr.onclick=()=>openGymSession(athlete, s.date, s.session_type);
@@ -1344,7 +1344,7 @@ async function openGymSession(athlete, date, session_type){
     // Stats bar
     const rpeClass = (s.avg_rpe||0)>=8.5?'rpe-high':(s.avg_rpe||0)>=7.5?'rpe-mid':'rpe-low';
     document.getElementById('modalStats').innerHTML = `
-      <div class="modal-stat"><div class="modal-stat-val">${s.exercises.length}</div><div class="modal-stat-lbl">Exercises</div></div>
+      <div class="modal-stat"><div class="modal-stat-val">${(s.exercises||[]).length}</div><div class="modal-stat-lbl">Exercises</div></div>
       <div class="modal-stat"><div class="modal-stat-val">${s.total_sets}</div><div class="modal-stat-lbl">Total Sets</div></div>
       <div class="modal-stat"><div class="modal-stat-val">${s.avg_rpe ? '<span class="rpe-badge '+rpeClass+'">'+s.avg_rpe+'</span>' : '—'}</div><div class="modal-stat-lbl">Avg RPE</div></div>
       <div class="modal-stat"><div class="modal-stat-val" style="font-size:16px">${s.total_load>0?s.total_load.toLocaleString()+'kg':'—'}</div><div class="modal-stat-lbl">Volume</div></div>
@@ -1352,7 +1352,7 @@ async function openGymSession(athlete, date, session_type){
 
     // Exercise table blocks — one table per exercise, sets as rows
     let bodyHtml = '<div class="modal-section"><div class="modal-section-title">Exercises — in order performed</div>';
-    s.exercises.forEach((ex, exIdx) => {
+    (s.exercises||[]).forEach((ex, exIdx) => {
       const hasLoad = ex.sets.some(st => st.load && st.load !== '—' && st.load !== null);
       const hasRpe  = ex.sets.some(st => st.rpe);
       bodyHtml += `

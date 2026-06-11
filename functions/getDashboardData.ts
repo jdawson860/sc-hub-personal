@@ -101,12 +101,17 @@ function buildSessionHistory(logs: any[]) {
       const sets = logs.filter(l => l.timestamp?.startsWith(date) && l.session_type === r.session_type);
       const rpes = sets.filter(s => s.rpe).map(s => s.rpe);
       const tl = sets.reduce((a, s) => { const l = parseFloat(s.load); return a + (isNaN(l) ? 0 : l * (parseFloat(s.reps) || 1)); }, 0);
+      // Unique exercises in order they appear
+      const exSeen = new Set<string>();
+      const exercises: string[] = [];
+      for (const s of sets) { if (s.exercise && !exSeen.has(s.exercise)) { exSeen.add(s.exercise); exercises.push(s.exercise); } }
       sessions.push({
         date,
         session_type: r.session_type,
         totalSets: sets.length,
         avgRpe: rpes.length ? parseFloat((rpes.reduce((a, v) => a + v, 0) / rpes.length).toFixed(1)) : null,
         totalLoad: Math.round(tl),
+        exercises,
       });
     }
   }
