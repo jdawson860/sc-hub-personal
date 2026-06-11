@@ -1,15 +1,14 @@
-import { createClient } from 'npm:@base44/sdk@0.8.31';
+// getWellnessData v2 - uses direct REST API (no SDK asServiceRole)
 
-// Returns squad-wide wellness data for the coach dashboard
-// Response:
-// {
-//   ok: true,
-//   athletes: string[],
-//   latest: { athlete, readiness_score, sleep, soreness, motivation, timestamp }[],  // most recent check-in per athlete
-//   series: { athlete, date, readiness_score, sleep, soreness, motivation }[],       // last 28 days all athletes
-//   squad_avg_readiness: number,
-//   low_readiness: string[],  // athletes < 5.0 today
-// }
+const APP_ID = "6a2139cf1719e3fb84188511";
+const BASE = `https://app.base44.com/api/apps/${APP_ID}/entities`;
+
+async function fetchEntity(entity: string, token: string): Promise<any[]> {
+  const res = await fetch(`${BASE}/${entity}`, { headers: { 'api_key': token } });
+  if (!res.ok) throw new Error(`${entity} fetch failed: ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
 
 Deno.serve(async (req) => {
   const cors = {
@@ -20,13 +19,12 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
 
   try {
-    const base44 = createClient({ appId: "6a2139cf1719e3fb84188511", serviceToken: Deno.env.get("BASE44_SERVICE_TOKEN") || "" });
+    const token = Deno.env.get("BASE44_SERVICE_TOKEN") || "";
     const body = await req.json().catch(() => ({}));
-    const { athlete } = body; // optional: filter to one athlete
+    const { athlete } = body;
 
-    const allWellness = await base44.asServiceRole.entities.WellnessCheckIn.list();
+    const allWellness = await fetchEntity('WellnessCheckIn', token);
 
-    // Filter to last 28 days
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 28);
 
@@ -34,10 +32,8 @@ Deno.serve(async (req) => {
       .filter((w: any) => new Date(w.timestamp) >= cutoff)
       .sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-    // If filtering to one athlete
     const filtered = athlete ? recent.filter((w: any) => w.athlete === athlete) : recent;
 
-    // Latest check-in per athlete
     const latestMap: Record<string, any> = {};
     for (const w of recent) {
       if (!latestMap[w.athlete]) latestMap[w.athlete] = w;
@@ -53,16 +49,13 @@ Deno.serve(async (req) => {
       date: w.timestamp?.slice(0, 10),
     })).sort((a: any, b: any) => (a.readiness_score ?? 10) - (b.readiness_score ?? 10));
 
-    // Squad avg readiness (latest per athlete)
     const readinessScores = latest.map((w: any) => w.readiness_score).filter((s: any) => s != null);
     const squad_avg_readiness = readinessScores.length
       ? parseFloat((readinessScores.reduce((a: number, b: number) => a + b, 0) / readinessScores.length).toFixed(1))
       : null;
 
-    // Athletes flagged low readiness (< 5.0)
     const low_readiness = latest.filter((w: any) => (w.readiness_score ?? 10) < 5).map((w: any) => w.athlete);
 
-    // Series: all records, shaped for charting
     const series = filtered.map((w: any) => ({
       athlete: w.athlete,
       date: w.timestamp?.slice(0, 10),
@@ -73,19 +66,10 @@ Deno.serve(async (req) => {
       notes: w.notes,
     }));
 
-    // Unique athletes
     const athletes = [...new Set(recent.map((w: any) => w.athlete as string))].sort();
 
-    return Response.json({
-      ok: true,
-      athletes,
-      latest,
-      series,
-      squad_avg_readiness,
-      low_readiness,
-    }, { status: 200, headers: cors });
-
+    return Response.json({ ok: true, athletes, latest, series, squad_avg_readiness, low_readiness }, { status: 200, headers: cors });
   } catch (err: any) {
-    return Response.json({ error: err.message }, { status: 500, headers: cors });
+    return Response.json({ ok: false, error: err.message }, { status: 500, headers: cors });
   }
 });

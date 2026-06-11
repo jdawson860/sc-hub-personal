@@ -1,11 +1,27 @@
-import { createClient } from 'npm:@base44/sdk@0.8.31';
+// getTestingData v2 - uses direct REST API (no SDK asServiceRole)
+
+const APP_ID = "6a2139cf1719e3fb84188511";
+const BASE = `https://app.base44.com/api/apps/${APP_ID}/entities`;
+
+async function fetchEntity(entity: string, token: string): Promise<any[]> {
+  const res = await fetch(`${BASE}/${entity}`, { headers: { 'api_key': token } });
+  if (!res.ok) throw new Error(`${entity} fetch failed: ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
 
 Deno.serve(async (req) => {
-  try {
-    const base44 = createClient({ appId: "6a2139cf1719e3fb84188511", serviceToken: Deno.env.get("BASE44_SERVICE_TOKEN") || "" });
-    const records = await base44.asServiceRole.entities.TestingResult.list();
+  const cors = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
 
-    // Group by year level
+  try {
+    const token = Deno.env.get("BASE44_SERVICE_TOKEN") || "";
+    const records = await fetchEntity('TestingResult', token);
+
     const byYear: Record<string, any[]> = {};
     for (const r of records) {
       const yr = r.year_level || 'Unknown';
@@ -13,7 +29,6 @@ Deno.serve(async (req) => {
       byYear[yr].push(r);
     }
 
-    // For each year level, rank athletes on each test metric (higher = better for all current tests)
     const METRICS = [
       { key: 'hollow_hold', label: 'Hollow Hold', unit: 's', higherBetter: true },
       { key: 'prone_plank', label: 'Prone Plank', unit: 's', higherBetter: true },
@@ -21,24 +36,14 @@ Deno.serve(async (req) => {
       { key: 'side_plank_right', label: 'Side Plank Right', unit: 's', higherBetter: true },
     ];
 
-    const yearGroups = Object.keys(byYear).sort((a,b) => {
-      const na = parseInt(a) || 999;
-      const nb = parseInt(b) || 999;
-      return na - nb;
-    });
+    const yearGroups = Object.keys(byYear).sort((a, b) => (parseInt(a) || 999) - (parseInt(b) || 999));
 
     const result = yearGroups.map(yr => {
       const athletes = byYear[yr];
-
-      // For each metric, rank athletes (only those with a score)
       const metricRankings = METRICS.map(metric => {
         const scored = athletes
           .filter(a => a[metric.key] !== null && a[metric.key] !== undefined)
-          .sort((a, b) => metric.higherBetter
-            ? b[metric.key] - a[metric.key]
-            : a[metric.key] - b[metric.key]
-          );
-
+          .sort((a, b) => metric.higherBetter ? b[metric.key] - a[metric.key] : a[metric.key] - b[metric.key]);
         return {
           ...metric,
           rankings: scored.map((a, idx) => ({
@@ -46,12 +51,11 @@ Deno.serve(async (req) => {
             athlete: a.athlete_name,
             score: a[metric.key],
             date: a.timestamp?.slice(0, 10),
-          }))
+          })),
         };
       });
 
-      // Overall score per athlete (avg rank across all metrics they have)
-      const athleteScores: Record<string, { totalRank: number, count: number, scores: Record<string,number> }> = {};
+      const athleteScores: Record<string, { totalRank: number, count: number, scores: Record<string, number> }> = {};
       metricRankings.forEach(metric => {
         metric.rankings.forEach(r => {
           if (!athleteScores[r.athlete]) athleteScores[r.athlete] = { totalRank: 0, count: 0, scores: {} };
@@ -71,17 +75,11 @@ Deno.serve(async (req) => {
         .sort((a, b) => a.avgRank - b.avgRank)
         .map((a, idx) => ({ ...a, overallRank: idx + 1 }));
 
-      return {
-        yearLevel: yr,
-        athleteCount: athletes.length,
-        metricRankings,
-        overallRanking,
-      };
+      return { yearLevel: yr, athleteCount: athletes.length, metricRankings, overallRanking };
     });
 
-    return Response.json({ ok: true, yearGroups: result, totalRecords: records.length });
-
-  } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ ok: true, yearGroups: result, totalRecords: records.length }, { headers: cors });
+  } catch (error: any) {
+    return Response.json({ ok: false, error: error.message }, { status: 500, headers: cors });
   }
 });
