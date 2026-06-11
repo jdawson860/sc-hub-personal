@@ -204,11 +204,13 @@ Deno.serve(async (req) => {
       for (const r of logs) { if (sessionCounts[r.session_type] !== undefined) sessionCounts[r.session_type]++; }
 
       const highRpeSets = logs.filter(r => (r.rpe || 0) >= 9).length;
+      const uniqueSessions = new Set(logs.map(r => `${r.timestamp?.split('T')[0]}|${r.session_type}`)).size;
+      const uniqueRecentSessions = new Set(recent.map(r => `${r.timestamp?.split('T')[0]}|${r.session_type}`)).size;
 
       return {
         athlete: ath,
-        total_sessions: logs.length,
-        recent_sessions: recent.length,
+        total_sessions: uniqueSessions,
+        recent_sessions: uniqueRecentSessions,
         avg_rpe: avgRpe,
         high_rpe_sets: highRpeSets,
         acwr: latestAcwr?.acwr ?? null,
@@ -228,7 +230,7 @@ Deno.serve(async (req) => {
     });
 
     const squadCalendar = buildSquadLoadCalendar(allLogs);
-    const totalSessions = allLogs.length;
+    const totalSessions = new Set(allLogs.map(r => `${r.athlete}|${r.timestamp?.split('T')[0]}|${r.session_type}`)).size;
     const activeThisWeek = athletes.filter(a => byAthlete[a].some(r => new Date(r.timestamp) >= week7)).length;
     const allRpes = allLogs.filter(r => r.rpe).map(r => r.rpe);
     const avgSquadRpe = allRpes.length ? parseFloat((allRpes.reduce((a, v) => a + v, 0) / allRpes.length).toFixed(1)) : null;
