@@ -171,8 +171,6 @@
   <div class="mode-bar">
     <div class="mode-tab active" id="tab-sc" onclick="setMode('sc')">💪 S&amp;C</div>
     <div class="mode-tab" id="tab-erg" onclick="setMode('erg')">🚣 Erg</div>
-    <div class="mode-tab" id="tab-water" onclick="setMode('water')">🌊 Water</div>
-    <div class="mode-tab" id="tab-wellness" onclick="setMode('wellness')">❤️ Wellness</div>
     <div class="mode-tab" id="tab-history" onclick="setMode('history')">📋 History</div>
   </div>
 </header>
@@ -447,100 +445,6 @@
 </div>
 
 
-<!-- ═══════════════════════════════════════
-     WATER LOGGER PAGE
-═══════════════════════════════════════ -->
-<div class="page" id="page-water">
-  <div class="wrap">
-    <div class="status-bar" id="waterStatus" style="display:none">
-      <div>
-        <div class="status-ath" id="waterAthName">—</div>
-        <div class="status-sub">On-Water Session</div>
-      </div>
-    </div>
-
-    <p class="sec">Session Details</p>
-    <div class="card">
-      <div class="field">
-        <label>Session Type</label>
-        <select id="waterType">
-          <option value="">— Select —</option>
-          <option>Pieces</option>
-          <option>Steady State</option>
-          <option>Race Sim</option>
-          <option>Time Trial</option>
-          <option>Technique</option>
-          <option>Other</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Boat Type</label>
-        <select id="waterBoat">
-          <option value="">— Select —</option>
-          <option>1x</option><option>2x</option><option>2-</option>
-          <option>4x</option><option>4+</option><option>4-</option>
-          <option>8+</option><option>Other</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Conditions</label>
-        <select id="waterConditions">
-          <option value="">— Select —</option>
-          <option>Flat</option><option>Slight chop</option><option>Choppy</option>
-          <option>Headwind</option><option>Tailwind</option><option>Crosswind</option>
-        </select>
-      </div>
-    </div>
-
-    <p class="sec">Performance</p>
-    <div class="card">
-      <div class="field">
-        <label>Total Distance (m)</label>
-        <input type="number" id="waterDist" inputmode="numeric" placeholder="e.g. 12000"/>
-      </div>
-      <div class="field">
-        <label>Duration (hh:mm)</label>
-        <input type="text" id="waterDuration" placeholder="e.g. 1:15"/>
-      </div>
-      <div class="field">
-        <label>Avg Split /500m</label>
-        <input type="text" id="waterSplit" placeholder="e.g. 2:05"/>
-      </div>
-      <div class="field">
-        <label>Stroke Rating (spm)</label>
-        <input type="number" id="waterRating" inputmode="numeric" placeholder="e.g. 20"/>
-      </div>
-      <div class="field">
-        <label>Avg Heart Rate (bpm)</label>
-        <input type="number" id="waterHr" inputmode="numeric" placeholder="e.g. 155"/>
-      </div>
-    </div>
-
-    <p class="sec">Pieces / Intervals (optional)</p>
-    <div class="card">
-      <div class="field">
-        <label>Describe pieces</label>
-        <textarea id="waterPieces" rows="3" placeholder="e.g. 4×2km r:3 — splits: 1:58, 1:57, 1:59, 1:56" style="width:100%;padding:11px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;resize:vertical;outline:none"></textarea>
-      </div>
-    </div>
-
-    <p class="sec">Wellbeing</p>
-    <div class="card">
-      <div class="field">
-        <label>RPE (1–10)</label>
-        <input type="number" id="waterRpe" inputmode="numeric" min="1" max="10" placeholder="e.g. 7"/>
-        <div class="hint">1 = very easy · 10 = maximal effort</div>
-      </div>
-      <div class="field">
-        <label>Athlete Notes</label>
-        <textarea id="waterNotes" rows="2" placeholder="How did it feel? Technique notes…" style="width:100%;padding:11px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;resize:vertical;outline:none"></textarea>
-      </div>
-    </div>
-
-    <button class="btn btn-primary" id="submitWaterBtn" onclick="submitWater()">Submit Water Session ✓</button>
-    <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:10px">Saves to the coach dashboard</p>
-  </div>
-</div>
 
 <!-- ═══════════════════════════════════════
      HISTORY PAGE
@@ -552,7 +456,6 @@
         <option value="all">All Sessions</option>
         <option value="sc">💪 S&amp;C Sessions</option>
         <option value="erg">🚣 Erg Sessions</option>
-        <option value="water">🌊 Water Sessions</option>
       </select>
     </div>
     <div id="historyContent">
@@ -563,79 +466,6 @@
     </div>
   </div>
 </div>
-<!-- ═══════════════════════════════════════
-     WELLNESS CHECK-IN PAGE
-═══════════════════════════════════════ -->
-<div class="page" id="page-wellness">
-  <div class="wrap">
-    <div class="status-bar" id="wellnessStatus" style="display:none">
-      <div>
-        <div class="status-ath" id="wellnessAthName">—</div>
-        <div class="status-sub">Daily Wellness Check-In</div>
-      </div>
-    </div>
-
-    <div id="wellnessSuccess" style="display:none;text-align:center;padding:40px 20px">
-      <div style="font-size:48px;margin-bottom:12px">❤️</div>
-      <h3 style="font-size:20px;font-weight:800;color:var(--navy);margin-bottom:8px">Check-in recorded!</h3>
-      <p id="wellnessScoreMsg" style="font-size:15px;color:var(--muted)">Your readiness score has been saved.</p>
-      <div id="readinessMeter" style="margin:20px auto;width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;border:4px solid #22c55e;color:#07122b"></div>
-      <p style="font-size:12px;color:var(--muted)">Visible to your coach on the dashboard</p>
-      <button onclick="resetWellness()" style="margin-top:16px;padding:12px 24px;background:var(--bg);border:2px solid var(--border);border-radius:10px;font-weight:700;cursor:pointer;font-size:14px">Log another day</button>
-    </div>
-
-    <div id="wellnessForm">
-      <p class="sec">How are you feeling today?</p>
-      <div class="card">
-        <div style="margin-bottom:20px">
-          <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:4px">😴 Sleep Quality</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">1 = terrible · 5 = excellent</div>
-          <div style="display:flex;gap:8px">
-            <button class="rating-btn" id="sleep-1" onclick="setRating('sleep',1)">1</button>
-            <button class="rating-btn" id="sleep-2" onclick="setRating('sleep',2)">2</button>
-            <button class="rating-btn" id="sleep-3" onclick="setRating('sleep',3)">3</button>
-            <button class="rating-btn" id="sleep-4" onclick="setRating('sleep',4)">4</button>
-            <button class="rating-btn" id="sleep-5" onclick="setRating('sleep',5)">5</button>
-          </div>
-        </div>
-        <div style="margin-bottom:20px">
-          <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:4px">💪 Muscle Soreness</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">1 = no soreness · 5 = very sore</div>
-          <div style="display:flex;gap:8px">
-            <button class="rating-btn" id="soreness-1" onclick="setRating('soreness',1)">1</button>
-            <button class="rating-btn" id="soreness-2" onclick="setRating('soreness',2)">2</button>
-            <button class="rating-btn" id="soreness-3" onclick="setRating('soreness',3)">3</button>
-            <button class="rating-btn" id="soreness-4" onclick="setRating('soreness',4)">4</button>
-            <button class="rating-btn" id="soreness-5" onclick="setRating('soreness',5)">5</button>
-          </div>
-        </div>
-        <div>
-          <div style="font-size:14px;font-weight:800;color:var(--navy);margin-bottom:4px">🔥 Motivation to Train</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">1 = can't be bothered · 5 = ready to go</div>
-          <div style="display:flex;gap:8px">
-            <button class="rating-btn" id="motivation-1" onclick="setRating('motivation',1)">1</button>
-            <button class="rating-btn" id="motivation-2" onclick="setRating('motivation',2)">2</button>
-            <button class="rating-btn" id="motivation-3" onclick="setRating('motivation',3)">3</button>
-            <button class="rating-btn" id="motivation-4" onclick="setRating('motivation',4)">4</button>
-            <button class="rating-btn" id="motivation-5" onclick="setRating('motivation',5)">5</button>
-          </div>
-        </div>
-      </div>
-
-      <p class="sec">Optional</p>
-      <div class="card">
-        <div class="field">
-          <label>Anything else? (injury niggles, illness, personal notes)</label>
-          <textarea id="wellnessNotes" rows="3" placeholder="e.g. tight hamstring from yesterday, feeling a bit run down…" style="width:100%;padding:11px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;resize:vertical;outline:none"></textarea>
-        </div>
-      </div>
-
-      <button class="btn btn-primary" id="submitWellnessBtn" onclick="submitWellness()">Submit Check-In ✓</button>
-      <p style="text-align:center;font-size:11px;color:var(--muted);margin-top:10px">Shared with your coach — do this before each training day</p>
-    </div>
-  </div>
-</div>
-
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────
 const BASE = 'https://superagent-84188511.base44.app/functions';
@@ -730,11 +560,6 @@ function selectAthlete(ath) {
   localStorage.setItem('cranbrook_athlete', ath);
   document.getElementById('overlay').classList.add('hidden');
   document.getElementById('headerAth').textContent = ath;
-  // Update water + wellness status
-  const ws = document.getElementById('waterStatus');
-  if(ws){ ws.style.display='flex'; document.getElementById('waterAthName').textContent=ath; }
-  const wellS = document.getElementById('wellnessStatus');
-  if(wellS){ wellS.style.display='flex'; document.getElementById('wellnessAthName').textContent=ath; }
   // Reset history cache on athlete change
   historyLoaded = false;
   // Check if first time
@@ -747,7 +572,7 @@ function changeAthlete() {
 // ── MODE SWITCH ───────────────────────────────────────────────────────
 function setMode(m) {
   currentMode = m;
-  ['sc','erg','water','wellness','history'].forEach(id => {
+  ['sc','erg','history'].forEach(id => {
     document.getElementById(`page-${id}`).classList.toggle('active', id===m);
     document.getElementById(`tab-${id}`).classList.toggle('active', id===m);
   });
@@ -890,7 +715,8 @@ async function submitSession() {
   try {
     const res = await api('submitSession', records);
     if (res.ok) {
-      showToast(`✅ Session logged! ${res.created} sets saved.`, 4000);
+      const sheetMsg = res.sheet_synced ? ' + Sheet ✓' : '';
+      showToast(`✅ Session logged! ${res.created} sets saved.${sheetMsg}`, 4000);
       clearSession();
     } else {
       showToast('❌ Error submitting. Try again.');
@@ -1282,47 +1108,6 @@ function showToast(msg, duration=3000) {
 }
 
 
-// ── WATER LOGGER ─────────────────────────────────────────────────────
-async function submitWater() {
-  if (!currentAthlete) { showToast('Select your name first'); changeAthlete(); return; }
-  const type = document.getElementById('waterType').value;
-  if (!type) { showToast('⚠️ Select a session type'); return; }
-
-  const btn = document.getElementById('submitWaterBtn');
-  btn.disabled = true; btn.textContent = '⏳ Submitting…';
-
-  const body = {
-    athlete: currentAthlete,
-    session_type: type,
-    boat_type: document.getElementById('waterBoat').value || null,
-    conditions: document.getElementById('waterConditions').value || null,
-    distance: document.getElementById('waterDist').value || null,
-    duration: document.getElementById('waterDuration').value || null,
-    avg_split: document.getElementById('waterSplit').value || null,
-    rating: document.getElementById('waterRating').value || null,
-    avg_heart_rate: document.getElementById('waterHr').value || null,
-    rpe: document.getElementById('waterRpe').value || null,
-    pieces: document.getElementById('waterPieces').value || null,
-    athlete_notes: document.getElementById('waterNotes').value || null,
-  };
-
-  try {
-    const res = await api('submitWater', body);
-    if (res.ok) {
-      showToast('✅ Water session logged!', 4000);
-      // Reset form
-      ['waterType','waterBoat','waterConditions'].forEach(id => document.getElementById(id).value='');
-      ['waterDist','waterDuration','waterSplit','waterRating','waterHr','waterRpe'].forEach(id => document.getElementById(id).value='');
-      ['waterPieces','waterNotes'].forEach(id => document.getElementById(id).value='');
-    } else {
-      showToast('❌ Error. Try again.');
-    }
-  } catch(e) {
-    showToast('❌ Network error. Try again.');
-  }
-  btn.disabled = false; btn.textContent = 'Submit Water Session ✓';
-}
-
 // ── HISTORY ──────────────────────────────────────────────────────────
 let historyLoaded = false;
 let _historyScSessions = [];
@@ -1429,19 +1214,15 @@ async function loadHistory() {
   el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:32px;margin-bottom:12px">⏳</div><div style="font-size:14px;font-weight:600">Loading…</div></div>';
 
   try {
-    const [scData, ergData, waterData] = await Promise.all([
+    const [scData, ergData] = await Promise.all([
       api('getDashboardData', { view: 'athlete', athlete: currentAthlete }),
       api('getErgData', { view: 'athlete', athlete: currentAthlete }),
-      api('getWaterData', { athlete: currentAthlete }),
     ]);
 
     _historyScSessions = scData.sessionHistory || [];
     _historyErgSessions = (ergData.sessions || []);
-    _historyWaterSessions = (waterData.sessions || []);
+    _historyWaterSessions = [];
 
-    const sessions = _historyScSessions;
-    const ergSessions = _historyErgSessions;
-    const waterSessions = _historyWaterSessions;
 
     historyLoaded = true;
     filterHistoryView();
@@ -1451,62 +1232,6 @@ async function loadHistory() {
 }
 
 // History cache reset is handled in selectAthlete directly
-
-
-// ── WELLNESS ──────────────────────────────────────────────────────────
-const wellnessRatings = { sleep: 0, soreness: 0, motivation: 0 };
-
-function setRating(type, value) {
-  wellnessRatings[type] = value;
-  document.querySelectorAll(`[id^="${type}-"]`).forEach(b => {
-    const n = parseInt(b.id.split('-')[1]);
-    b.classList.toggle('active', n <= value);
-  });
-}
-
-async function submitWellness() {
-  if (!currentAthlete) { showToast('Select your name first'); changeAthlete(); return; }
-  if (!wellnessRatings.sleep || !wellnessRatings.soreness || !wellnessRatings.motivation) {
-    showToast('⚠️ Rate all three categories'); return;
-  }
-
-  const btn = document.getElementById('submitWellnessBtn');
-  btn.disabled = true; btn.textContent = '⏳ Saving…';
-
-  try {
-    const res = await api('submitWellness', {
-      athlete: currentAthlete,
-      sleep: wellnessRatings.sleep,
-      soreness: wellnessRatings.soreness,
-      motivation: wellnessRatings.motivation,
-      notes: document.getElementById('wellnessNotes').value || null,
-    });
-
-    if (res.ok) {
-      document.getElementById('wellnessForm').style.display = 'none';
-      document.getElementById('wellnessSuccess').style.display = 'block';
-      const score = res.readiness_score;
-      const meter = document.getElementById('readinessMeter');
-      meter.textContent = score;
-      meter.style.borderColor = score >= 7 ? '#22c55e' : score >= 5 ? '#f59e0b' : '#e63946';
-      const label = score >= 7 ? "You're in good shape today 💪" : score >= 5 ? "Moderate readiness — train smart" : "Low readiness — take care today";
-      document.getElementById('wellnessScoreMsg').textContent = `Readiness score: ${score}/10 — ${label}`;
-    } else {
-      showToast('❌ Error saving. Try again.');
-    }
-  } catch(e) {
-    showToast('❌ Network error. Try again.');
-  }
-  btn.disabled = false; btn.textContent = 'Submit Check-In ✓';
-}
-
-function resetWellness() {
-  wellnessRatings.sleep = 0; wellnessRatings.soreness = 0; wellnessRatings.motivation = 0;
-  document.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('wellnessNotes').value = '';
-  document.getElementById('wellnessForm').style.display = 'block';
-  document.getElementById('wellnessSuccess').style.display = 'none';
-}
 
 
 init();
