@@ -1,15 +1,25 @@
-// getDashboardData v3 - uses direct REST API (no SDK asServiceRole)
+// getDashboardData v4 — paginated fetch, correct session_counts, ACWR provisional guard
 
 const APP_ID = "6a2139cf1719e3fb84188511";
 const BASE = `https://app.base44.com/api/apps/${APP_ID}/entities`;
 
+// Paginated fetch — retrieves ALL records, not just the first page
 async function fetchEntity(entity: string, token: string): Promise<any[]> {
-  const res = await fetch(`${BASE}/${entity}`, {
-    headers: { 'api_key': token },
-  });
-  if (!res.ok) throw new Error(`${entity} fetch failed: ${res.status}`);
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
+  const all: any[] = [];
+  let skip = 0;
+  const limit = 500;
+  while (true) {
+    const res = await fetch(`${BASE}/${entity}?limit=${limit}&skip=${skip}`, {
+      headers: { 'api_key': token },
+    });
+    if (!res.ok) throw new Error(`${entity} fetch failed: ${res.status}`);
+    const data = await res.json();
+    const page = Array.isArray(data) ? data : (data.records || data.data || []);
+    all.push(...page);
+    if (page.length < limit) break;
+    skip += limit;
+  }
+  return all;
 }
 
 function buildDailyLoad(logs: any[]): Record<string, number> {
@@ -35,7 +45,7 @@ function rollingMean(daily: Record<string, number>, endDate: string, days: numbe
   return total / days;
 }
 
-function computeACWR(logs: any[]): { date: string, acute: number, chronic: number, acwr: number, dailyLoad: number }[] {
+function computeACWR(logs: any[]): { date: string, acute: number, chronic: number, acwr: number, dailyLoad: number, provisional: boolean }[] {
   const daily = buildDailyLoad(logs);
   if (!Object.keys(daily).length) return [];
   const allDates = Object.keys(daily).sort();
@@ -48,12 +58,16 @@ function computeACWR(logs: any[]): { date: string, acute: number, chronic: numbe
     if (daysSinceStart < 6) continue;
     const acute = rollingMean(daily, dateStr, 7);
     const chronic = rollingMean(daily, dateStr, 28);
+    // Mark as provisional until we have a full 28-day chronic window
+    const provisional = daysSinceStart < 27;
     points.push({
       date: dateStr,
       acute: Math.round(acute),
       chronic: Math.round(chronic),
-      acwr: chronic > 0 ? parseFloat((acute / chronic).toFixed(2)) : 0,
+      // Cap ACWR at 3.0 to avoid extreme values from sparse early data
+      acwr: chronic > 0 ? Math.min(parseFloat((acute / chronic).toFixed(2)), 3.0) : 0,
       dailyLoad: Math.round(daily[dateStr] || 0),
+      provisional,
     });
   }
   return points;
@@ -101,7 +115,6 @@ function buildSessionHistory(logs: any[]) {
       const sets = logs.filter(l => l.timestamp?.startsWith(date) && l.session_type === r.session_type);
       const rpes = sets.filter(s => s.rpe).map(s => s.rpe);
       const tl = sets.reduce((a, s) => { const l = parseFloat(s.load); return a + (isNaN(l) ? 0 : l * (parseFloat(s.reps) || 1)); }, 0);
-      // Unique exercises in order they appear
       const exSeen = new Set<string>();
       const exercises: string[] = [];
       for (const s of sets) { if (s.exercise && !exSeen.has(s.exercise)) { exSeen.add(s.exercise); exercises.push(s.exercise); } }
@@ -170,6 +183,8 @@ Deno.serve(async (req) => {
     const week7 = new Date(now); week7.setDate(now.getDate() - 7);
 
     const sessionTypes = ['Lower A', 'Lower B', 'Upper A', 'Upper B'];
+
+    // Heatmap — did each athlete do each session type in the last 7 days?
     const heatmap: Record<string, Record<string, boolean>> = {};
     for (const ath of athletes) {
       heatmap[ath] = {};
@@ -179,6 +194,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Latest wellness per athlete
     const wellnessByAthlete: Record<string, any> = {};
     for (const w of allWellness) {
       const ath = w.athlete;
@@ -192,6 +208,10 @@ Deno.serve(async (req) => {
       const recent = logs.filter(r => new Date(r.timestamp) >= week7);
       const acwrData = computeACWR(logs);
       const latestAcwr = acwrData.length ? acwrData[acwrData.length - 1] : null;
+
+      // Only report ACWR if we have a full 28-day chronic window
+      const hasFullChronic = latestAcwr && !latestAcwr.provisional;
+
       const avgRpe = logs.filter(r => r.rpe).length
         ? parseFloat((logs.reduce((a, r) => a + (r.rpe || 0), 0) / logs.filter(r => r.rpe).length).toFixed(1))
         : null;
@@ -199,13 +219,27 @@ Deno.serve(async (req) => {
       const lastLog = [...logs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
       const daysSinceLast = lastLog ? Math.floor((now.getTime() - new Date(lastLog.timestamp).getTime()) / 86400000) : null;
       const wellness = wellnessByAthlete[ath] || null;
+
+      // session_counts: unique sessions per type (not raw set rows)
       const sessionCounts: Record<string, number> = {};
       for (const st of sessionTypes) sessionCounts[st] = 0;
-      for (const r of logs) { if (sessionCounts[r.session_type] !== undefined) sessionCounts[r.session_type]++; }
+      const seenSessions = new Set<string>();
+      for (const r of logs) {
+        const date = r.timestamp?.split('T')[0];
+        const key = `${date}|${r.session_type}`;
+        if (!seenSessions.has(key) && sessionCounts[r.session_type] !== undefined) {
+          seenSessions.add(key);
+          sessionCounts[r.session_type]++;
+        }
+      }
 
       const highRpeSets = logs.filter(r => (r.rpe || 0) >= 9).length;
       const uniqueSessions = new Set(logs.map(r => `${r.timestamp?.split('T')[0]}|${r.session_type}`)).size;
       const uniqueRecentSessions = new Set(recent.map(r => `${r.timestamp?.split('T')[0]}|${r.session_type}`)).size;
+
+      // Days since first session — for ACWR provisional label
+      const oldestLog = [...logs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())[0];
+      const daysSinceFirst = oldestLog ? Math.floor((now.getTime() - new Date(oldestLog.timestamp).getTime()) / 86400000) : 0;
 
       return {
         athlete: ath,
@@ -213,9 +247,12 @@ Deno.serve(async (req) => {
         recent_sessions: uniqueRecentSessions,
         avg_rpe: avgRpe,
         high_rpe_sets: highRpeSets,
-        acwr: latestAcwr?.acwr ?? null,
-        acute: latestAcwr?.acute ?? null,
-        chronic: latestAcwr?.chronic ?? null,
+        // Suppress ACWR until 28 days of data
+        acwr: hasFullChronic ? (latestAcwr?.acwr ?? null) : null,
+        acwr_provisional: !hasFullChronic && acwrData.length > 0,
+        days_until_acwr: hasFullChronic ? 0 : Math.max(0, 28 - daysSinceFirst),
+        acute: hasFullChronic ? (latestAcwr?.acute ?? null) : null,
+        chronic: hasFullChronic ? (latestAcwr?.chronic ?? null) : null,
         weekly_load: Math.round(wkLoad),
         session_counts: sessionCounts,
         days_since_last: daysSinceLast,
@@ -271,6 +308,7 @@ Deno.serve(async (req) => {
         active_this_week: activeThisWeek,
         total_athletes: athletes.length,
         avg_rpe: avgSquadRpe,
+        total_records: allLogs.length,
       },
       heatmap,
       session_types: sessionTypes,

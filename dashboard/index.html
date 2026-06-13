@@ -471,7 +471,7 @@ function renderCoachView(data){
     <div class="section-title">Squad Overview</div>
     <div class="stats-grid">
       <div class="stat-card green"><div class="stat-label">Active This Week</div><div class="stat-value">${squad.active_this_week||0}<span style="font-size:14px;color:var(--muted)">/${squad.total_athletes||0}</span></div><div class="stat-sub">Athletes trained</div></div>
-      <div class="stat-card"><div class="stat-label">Total Sets</div><div class="stat-value">${squad.total_sessions||0}</div><div class="stat-sub">All time</div></div>
+      <div class="stat-card"><div class="stat-label">Total Sessions</div><div class="stat-value">${squad.total_sessions||0}</div><div class="stat-sub">Unique sessions all-time</div></div>
       <div class="stat-card warn"><div class="stat-label">Avg Squad RPE</div><div class="stat-value">${squad.avg_rpe||'—'}</div><div class="stat-sub">All sets</div></div>
     </div>
 
@@ -548,6 +548,16 @@ function renderCoachView(data){
       .map(([k,v])=>{const cls=k==='Lower A'?'sb-la':k==='Lower B'?'sb-lb':k==='Upper A'?'sb-ua':'sb-ub';return `<span class="session-badge ${cls}">${k} ×${v}</span>`;}).join('');
     const acwrVal = a.acwr;
     const acwrCls = !acwrVal?'acwr-none':acwrVal<0.8?'acwr-low':acwrVal<=1.3?'acwr-optimal':acwrVal<=1.5?'acwr-caution':'acwr-danger';
+    // ACWR provisional: show countdown until 28-day window is ready
+    const acwrBadge = acwrVal
+      ? `<span class="acwr-badge ${acwrCls}">${acwrVal.toFixed(2)}</span>`
+      : a.acwr_provisional
+        ? `<span class="acwr-badge acwr-none" title="Building 28-day chronic baseline">~${a.days_until_acwr||''}d</span>`
+        : '<span class="acwr-badge acwr-none">—</span>';
+    // Pre-compute RPE≥9 cell styling
+    const rpeCount = a.high_rpe_sets || 0;
+    const rpeColor = rpeCount > 3 ? 'var(--red)' : 'var(--text)';
+    const rpeWeight = rpeCount > 3 ? 700 : 400;
     const tr = document.createElement('tr');
     tr.onclick=()=>{ switchView('athlete'); document.getElementById('athleteSelect').value=a.athlete; loadAthleteView(); };
     // ACWR row highlight
@@ -562,8 +572,8 @@ function renderCoachView(data){
       <td style="color:${ds>7?'var(--red)':'var(--text)'};font-weight:${ds>7?700:400}">${lastStr}</td>
       <td><div class="mini-bar-wrap"><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${Math.round((a.total_sessions||0)/maxSess*100)}%"></div></div><span style="font-size:13px;font-weight:700">${a.total_sessions||0}</span></div></td>
       <td>${badges||'<span style="color:var(--muted)">—</span>'}</td>
-      <td style="color:\${(a.high_rpe_sets||0)>3?'var(--red)':'var(--text)'};font-weight:\${(a.high_rpe_sets||0)>3?700:400}">\${a.high_rpe_sets||0}</td>
-      <td><span class="acwr-badge ${acwrCls}">${acwrVal?acwrVal.toFixed(2):'—'}</span></td>
+      <td style="color:${rpeColor};font-weight:${rpeWeight}">${rpeCount}</td>
+      <td>${acwrBadge}</td>
       <td><span style="font-size:12px;color:var(--muted)">${a.weekly_load>0?a.weekly_load.toLocaleString()+'kg':'—'}</span></td>
     `;
     tbody.appendChild(tr);

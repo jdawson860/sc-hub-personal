@@ -8,9 +8,17 @@ const token = process.env.GOOGLESHEETS_ACCESS_TOKEN;
 // Helpers
 // ──────────────────────────────────────────────
 
+// Uppercase abbreviations commonly used in S&C exercise naming
+const ABBREV = new Set(['BB','DB','SB','KB','RDL','GHD','ISO','RFESS','TRX','RM']);
+
+// Title-case that preserves known abbreviations (BB, DB, GHD, etc.)
 function toTitleCase(str) {
   if (!str) return str;
-  return str.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  return str.trim().split(/\s+/).map(word => {
+    const upper = word.toUpperCase();
+    if (ABBREV.has(upper)) return upper;
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  }).join(' ');
 }
 
 function parseDate(val) {
