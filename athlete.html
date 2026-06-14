@@ -64,6 +64,7 @@
     .set-input{padding:10px 10px;border:2px solid var(--border);border-radius:8px;font-size:15px;font-weight:700;text-align:center;width:100%;outline:none;background:#fff;transition:border .2s;-webkit-appearance:none}
     .set-input:focus{border-color:var(--blue)}
     .set-input.rpe-input{color:var(--navy)}
+    .set-input::placeholder{color:#bbb;font-style:italic}
     .del-set{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:4px;border-radius:6px;line-height:1;opacity:.6;transition:opacity .2s}
     .del-set:hover{opacity:1}
 
@@ -537,6 +538,7 @@ let currentAthlete = localStorage.getItem('cranbrook_athlete') || null;
 let currentMode = 'sc';
 let currentSession = null;
 let exercises = []; // [{name, sets:[{reps,load,rpe}]}]
+let pbMap = {}; // { exerciseName: { reps, load } } — best results for placeholders
 let intervalCount = 0;
 let uploadedImageUrl = null;
 let extractedIntervalSplits = [];
@@ -602,6 +604,9 @@ function startSession() {
   const sessTs = sessDateVal ? new Date(sessDateVal + 'T12:00:00').toISOString() : new Date().toISOString();
   currentSession = { athlete: currentAthlete, session_type: st, timestamp: sessTs };
 
+  // Fetch PBs for this athlete in background, then re-render
+  fetchAthleteHistory(currentAthlete);
+
   // Auto-populate all programmed exercises for this session type (3 sets each by default)
   const exList = EXERCISES[st] || [];
   exercises = exList.map(name => ({
@@ -664,6 +669,36 @@ function updateField(exIdx, setIdx, field, val) {
 function isTimeEx(name) { return TIME_EXERCISES.some(t => name.includes(t)); }
 function isBandEx(name) { return BAND_EXERCISES.some(t => name.includes(t)); }
 
+async function fetchAthleteHistory(ath) {
+  try {
+    const data = await api('getDashboardData', { athlete: ath });
+    const logs = data.logs || [];
+    // Build pbMap: best (highest) load per exercise, and corresponding reps
+    const best = {};
+    for (const r of logs) {
+      const ex = r.exercise;
+      if (!ex) continue;
+      const load = parseFloat(r.load);
+      const reps = parseFloat(r.reps);
+      if (!best[ex]) best[ex] = { load: null, reps: null };
+      if (!isNaN(load) && load > 0 && (best[ex].load === null || load > best[ex].load)) {
+        best[ex].load = load;
+        best[ex].reps = isNaN(reps) ? null : reps;
+      }
+      // If no load, track best reps
+      if ((isNaN(load) || load === 0) && !isNaN(reps) && reps > 0) {
+        if (best[ex].reps === null || reps > best[ex].reps) {
+          best[ex].reps = reps;
+        }
+      }
+    }
+    pbMap = best;
+    renderExercises(); // re-render with PBs
+  } catch (e) {
+    // silently ignore — placeholders just stay as default
+  }
+}
+
 function renderExercises() {
   const container = document.getElementById('exerciseBlocks');
   if (!exercises.length) {
@@ -687,8 +722,8 @@ function renderExercises() {
       ${ex.sets.map((s, si) => `
         <div class="set-row">
           <div class="set-num">${si+1}</div>
-          <input class="set-input" type="${isTime?'number':'number'}" inputmode="numeric" placeholder="${isTime?'sec':'reps'}" value="${s.reps}" oninput="updateField(${ei},${si},'reps',this.value)"/>
-          <input class="set-input" type="text" inputmode="decimal" placeholder="${isBand?'band/+kg':'kg'}" value="${s.load}" oninput="updateField(${ei},${si},'load',this.value)"/>
+          <input class="set-input" type="${isTime?'number':'number'}" inputmode="numeric" placeholder="${pbMap[ex.name]?.reps != null ? 'PB: '+pbMap[ex.name].reps+(isTime?' sec':' reps') : (isTime?'sec':'reps')}" value="${s.reps}" oninput="updateField(${ei},${si},'reps',this.value)"/>
+          <input class="set-input" type="text" inputmode="decimal" placeholder="${pbMap[ex.name]?.load != null ? 'PB: '+pbMap[ex.name].load+'kg' : (isBand?'band/+kg':'kg')}" value="${s.load}" oninput="updateField(${ei},${si},'load',this.value)"/>
           <select class="set-input rpe-input" onchange="updateField(${ei},${si},'rpe',this.value)">
             <option value="">RPE</option>
             ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}"${s.rpe==n?' selected':''}>${n}</option>`).join('')}
