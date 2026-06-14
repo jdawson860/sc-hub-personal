@@ -4,6 +4,17 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Cranbrook Rowing — Athlete Hub</title>
+  <!-- PWA / iOS Home Screen -->
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="CRK Hub"/>
+  <link rel="apple-touch-icon" href="icon-180.png"/>
+  <link rel="apple-touch-icon" sizes="152x152" href="icon-152.png"/>
+  <link rel="apple-touch-icon" sizes="167x167" href="icon-167.png"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png"/>
+  <meta name="theme-color" content="#07122b"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
@@ -1458,5 +1469,16 @@ document.getElementById('sessionEditModal').addEventListener('click', function(e
 });
 </script>
 
+
+  <!-- Service Worker registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/cranbrook-sc-hub/sw.js')
+          .then(r => console.log('SW registered:', r.scope))
+          .catch(e => console.log('SW failed:', e));
+      });
+    }
+  </script>
 </body>
 </html>
