@@ -197,6 +197,10 @@
       <p class="sec">Select Session</p>
       <div class="card">
         <div class="field">
+          <label>Session Date</label>
+          <input type="date" id="sessDate" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:15px;font-weight:600;color:var(--text);background:#fff;outline:none"/>
+        </div>
+        <div class="field">
           <label>Session Type</label>
           <select id="sessType">
             <option value="">— Select —</option>
@@ -265,6 +269,10 @@
     <!-- MANUAL ERG FORM -->
     <div id="ergManual" style="display:none">
       <div class="card">
+        <div class="field">
+          <label>Session Date</label>
+          <input type="date" id="ergDate" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:15px;font-weight:600;color:var(--text);background:#fff;outline:none"/>
+        </div>
         <div class="field">
           <label>Workout Type</label>
           <select id="ergType" onchange="updateErgForm()">
@@ -535,6 +543,12 @@ let extractedIntervalSplits = [];
 
 // ── INIT ──────────────────────────────────────────────────────────────
 function init() {
+  // Auto-fill date pickers with today
+  const today = new Date().toISOString().split('T')[0];
+  const sd = document.getElementById('sessDate');
+  if (sd) sd.value = today;
+  const ed = document.getElementById('ergDate');
+  if (ed) ed.value = today;
   buildAthGrid();
   if (currentAthlete) {
     selectAthlete(currentAthlete, false);
@@ -584,7 +598,9 @@ function startSession() {
   const st = document.getElementById('sessType').value;
   if (!st) { showToast('Please select a session type'); return; }
   if (!currentAthlete) { showToast('Please select your name first'); changeAthlete(); return; }
-  currentSession = { athlete: currentAthlete, session_type: st, timestamp: new Date().toISOString() };
+  const sessDateVal = document.getElementById('sessDate')?.value;
+  const sessTs = sessDateVal ? new Date(sessDateVal + 'T12:00:00').toISOString() : new Date().toISOString();
+  currentSession = { athlete: currentAthlete, session_type: st, timestamp: sessTs };
 
   // Auto-populate all programmed exercises for this session type (3 sets each by default)
   const exList = EXERCISES[st] || [];
@@ -840,7 +856,11 @@ async function submitErgManual() {
       splitData.map(s => `${s.distance||'?'}m / ${s.time||'?'} (${s.split||'?'}/500m)`).join(' | ');
   }
 
+  const ergDateVal = document.getElementById('ergDate')?.value;
+  const ergTs = ergDateVal ? new Date(ergDateVal + 'T12:00:00').toISOString() : new Date().toISOString();
+
   const body = {
+    timestamp: ergTs,
     athlete: currentAthlete,
     workout_type: document.getElementById('ergType').value,
     total_distance: isIntervals ? (document.getElementById('ergDistInt').value||null) : (document.getElementById('ergDist').value||null),
@@ -1075,7 +1095,11 @@ function readExIntervalRows() {
 async function submitErgPhoto() {
   if (!currentAthlete) { showToast('Select your name first'); return; }
   const intervalRows = readExIntervalRows();
+  const ergDateVal = document.getElementById('ergDate')?.value;
+  const ergTs = ergDateVal ? new Date(ergDateVal + 'T12:00:00').toISOString() : new Date().toISOString();
+
   const body = {
+    timestamp: ergTs,
     athlete: currentAthlete,
     workout_type: document.getElementById('exType').value || 'Custom',
     total_distance: document.getElementById('exDist').value || null,

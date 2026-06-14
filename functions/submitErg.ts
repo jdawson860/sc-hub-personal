@@ -3,15 +3,16 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 const SHEET_ID = "1_6BgfNQzfoxxRwf9oAYkto0FBX8ihUZgDFe3CRE-Xuk";
 const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 const ERG_SHEET = "Erg_Session_Responses";
+const HUB_SHEET = "Athlete Hub Responses";
 
-async function appendToSheet(token: string, row: any[]) {
-  const url = `${SHEETS_API}/${SHEET_ID}/values/${encodeURIComponent(ERG_SHEET)}!A:M:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+async function appendToSheet(token: string, sheetName: string, rows: any[][]) {
+  const url = `${SHEETS_API}/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ values: [row] }),
+    body: JSON.stringify({ values: rows }),
   });
-  if (!res.ok) throw new Error(`Sheets append failed (${res.status}): ${await res.text()}`);
+  if (!res.ok) throw new Error(`Sheets append to ${sheetName} failed (${res.status}): ${await res.text()}`);
   return await res.json();
 }
 
@@ -57,31 +58,49 @@ Deno.serve(async (req) => {
       image_url: image_url ? String(image_url) : null,
     });
 
-    // 2. Mirror to Google Sheet (Erg_Session_Responses tab) for build-phase visibility
+    // 2. Mirror to both Erg_Session_Responses and Athlete Hub Responses
     let sheetOk = false;
     let sheetError: string | null = null;
     try {
       const { accessToken: sheetsToken } = await base44.asServiceRole.connectors.getConnection('googlesheets');
-      const row = [
-        sessionTimestamp,       // Timestamp
-        String(athlete),        // Athlete
-        String(workout_type),   // WorkoutType
-        total_distance ?? '',   // TotalDistance_m
-        total_time ?? '',       // TotalTime
-        avg_split ?? '',        // AvgSplit_500m
-        avg_heart_rate ?? '',   // AvgHeartRate_bpm
-        stroke_rate ?? '',      // StrokeRate_spm
-        rpe ?? '',              // RPE
-        intervals ?? '',        // Intervals
-        notes ?? '',            // Notes
-        image_url ?? '',        // ImageURL
-        now,                    // SubmittedAt
+
+      const ergRow = [
+        sessionTimestamp,
+        String(athlete),
+        String(workout_type),
+        total_distance ?? '',
+        total_time ?? '',
+        avg_split ?? '',
+        avg_heart_rate ?? '',
+        stroke_rate ?? '',
+        rpe ?? '',
+        intervals ?? '',
+        notes ?? '',
+        image_url ?? '',
+        now,
       ];
-      await appendToSheet(sheetsToken, row);
+
+      const hubRow = [
+        sessionTimestamp,
+        sessionTimestamp.split('T')[0],
+        String(athlete),
+        'Erg',
+        String(workout_type),
+        total_distance ?? '',
+        total_time ?? '',
+        avg_split ?? '',
+        rpe ?? '',
+        intervals ?? '',
+        notes ?? '',
+      ];
+
+      await Promise.all([
+        appendToSheet(sheetsToken, ERG_SHEET, [ergRow]),
+        appendToSheet(sheetsToken, HUB_SHEET, [hubRow]),
+      ]);
       sheetOk = true;
     } catch (e: any) {
       sheetError = e.message;
-      // Non-fatal — DB write already succeeded
     }
 
     return Response.json({
