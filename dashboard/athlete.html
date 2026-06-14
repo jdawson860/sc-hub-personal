@@ -576,9 +576,19 @@ function selectAthlete(ath) {
   localStorage.setItem('cranbrook_athlete', ath);
   document.getElementById('overlay').classList.add('hidden');
   document.getElementById('headerAth').textContent = ath;
-  // Reset history cache on athlete change
-  historyLoaded = false;
-  // Check if first time
+
+  // Reset S&C session state so new athlete starts fresh
+  clearSession();
+
+  // Reset history so it reloads for the new athlete
+  _historyScSessions = [];
+  _historyErgSessions = [];
+  _historyWaterSessions = [];
+  const histEl = document.getElementById('historyContent');
+  if (histEl) histEl.innerHTML = '';
+
+  // If currently on history tab, reload it immediately
+  if (currentMode === 'history') loadHistory();
 }
 
 function changeAthlete() {
