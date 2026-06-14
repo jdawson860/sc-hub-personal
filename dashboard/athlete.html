@@ -208,11 +208,11 @@
       <div class="card">
         <div class="field">
           <label>Session Date</label>
-          <input type="date" id="sessDate" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:15px;font-weight:600;color:var(--text);background:#fff;outline:none"/>
+          <input type="date" id="sessDate" onchange="saveSession()" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:15px;font-weight:600;color:var(--text);background:#fff;outline:none"/>
         </div>
         <div class="field">
           <label>Session Type</label>
-          <select id="sessType">
+          <select id="sessType" onchange="saveSession()">
             <option value="">— Select —</option>
             <option value="Lower A">Lower A</option>
             <option value="Lower B">Lower B</option>
@@ -281,7 +281,7 @@
       <div class="card">
         <div class="field">
           <label>Session Date</label>
-          <input type="date" id="ergDate" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:15px;font-weight:600;color:var(--text);background:#fff;outline:none"/>
+          <input type="date" id="ergDate" onchange="saveSession()" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:15px;font-weight:600;color:var(--text);background:#fff;outline:none"/>
         </div>
         <div class="field">
           <label>Workout Type</label>
@@ -581,6 +581,12 @@ function buildAthGrid() {
 }
 
 function selectAthlete(ath) {
+  // Warn if switching athletes mid-session
+  if (currentAthlete && ath !== currentAthlete && currentSession && exercises.length > 0) {
+    if (!confirm('⚠️ You have an active session in progress. Switching athletes will lose all unsaved data. Continue?')) {
+      return;
+    }
+  }
   currentAthlete = ath;
   localStorage.setItem('cranbrook_athlete', ath);
   document.getElementById('overlay').classList.add('hidden');
@@ -821,9 +827,10 @@ function resetSession() {
 }
 
 function saveSession() {
-  if (currentSession) {
-    localStorage.setItem('cranbrook_session', JSON.stringify({ currentSession, exercises }));
-  }
+  const sessDate = document.getElementById('sessDate')?.value || '';
+  const sessType = document.getElementById('sessType')?.value || '';
+  const ergDate = document.getElementById('ergDate')?.value || '';
+  localStorage.setItem('cranbrook_session', JSON.stringify({ currentSession, exercises, sessDate, sessType, ergDate }));
 }
 
 function loadStoredSession() {
@@ -843,6 +850,10 @@ function loadStoredSession() {
     document.getElementById('exSelect').innerHTML = '<option value="">— Choose exercise —</option>' +
       exList.map(e=>`<option value="${e}">${e}</option>`).join('');
     renderExercises();
+    // Restore input field values
+    if (cs.sessDate) { const el = document.getElementById('sessDate'); if (el) el.value = cs.sessDate; }
+    if (cs.sessType) { const el = document.getElementById('sessType'); if (el) el.value = cs.sessType; }
+    if (cs.ergDate) { const el = document.getElementById('ergDate'); if (el) el.value = cs.ergDate; }
   } catch(e) {}
 }
 
