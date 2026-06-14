@@ -1,5 +1,5 @@
 // Cranbrook S&C Hub — Service Worker v1
-const CACHE = 'crk-hub-v1';
+const CACHE = 'crk-hub-v2';
 const PRECACHE = [
   '/cranbrook-sc-hub/athlete.html',
   '/cranbrook-sc-hub/manifest.json',
