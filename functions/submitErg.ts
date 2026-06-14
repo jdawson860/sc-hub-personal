@@ -3,16 +3,15 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 const SHEET_ID = "1_6BgfNQzfoxxRwf9oAYkto0FBX8ihUZgDFe3CRE-Xuk";
 const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 const ERG_SHEET = "Erg_Session_Responses";
-const HUB_SHEET = "Athlete Hub Responses";
 
-async function appendToSheet(token: string, sheetName: string, rows: any[][]) {
-  const url = `${SHEETS_API}/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+async function appendToSheet(token: string, row: any[]) {
+  const url = `${SHEETS_API}/${SHEET_ID}/values/${encodeURIComponent(ERG_SHEET)}!A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ values: rows }),
+    body: JSON.stringify({ values: [row] }),
   });
-  if (!res.ok) throw new Error(`Sheets append to ${sheetName} failed (${res.status}): ${await res.text()}`);
+  if (!res.ok) throw new Error(`Sheets append to ${ERG_SHEET} failed (${res.status}): ${await res.text()}`);
   return await res.json();
 }
 
@@ -58,12 +57,11 @@ Deno.serve(async (req) => {
       image_url: image_url ? String(image_url) : null,
     });
 
-    // 2. Mirror to both Erg_Session_Responses and Athlete Hub Responses
+    // 2. Mirror to Erg_Session_Responses only
     let sheetOk = false;
     let sheetError: string | null = null;
     try {
       const { accessToken: sheetsToken } = await base44.asServiceRole.connectors.getConnection('googlesheets');
-
       const ergRow = [
         sessionTimestamp,
         String(athlete),
@@ -79,25 +77,7 @@ Deno.serve(async (req) => {
         image_url ?? '',
         now,
       ];
-
-      const hubRow = [
-        sessionTimestamp,
-        sessionTimestamp.split('T')[0],
-        String(athlete),
-        'Erg',
-        String(workout_type),
-        total_distance ?? '',
-        total_time ?? '',
-        avg_split ?? '',
-        rpe ?? '',
-        intervals ?? '',
-        notes ?? '',
-      ];
-
-      await Promise.all([
-        appendToSheet(sheetsToken, ERG_SHEET, [ergRow]),
-        appendToSheet(sheetsToken, HUB_SHEET, [hubRow]),
-      ]);
+      await appendToSheet(sheetsToken, ergRow);
       sheetOk = true;
     } catch (e: any) {
       sheetError = e.message;
