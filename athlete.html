@@ -590,14 +590,7 @@ function buildAthGrid() {
 }
 
 function selectAthlete(ath, isReload) {
-  // Warn if switching athletes mid-session (not on page reload)
-  if (!isReload && currentAthlete && ath !== currentAthlete && currentSession && exercises.length > 0) {
-    if (!confirm('⚠️ You have an active session in progress. Switching athletes will lose all unsaved data. Continue?')) {
-      // Hide the overlay and keep current athlete
-      document.getElementById('overlay').classList.add('hidden');
-      return;
-    }
-  }
+  // (Warning is handled in changeAthlete before overlay opens)
   currentAthlete = ath;
   localStorage.setItem('cranbrook_athlete', ath);
   document.getElementById('overlay').classList.add('hidden');
@@ -620,6 +613,14 @@ function selectAthlete(ath, isReload) {
 }
 
 function changeAthlete() {
+  // Warn immediately if there is an active session in progress
+  if (currentAthlete && currentSession && exercises.length > 0) {
+    if (!confirm('⚠️ You have an active session in progress. Switching athletes will lose all unsaved data. Continue?')) {
+      return;
+    }
+    // Confirmed — clear session before showing picker
+    clearSession();
+  }
   document.getElementById('overlay').classList.remove('hidden');
   // Show cancel button only when already logged in (switching mid-session)
   const cancelBtn = document.getElementById('overlayCancel');
