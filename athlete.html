@@ -1278,7 +1278,6 @@ async function loadHistory() {
     el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Select your name first</div>';
     return;
   }
-  if (historyLoaded) return; // cache until athlete changes
   el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:32px;margin-bottom:12px">⏳</div><div style="font-size:14px;font-weight:600">Loading…</div></div>';
 
   try {
@@ -1292,7 +1291,6 @@ async function loadHistory() {
     _historyWaterSessions = [];
 
 
-    historyLoaded = true;
     filterHistoryView();
   } catch(e) {
     el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">Failed to load history: ${e.message}</div>`;
