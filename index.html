@@ -2857,6 +2857,32 @@ function loadCoreTestingView() {
     '</div>';
   mc.appendChild(header);
 
+  // Date picker row
+  var dateRow = document.createElement('div');
+  dateRow.style.cssText = 'display:flex;align-items:center;gap:12px;margin-bottom:16px';
+  var dateLabel = document.createElement('label');
+  dateLabel.htmlFor = 'ctDate';
+  dateLabel.style.cssText = 'color:#8fa0be;font-size:13px;font-weight:700;white-space:nowrap';
+  dateLabel.textContent = 'Testing Date';
+  var ctDateInput = document.createElement('input');
+  ctDateInput.type = 'date';
+  ctDateInput.id = 'ctDate';
+  // Default to today in local timezone
+  var todayStr = (function(){
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = String(d.getMonth()+1).padStart(2,'0');
+    var day = String(d.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+day;
+  })();
+  ctDateInput.value = todayStr;
+  ctDateInput.style.cssText = 'padding:9px 14px;border:1.5px solid #3b82f6;border-radius:9px;font-size:14px;font-weight:700;color:#07122b;background:#fff;outline:none;cursor:pointer';
+  ctDateInput.addEventListener('focus', function(){ this.style.borderColor='#1a56db'; });
+  ctDateInput.addEventListener('blur',  function(){ this.style.borderColor='#3b82f6'; });
+  dateRow.appendChild(dateLabel);
+  dateRow.appendChild(ctDateInput);
+  mc.appendChild(dateRow);
+
   // Card
   var card = document.createElement('div');
   card.style.cssText = 'background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.25)';
@@ -3010,6 +3036,9 @@ function loadCoreTestingView() {
   async function doSave() {
     var rows = document.querySelectorAll('#ctBody tr');
     var records = [];
+    // Use the selected date, defaulting to today
+    var dateVal = (document.getElementById('ctDate') || {}).value;
+    var testingDate = dateVal ? (dateVal + 'T00:00:00.000+10:00') : new Date().toISOString();
     rows.forEach(function(row) {
       function get(f) {
         var el = row.querySelector('[data-field="' + f + '"]');
@@ -3028,7 +3057,7 @@ function loadCoreTestingView() {
         prone_plank:      get('prone') || null,
         side_plank_left:  get('spleft') || null,
         side_plank_right: get('spright') || null,
-        timestamp:        new Date().toISOString()
+        timestamp:        testingDate
       });
     });
 
