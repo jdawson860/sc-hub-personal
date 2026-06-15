@@ -2,11 +2,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 const SHEET_ID = '1_6BgfNQzfoxxRwf9oAYkto0FBX8ihUZgDFe3CRE-Xuk';
-const SHEET_NAME = 'Core_Testing_Responses';
 const SHEET_NAME_DASHBOARD = 'Core Testing Dashboard Responses';
 const SHEETS_API = 'https://sheets.googleapis.com/v4/spreadsheets';
 
-async function appendToSheet(token: string, row: any[], sheetName: string = SHEET_NAME) {
+async function appendToSheet(token: string, row: any[], sheetName: string) {
   const url = `${SHEETS_API}/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A:J:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
   const res = await fetch(url, {
     method: 'POST',
@@ -36,8 +35,8 @@ Deno.serve(async (req) => {
     const lastName  = (body?.athlete_last  || '').trim();
     const athleteName = [firstName, lastName].filter(Boolean).join(' ');
 
-    if (!firstName || !body?.year_level) {
-      return Response.json({ ok: false, error: 'athlete_first and year_level are required' }, { status: 400, headers: cors });
+    if (!firstName) {
+      return Response.json({ ok: false, error: 'athlete_first is required' }, { status: 400, headers: cors });
     }
 
     const now = new Date().toISOString();
@@ -81,9 +80,7 @@ Deno.serve(async (req) => {
         record.side_plank_right ?? '',
       ];
 
-      await appendToSheet(sheetsToken, row);
-      // Also write to the new dashboard tab with headers if first row
-      try { await appendToSheet(sheetsToken, row, SHEET_NAME_DASHBOARD); } catch(_) {}
+      await appendToSheet(sheetsToken, row, SHEET_NAME_DASHBOARD);
       sheetOk = true;
     } catch (sheetErr: any) {
       sheetError = sheetErr.message;
