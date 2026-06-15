@@ -265,10 +265,9 @@
     <button class="csv-btn" id="csvBtn" onclick="exportCSV()" style="display:none">⬇ Export CSV</button>
     <button class="csv-btn" id="pdfBtn" onclick="exportWeeklyPDF()" style="display:none;background:var(--red);margin-left:4px">📄 Weekly Report</button>
   </div>
-  <div class="view-toggle">
-    <button class="view-btn active" id="btnCoach" onclick="switchView('coach')">Coach</button>
-    <button class="view-btn" id="btnAthlete" onclick="switchView('athlete')">Athlete</button>
-  </div>
+  <!-- view-toggle removed; switching handled by back button / athlete row clicks -->
+  <button class="view-btn active" id="btnCoach" style="display:none" onclick="switchView('coach')">Coach</button>
+  <button class="view-btn" id="btnAthlete" style="display:none" onclick="switchView('athlete')">Athlete</button>
 </header>
 
 <!-- SIDEBAR BACKDROP (mobile) -->
@@ -289,17 +288,26 @@
         <button class="snav-btn" id="snav-cp" onclick="switchTab('cp')">⚡ Critical Power</button>
         <button class="snav-btn" id="snav-coretesting" onclick="switchTab('coretesting')">🧪 Core Testing</button>
       </div>
-      <div class="sidebar-athlete-sel" id="athSelWrap" style="display:none">
-        <label>Athlete</label>
-        <select id="athleteSelect" onchange="loadAthleteView()">
-          <option>Loading…</option>
-        </select>
-      </div>
+      <!-- athlete selector moved to content area banner -->
+      <div id="athSelWrap" style="display:none"></div>
     </div>
   </nav>
 
   <!-- CONTENT -->
   <div class="content-area" id="contentArea">
+
+  <!-- Athlete view banner — shown only in athlete mode -->
+  <div id="athleteBanner" style="display:none;background:var(--navy-mid);border-bottom:2px solid var(--border);padding:14px 24px;display:none;align-items:center;gap:16px;flex-wrap:wrap">
+    <button onclick="switchView('coach')" style="background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);color:#fff;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap">
+      ← Back to Hub
+    </button>
+    <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:200px">
+      <label style="color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Viewing Athlete</label>
+      <select id="athleteSelect" onchange="loadAthleteView()" style="background:var(--navy-light);border:2px solid var(--accent);color:#fff;padding:10px 16px;border-radius:10px;font-size:16px;font-weight:800;cursor:pointer;outline:none;min-width:160px;flex:1;max-width:280px">
+        <option>Loading…</option>
+      </select>
+    </div>
+  </div>
 
 <!-- SESSION DETAIL MODAL -->
 <div class="modal-overlay hidden" id="sessionModal" onclick="closeModal(event)">
@@ -386,17 +394,13 @@ setInterval(updateSyncIndicator, 30000);
 
 function switchView(view){
   currentView = view;
-  document.getElementById('btnCoach').classList.toggle('active', view==='coach');
-  document.getElementById('btnAthlete').classList.toggle('active', view==='athlete');
   document.getElementById('csvBtn').style.display = view==='coach' ? 'flex' : 'none';
   document.getElementById('pdfBtn').style.display = view==='coach' ? 'flex' : 'none';
 
-  // Show/hide tab bar and athlete selector
-  const snav = document.getElementById('subnav');
-  const athWrap = document.getElementById('athSelWrap');
+  const banner = document.getElementById('athleteBanner');
 
   if(view==='athlete'){
-    // Athlete view: hide all coach tabs, show selector
+    // Hide all coach sidebar tabs
     document.getElementById('snav-sc').style.display='none';
     document.getElementById('snav-erg').style.display='none';
     document.getElementById('snav-water').style.display='none';
@@ -404,9 +408,11 @@ function switchView(view){
     document.getElementById('snav-coretesting').style.display='none';
     const cmpA1 = document.getElementById('snav-compare')?.closest('a'); if(cmpA1) cmpA1.style.display='none';
     document.getElementById('snav-cp').style.display='none';
-    athWrap.style.display='block';
+    // Show athlete banner
+    if(banner){ banner.style.display='flex'; }
     loadAthleteView();
   } else {
+    // Restore coach sidebar tabs
     document.getElementById('snav-sc').style.display='';
     document.getElementById('snav-erg').style.display='';
     document.getElementById('snav-water').style.display='';
@@ -414,7 +420,8 @@ function switchView(view){
     document.getElementById('snav-coretesting').style.display='';
     const cmpA2 = document.getElementById('snav-compare')?.closest('a'); if(cmpA2) cmpA2.style.display='';
     document.getElementById('snav-cp').style.display='';
-    athWrap.style.display='none';
+    // Hide athlete banner
+    if(banner){ banner.style.display='none'; }
     switchTab(currentTab);
   }
 }
