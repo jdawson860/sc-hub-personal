@@ -102,7 +102,7 @@
     .heatmap-row{display:flex;align-items:center;gap:8px}
     .heatmap-label{font-size:12px;font-weight:700;color:var(--navy);width:28px;flex-shrink:0}
     .heatmap-cells{display:flex;gap:4px;flex:1}
-    .heatmap-cell{flex:1;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;transition:transform .15s;cursor:default}
+    .heatmap-cell{flex:1;min-height:44px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:700;transition:transform .15s;cursor:default;padding:4px 2px}
     .heatmap-cell:hover{transform:scale(1.05)}
     .heatmap-cell.done{background:#00c8a0;color:#fff}
     .heatmap-cell.miss{background:#fce4ec;color:#c62828}
@@ -628,6 +628,16 @@ function stepComplianceWeek(delta) {
   renderComplianceForCurrentWeek();
 }
 
+function fmtComplianceDate(dateStr) {
+  // Returns "Mon 15 Jun" from "2026-06-15"
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T12:00:00');
+  const day = d.toLocaleDateString('en-AU', { weekday: 'short' });
+  const num = String(d.getDate()).padStart(2, '0');
+  const mon = d.toLocaleDateString('en-AU', { month: 'short' });
+  return `${day} ${num} ${mon}`;
+}
+
 function renderComplianceForCurrentWeek() {
   const mon = getMondayOfWeek(_complianceWeekOffset);
   const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
@@ -651,17 +661,20 @@ function renderComplianceForCurrentWeek() {
   if (nextBtn) nextBtn.disabled = isCurrentWeek;
   if (nextBtn) nextBtn.style.opacity = isCurrentWeek ? '0.35' : '1';
 
-  // Build heatmap from _squadSessions for this Mon–Sun range
+  // Build heatmap: athlete -> session_type -> date (most recent if multiple)
   const monStr = mon.toISOString().split('T')[0];
   const sunStr = sun.toISOString().split('T')[0];
 
-  const heatmap = {};
+  const heatmap = {}; // athlete -> session_type -> date string
   for (const ath of _complianceAthletes) heatmap[ath] = {};
 
   for (const s of _squadSessions) {
     if (!s.date || s.date < monStr || s.date > sunStr) continue;
     if (!heatmap[s.athlete]) heatmap[s.athlete] = {};
-    heatmap[s.athlete][s.session_type] = true;
+    // Keep the actual date so we can show it and use it to open session
+    if (!heatmap[s.athlete][s.session_type]) {
+      heatmap[s.athlete][s.session_type] = s.date;
+    }
   }
 
   // Render
@@ -673,10 +686,16 @@ function renderComplianceForCurrentWeek() {
   _complianceAthletes.forEach(ath => {
     html += `<div class="heatmap-row"><div class="heatmap-label">${ath}</div><div class="heatmap-cells">`;
     sessionTypes.forEach(st => {
-      const done = heatmap[ath]?.[st];
-      const cls = done ? 'done' : 'none';
-      const lbl = done ? '✓' : '—';
-      html += `<div class="heatmap-cell ${cls}" title="${ath} — ${st}">${lbl}</div>`;
+      const date = heatmap[ath]?.[st];
+      if (date) {
+        const dateLabel = fmtComplianceDate(date);
+        html += `<div class="heatmap-cell done" title="View ${ath} — ${st} — ${dateLabel}" onclick="openGymSession('${ath}','${date}','${st}')" style="cursor:pointer;flex-direction:column;gap:2px">
+          <span style="font-size:13px;font-weight:800">✓</span>
+          <span style="font-size:9px;font-weight:600;opacity:.85;letter-spacing:.2px">${dateLabel}</span>
+        </div>`;
+      } else {
+        html += `<div class="heatmap-cell none" title="${ath} — ${st} — not logged">—</div>`;
+      }
     });
     html += `</div></div>`;
   });
