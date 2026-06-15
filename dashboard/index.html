@@ -254,10 +254,12 @@
 <header class="header">
   <div class="header-left">
     <button class="sidebar-toggle" id="sidebarToggleBtn" onclick="toggleSidebar()" title="Toggle menu">☰</button>
-    <div class="header-logo"><img src="https://media.base44.com/images/public/6a2139cf1719e3fb84188511/dbd88bf6d_Cranbrooklogo.jpg" alt="Cranbrook School" /></div>
-    <div>
-      <div class="header-title">Cranbrook Rowing</div>
-      <div class="header-sub">Strength & Conditioning Dashboard</div>
+    <div onclick="switchView('coach'); switchTab('sc');" title="Back to home" style="display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none">
+      <div class="header-logo"><img src="https://media.base44.com/images/public/6a2139cf1719e3fb84188511/dbd88bf6d_Cranbrooklogo.jpg" alt="Cranbrook School" /></div>
+      <div>
+        <div class="header-title">Cranbrook Rowing</div>
+        <div class="header-sub">Strength & Conditioning Dashboard</div>
+      </div>
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:12px">
