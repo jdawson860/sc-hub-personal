@@ -396,11 +396,12 @@ function switchView(view){
   const athWrap = document.getElementById('athSelWrap');
 
   if(view==='athlete'){
-    // Athlete view: hide tab bar tabs (just SC), show selector
+    // Athlete view: hide all coach tabs, show selector
     document.getElementById('snav-sc').style.display='none';
     document.getElementById('snav-erg').style.display='none';
     document.getElementById('snav-water').style.display='none';
     document.getElementById('snav-testing').style.display='none';
+    document.getElementById('snav-coretesting').style.display='none';
     const cmpA1 = document.getElementById('snav-compare')?.closest('a'); if(cmpA1) cmpA1.style.display='none';
     document.getElementById('snav-cp').style.display='none';
     athWrap.style.display='block';
@@ -410,6 +411,7 @@ function switchView(view){
     document.getElementById('snav-erg').style.display='';
     document.getElementById('snav-water').style.display='';
     document.getElementById('snav-testing').style.display='';
+    document.getElementById('snav-coretesting').style.display='';
     const cmpA2 = document.getElementById('snav-compare')?.closest('a'); if(cmpA2) cmpA2.style.display='';
     document.getElementById('snav-cp').style.display='';
     athWrap.style.display='none';
