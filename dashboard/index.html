@@ -2829,17 +2829,230 @@ function renderCPAthlete(ath) {
 
 // ── CORE TESTING INLINE ─────────────────────────────────────────────
 function loadCoreTestingView() {
-  document.getElementById('mainContent').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
-      <div>
-        <h2 style="color:#fff;font-size:20px;font-weight:800;margin-bottom:4px">🧪 Core Testing Entry</h2>
-        <div style="font-size:12px;color:#8fa0be">Enter athlete testing results — saves to dashboard &amp; Google Sheets</div>
+  const DEFAULT_ROWS = 8;
+  const ATHLETES = coachData?.athletes || ['AF','RR','JC','MA','TL','CC','SK','AS','HM','TD'];
+
+  function buildGrid(rowCount) {
+    const rows = Array.from({length: rowCount}, (_, i) => `
+      <tr data-row="${i}" style="border-bottom:1px solid #e8eef8">
+        <td style="padding:6px 8px;text-align:center;color:#8fa0be;font-size:12px;font-weight:700;width:32px">${i+1}</td>
+        <td style="padding:6px 4px">
+          <input class="cti" data-field="first" placeholder="First" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:80px" 
+            onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/>
+        </td>
+        <td style="padding:6px 4px">
+          <input class="cti" data-field="last" placeholder="Last" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:80px"
+            onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/>
+        </td>
+        <td style="padding:6px 4px">
+          <select class="cti" data-field="year" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;background:#fff;outline:none;min-width:80px"
+            onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'">
+            <option value="">Year…</option>
+            <option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option>
+          </select>
+        </td>
+        <td style="padding:6px 4px"><input class="cti" data-field="height" type="number" inputmode="decimal" placeholder="cm" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:64px;text-align:center"
+          onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/></td>
+        <td style="padding:6px 4px"><input class="cti" data-field="weight" type="number" inputmode="decimal" placeholder="kg" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:64px;text-align:center"
+          onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/></td>
+        <td style="padding:6px 4px"><input class="cti" data-field="hollow" type="number" inputmode="decimal" placeholder="—" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:58px;text-align:center"
+          onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/></td>
+        <td style="padding:6px 4px"><input class="cti" data-field="prone" type="number" inputmode="decimal" placeholder="—" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:58px;text-align:center"
+          onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/></td>
+        <td style="padding:6px 4px"><input class="cti" data-field="spleft" type="number" inputmode="decimal" placeholder="—" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:58px;text-align:center"
+          onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/></td>
+        <td style="padding:6px 4px"><input class="cti" data-field="spright" type="number" inputmode="decimal" placeholder="—" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:58px;text-align:center"
+          onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/></td>
+        <td style="padding:6px 8px;text-align:center">
+          <button onclick="removeCTRow(this)" title="Remove row" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:16px;line-height:1;padding:4px" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#cbd5e1'">✕</button>
+        </td>
+      </tr>`).join('');
+
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2 style="color:#fff;font-size:20px;font-weight:800;margin-bottom:4px">🧪 Core Testing Entry</h2>
+          <div style="font-size:12px;color:#8fa0be">Fill in rows and click Save All — blank rows are skipped automatically</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <button onclick="addCTRow()" style="background:rgba(59,130,246,.15);border:1.5px solid #3b82f6;color:#93c5fd;padding:9px 16px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">
+            + Add Athlete
+          </button>
+          <button id="ctSaveBtn" onclick="saveAllCoreTests()" style="background:#1a56db;border:none;color:#fff;padding:10px 22px;border-radius:9px;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px">
+            💾 Save All
+          </button>
+        </div>
       </div>
-    </div>
-    <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.3)">
-      <iframe src="testing.html" style="width:100%;height:calc(100vh - 180px);min-height:600px;border:none;display:block" title="Core Testing Entry"></iframe>
-    </div>
-  `;
+
+      <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.25)">
+        <!-- Column header legend -->
+        <div style="background:#f0f4f8;padding:10px 16px;border-bottom:2px solid #d0daf0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:11px;font-weight:700;color:#5a6a8a;text-transform:uppercase;letter-spacing:.05em">Seconds for all plank/hold tests</span>
+          <span style="font-size:11px;color:#5a6a8a">· Leave blank if not tested</span>
+        </div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <table style="width:100%;border-collapse:collapse;min-width:820px">
+            <thead>
+              <tr style="background:#f8faff;border-bottom:2px solid #d0daf0">
+                <th style="padding:10px 8px;font-size:10px;font-weight:800;color:#5a6a8a;text-transform:uppercase;letter-spacing:.05em;text-align:center;width:32px">#</th>
+                <th style="padding:10px 8px;font-size:10px;font-weight:800;color:#5a6a8a;text-transform:uppercase;letter-spacing:.05em;text-align:left">First Name</th>
+                <th style="padding:10px 8px;font-size:10px;font-weight:800;color:#5a6a8a;text-transform:uppercase;letter-spacing:.05em;text-align:left">Last Name</th>
+                <th style="padding:10px 8px;font-size:10px;font-weight:800;color:#5a6a8a;text-transform:uppercase;letter-spacing:.05em;text-align:left">Year</th>
+                <th style="padding:10px 8px;font-size:10px;font-weight:800;color:#5a6a8a;text-transform:uppercase;letter-spacing:.05em;text-align:center">Height<br><span style="font-weight:400;text-transform:none">(cm)</span></th>
+                <th style="padding:10px 8px;font-size:10px;font-weight:800;color:#5a6a8a;text-transform:uppercase;letter-spacing:.05em;text-align:center">Weight<br><span style="font-weight:400;text-transform:none">(kg)</span></th>
+                <th style="padding:10px 8px;font-size:10px;font-weight:800;color:#5a6a8a;text-transform:uppercase;letter-spacing:.05em;text-align:center">Hollow<br><span style="font-weight:400;text-transform:none">Hold</span></th>
+                <th style="padding:10px 8px;font-size:10px;font-weight:800;color:#5a6a8a;text-transform:uppercase;letter-spacing:.05em;text-align:center">Prone<br><span style="font-weight:400;text-transform:none">Plank</span></th>
+                <th style="padding:10px 8px;font-size:10px;font-weight:800;color:#5a6a8a;text-transform:uppercase;letter-spacing:.05em;text-align:center">Side Plank<br><span style="font-weight:400;text-transform:none">Left</span></th>
+                <th style="padding:10px 8px;font-size:10px;font-weight:800;color:#5a6a8a;text-transform:uppercase;letter-spacing:.05em;text-align:center">Side Plank<br><span style="font-weight:400;text-transform:none">Right</span></th>
+                <th style="width:36px"></th>
+              </tr>
+            </thead>
+            <tbody id="ctBody">
+              ${rows}
+            </tbody>
+          </table>
+        </div>
+        <div style="padding:12px 16px;border-top:1px solid #e8eef8;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <button onclick="addCTRow()" style="background:none;border:1.5px dashed #94a3b8;color:#64748b;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer"
+            onmouseover="this.style.borderColor='#3b82f6';this.style.color='#3b82f6'" onmouseout="this.style.borderColor='#94a3b8';this.style.color='#64748b'">
+            + Add Athlete
+          </button>
+          <button id="ctSaveBtnBottom" onclick="saveAllCoreTests()" style="background:#1a56db;border:none;color:#fff;padding:10px 22px;border-radius:9px;font-size:14px;font-weight:800;cursor:pointer">
+            💾 Save All
+          </button>
+        </div>
+      </div>
+      <div id="ctStatus" style="margin-top:14px;display:none"></div>
+    `;
+  }
+
+  document.getElementById('mainContent').innerHTML = buildGrid(DEFAULT_ROWS);
+
+  // Renumber rows helper
+  window.renumberCTRows = function() {
+    document.querySelectorAll('#ctBody tr').forEach((tr, i) => {
+      tr.dataset.row = i;
+      tr.cells[0].textContent = i + 1;
+    });
+  };
+
+  // Add a new blank row
+  window.addCTRow = function() {
+    const tbody = document.getElementById('ctBody');
+    const i = tbody.rows.length;
+    const tr = document.createElement('tr');
+    tr.dataset.row = i;
+    tr.style.borderBottom = '1px solid #e8eef8';
+    tr.innerHTML = `
+      <td style="padding:6px 8px;text-align:center;color:#8fa0be;font-size:12px;font-weight:700;width:32px">${i+1}</td>
+      <td style="padding:6px 4px"><input class="cti" data-field="first" placeholder="First" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:80px"
+        onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/></td>
+      <td style="padding:6px 4px"><input class="cti" data-field="last" placeholder="Last" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:80px"
+        onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/></td>
+      <td style="padding:6px 4px"><select class="cti" data-field="year" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;background:#fff;outline:none;min-width:80px"
+        onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'">
+        <option value="">Year…</option>
+        <option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option>
+      </select></td>
+      <td style="padding:6px 4px"><input class="cti" data-field="height" type="number" inputmode="decimal" placeholder="cm" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:64px;text-align:center"
+        onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/></td>
+      <td style="padding:6px 4px"><input class="cti" data-field="weight" type="number" inputmode="decimal" placeholder="kg" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:64px;text-align:center"
+        onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/></td>
+      <td style="padding:6px 4px"><input class="cti" data-field="hollow" type="number" inputmode="decimal" placeholder="—" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:58px;text-align:center"
+        onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/></td>
+      <td style="padding:6px 4px"><input class="cti" data-field="prone" type="number" inputmode="decimal" placeholder="—" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:58px;text-align:center"
+        onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/></td>
+      <td style="padding:6px 4px"><input class="cti" data-field="spleft" type="number" inputmode="decimal" placeholder="—" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:58px;text-align:center"
+        onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/></td>
+      <td style="padding:6px 4px"><input class="cti" data-field="spright" type="number" inputmode="decimal" placeholder="—" style="width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;min-width:58px;text-align:center"
+        onfocus="this.style.borderColor='#1a56db'" onblur="this.style.borderColor='#d0daf0'"/></td>
+      <td style="padding:6px 8px;text-align:center"><button onclick="removeCTRow(this)" title="Remove" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:16px;padding:4px"
+        onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#cbd5e1'">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+    // Focus first input of new row
+    tr.querySelector('input').focus();
+  };
+
+  // Remove a row
+  window.removeCTRow = function(btn) {
+    const tr = btn.closest('tr');
+    if(document.querySelectorAll('#ctBody tr').length <= 1) return; // keep at least 1
+    tr.remove();
+    renumberCTRows();
+  };
+
+  // Save all filled rows
+  window.saveAllCoreTests = async function() {
+    const rows = document.querySelectorAll('#ctBody tr');
+    const records = [];
+    rows.forEach(tr => {
+      const get = f => tr.querySelector(\`[data-field="\${f}"]\`)?.value?.trim() || '';
+      const first = get('first');
+      const last = get('last');
+      if(!first && !last) return; // skip blank rows
+      records.push({
+        athlete_first: first,
+        athlete_last: last,
+        athlete_name: [first, last].filter(Boolean).join(' '),
+        year_level: get('year') || null,
+        height: get('height') || null,
+        weight: get('weight') || null,
+        hollow_hold: get('hollow') || null,
+        prone_plank: get('prone') || null,
+        side_plank_left: get('spleft') || null,
+        side_plank_right: get('spright') || null,
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    if(records.length === 0) {
+      const st = document.getElementById('ctStatus');
+      st.style.display = 'block';
+      st.innerHTML = '<div style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:10px;padding:12px 16px;color:#92400e;font-weight:700;font-size:13px">⚠️ No athlete data to save — fill in at least one row first.</div>';
+      return;
+    }
+
+    // Disable buttons
+    ['ctSaveBtn','ctSaveBtnBottom'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el){ el.disabled = true; el.textContent = 'Saving…'; }
+    });
+
+    let saved = 0, failed = 0;
+    for(const rec of records) {
+      try {
+        const res = await fetch('https://superagent-84188511.base44.app/functions/submitTesting', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(rec)
+        });
+        const data = await res.json();
+        if(data.success || data.id || res.ok) saved++;
+        else failed++;
+      } catch(e) {
+        failed++;
+      }
+    }
+
+    ['ctSaveBtn','ctSaveBtnBottom'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el){ el.disabled = false; el.innerHTML = '💾 Save All'; }
+    });
+
+    const st = document.getElementById('ctStatus');
+    st.style.display = 'block';
+    if(failed === 0) {
+      st.innerHTML = \`<div style="background:#f0fff4;border:1.5px solid #22c55e;border-radius:10px;padding:14px 18px;color:#166534;font-weight:700;font-size:14px">
+        ✅ Saved \${saved} athlete\${saved !== 1 ? 's' : ''} successfully!
+        <button onclick="loadCoreTestingView()" style="margin-left:16px;background:none;border:1.5px solid #166534;color:#166534;padding:5px 12px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">Clear &amp; Start New</button>
+      </div>\`;
+    } else {
+      st.innerHTML = \`<div style="background:#fff7ed;border:1.5px solid #f97316;border-radius:10px;padding:14px 18px;color:#9a3412;font-weight:700;font-size:14px">
+        ⚠️ \${saved} saved, \${failed} failed. Check connection and try again.
+      </div>\`;
+    }
+  };
 }
 
 </script>
