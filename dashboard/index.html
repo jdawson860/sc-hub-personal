@@ -285,10 +285,10 @@
         <button class="snav-btn active" id="snav-sc" onclick="switchTab('sc')">💪 S&amp;C</button>
         <button class="snav-btn" id="snav-erg" onclick="switchTab('erg')">🚣 Erg</button>
         <button class="snav-btn" id="snav-water" onclick="switchTab('water')">🌊 Water</button>
-        <button class="snav-btn" id="snav-testing" onclick="switchTab('testing')">📋 Testing</button>
         <a href="compare.html" style="display:block;text-decoration:none"><button class="snav-btn" id="snav-compare" style="width:100%;text-align:left">⚖️ Compare</button></a>
         <button class="snav-btn" id="snav-cp" onclick="switchTab('cp')" style="display:none">⚡ Critical Power</button>
-        <button class="snav-btn" id="snav-coretesting" onclick="switchTab('coretesting')">🧪 Core Testing</button>
+        <button class="snav-btn" id="snav-coretesting" onclick="switchTab('coretesting')">🧪 Record Core Testing</button>
+        <button class="snav-btn" id="snav-testing" onclick="switchTab('testing')">📋 Core Testing Results</button>
       </div>
       <!-- athlete selector moved to content area banner -->
       <div id="athSelWrap" style="display:none"></div>
@@ -765,7 +765,7 @@ async function loadTestingView() {
       </tr>`).join('');
 
     el.innerHTML = `
-      <div class="section-title">Testing Results — Latest per Athlete</div>
+      <div class="section-title">Core Testing Results</div>
       <div class="card" style="padding:0;overflow:hidden">
         <table class="data-table">
           <thead><tr>
@@ -1675,9 +1675,6 @@ function renderWaterView(data){
       </table>`}
     </div>
 
-    <div style="text-align:center;padding:16px 0;font-size:13px;color:var(--muted)">
-      Athletes log water sessions via the <a href="athlete.html" target="_blank" style="color:var(--accent);font-weight:700">Athlete Hub → 🌊 Water</a> tab
-    </div>
   `;
 }
 
