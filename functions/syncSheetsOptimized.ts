@@ -6,8 +6,8 @@ const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 async function getSheetRows(
   token: string,
   sheetName: string,
-  maxRows = 500,
-  maxCols = "N"
+  maxRows = 2000,
+  maxCols = "J"
 ): Promise<string[][]> {
   const url = `${SHEETS_API}/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A1:${maxCols}${maxRows}`;
   const resp = await fetch(url, {
@@ -18,32 +18,14 @@ async function getSheetRows(
   return data.values || [];
 }
 
-function sheetsDateToISO(val: string): string {
-  const serial = parseFloat(val);
-  if (!isNaN(serial) && serial > 40000) {
-    const epoch = new Date(1899, 11, 30);
-    const date = new Date(epoch.getTime() + serial * 86400000);
-    return date.toISOString().split("T")[0];
-  }
-  try {
-    const d = new Date(val);
-    if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
-  } catch {}
-  return val;
-}
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     const token = Deno.env.get("GOOGLESHEETS_ACCESS_TOKEN");
     if (!token) {
-      return Response.json({
-        error: "GOOGLESHEETS_ACCESS_TOKEN not set",
-        success: false,
-      });
+      return Response.json({ error: "GOOGLESHEETS_ACCESS_TOKEN not set", success: false });
     }
 
-    const athletes = ["AF", "RR", "JC", "MA", "TL", "CC", "SK", "AS", "AD", "OO"];
     const results = {
       session_records: 0,
       testing_records: 0,
@@ -51,56 +33,73 @@ Deno.serve(async (req) => {
       errors: [] as string[],
     };
 
-    // ── 1. SYNC SESSION DATA ────────────────────
+    // ── 1. SYNC SESSION DATA from "Athlete Hub Responses" ──────────────────
+    // Columns: Timestamp(A), Date(B), Athlete(C), Session Type(D), Exercise(E), Set(F), Reps(G), Load(H), RPE(I)
+    const hubRows = await getSheetRows(token, "Athlete Hub Responses", 2000, "I");
     const newSessionRecords: Record<string, unknown>[] = [];
 
-    for (const ath of athletes) {
+    for (const row of hubRows.slice(1)) {
+      // Need at least athlete + exercise
+      const athlete = row[2]?.trim();
+      const exercise = row[4]?.trim();
+      if (!athlete || !exercise) continue;
+      // Skip test entries
+      if (athlete === "JDT" || athlete === "TEST") continue;
+
+      // Use col B (Date) as primary date, fall back to col A (Timestamp)
+      const rawDate = row[1]?.trim() || row[0]?.trim() || "";
+      let dateStr = "";
       try {
-        const rows = await getSheetRows(token, `Athlete_${ath}`, 500);
-        if (rows.length < 2) continue;
+        const d = new Date(rawDate);
+        if (!isNaN(d.getTime())) dateStr = d.toISOString().split("T")[0];
+      } catch {}
+      if (!dateStr) continue;
 
-        for (const row of rows.slice(1)) {
-          if (!row[0] || !row[1] || !row[2]) continue;
-          const dateStr = sheetsDateToISO(row[0]);
-          newSessionRecords.push({
-            timestamp: `${dateStr}T09:00:00`,
-            athlete: ath,
-            session_type: row[1] || "",
-            exercise: row[2] || "",
-            set_number: parseInt(row[3]) || 1,
-            reps: row[4] || "",
-            load: row[5] || "",
-            rpe: row[6] ? parseInt(row[6]) : null,
-          });
+      newSessionRecords.push({
+        timestamp: `${dateStr}T09:00:00`,
+        athlete: athlete,
+        session_type: row[3]?.trim() || "",
+        exercise: exercise,
+        set_number: row[5] ? parseInt(row[5]) || 1 : 1,
+        reps: row[6]?.trim() || "",
+        load: row[7]?.trim() || "",
+        rpe: row[8] ? parseFloat(row[8]) : null,
+      });
+    }
+
+    // Clear existing and re-insert (sheet is source of truth)
+    const existingSessions = await base44.asServiceRole.entities.SessionLog.list({ limit: 1 });
+    if (existingSessions.length > 0) {
+      // Delete in batches
+      let skip = 0;
+      while (true) {
+        const batch = await base44.asServiceRole.entities.SessionLog.list({ limit: 200, skip });
+        if (batch.length === 0) break;
+        for (const rec of batch) {
+          await base44.asServiceRole.entities.SessionLog.delete(rec.id);
         }
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e);
-        results.errors.push(`Athlete_${ath}: ${msg}`);
+        if (batch.length < 200) break;
       }
     }
 
-    // Batch insert in chunks of 100
-    if (newSessionRecords.length > 0) {
-      for (let i = 0; i < newSessionRecords.length; i += 100) {
-        const chunk = newSessionRecords.slice(i, i + 100);
-        await base44.entities.SessionLog.create(chunk);
-      }
-      results.session_records = newSessionRecords.length;
+    // Insert fresh from sheet in chunks of 100
+    for (let i = 0; i < newSessionRecords.length; i += 100) {
+      const chunk = newSessionRecords.slice(i, i + 100);
+      await base44.asServiceRole.entities.SessionLog.create(chunk);
     }
+    results.session_records = newSessionRecords.length;
 
-    // ── 2. SYNC TESTING DATA ────────────────────
-    const testRows = await getSheetRows(token, "Core_Testing_Responses", 500);
+    // ── 2. SYNC TESTING DATA ────────────────────────────────────────────────
+    const testRows = await getSheetRows(token, "Core_Testing_Responses", 500, "K");
     const newTestRecords: Record<string, unknown>[] = [];
 
     for (const row of testRows.slice(1)) {
-      if (row.length < 10) continue;
+      if (row.length < 6) continue;
       const firstName = (row[1] || "").trim().toUpperCase();
       if (!firstName || firstName === "TEST" || firstName === "NOTREAL") continue;
 
       let ts = row[0];
-      try {
-        ts = new Date(row[0]).toISOString();
-      } catch {}
+      try { ts = new Date(row[0]).toISOString(); } catch {}
 
       newTestRecords.push({
         timestamp: ts,
@@ -117,28 +116,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Batch insert testing records
     if (newTestRecords.length > 0) {
       for (let i = 0; i < newTestRecords.length; i += 100) {
-        const chunk = newTestRecords.slice(i, i + 100);
-        await base44.entities.TestingResult.create(chunk);
+        await base44.asServiceRole.entities.TestingResult.create(newTestRecords.slice(i, i + 100));
       }
       results.testing_records = newTestRecords.length;
     }
 
-    // ── 3. SYNC ERG SESSION DATA ────────────────────
+    // ── 3. SYNC ERG SESSIONS ────────────────────────────────────────────────
+    // Columns: Timestamp(A), Athlete(B), WorkoutType(C), TotalDistance(D), TotalTime(E),
+    //          AvgSplit(F), AvgHR(G), StrokeRate(H), RPE(I), Intervals(J), Notes(K), ImageURL(L)
     try {
       const ergRows = await getSheetRows(token, "Erg_Session_Responses", 500, "M");
       const newErgRecords: Record<string, unknown>[] = [];
 
       for (const row of ergRows.slice(1)) {
-        // Skip empty rows — need at least timestamp + athlete + workout_type
         if (!row[0] || !row[1] || !row[2]) continue;
-
-        // Parse timestamp
         let ts = row[0];
         try { ts = new Date(row[0]).toISOString(); } catch {}
-
         newErgRecords.push({
           timestamp: ts,
           athlete: row[1]?.trim() || "",
@@ -155,35 +150,23 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Clear existing erg records and re-insert from sheet (sheet is source of truth)
-      if (newErgRecords.length > 0) {
-        // Delete all existing erg sessions first
-        const existing = await base44.asServiceRole.entities.ErgSession.list();
-        for (const rec of existing) {
-          await base44.asServiceRole.entities.ErgSession.delete(rec.id);
-        }
-        // Insert fresh from sheet
-        for (let i = 0; i < newErgRecords.length; i += 100) {
-          const chunk = newErgRecords.slice(i, i + 100);
-          await base44.asServiceRole.entities.ErgSession.create(chunk);
-        }
-        results.erg_records = newErgRecords.length;
+      // Wipe and re-insert
+      const existingErg = await base44.asServiceRole.entities.ErgSession.list({ limit: 500 });
+      for (const rec of existingErg) {
+        await base44.asServiceRole.entities.ErgSession.delete(rec.id);
       }
+      for (let i = 0; i < newErgRecords.length; i += 100) {
+        await base44.asServiceRole.entities.ErgSession.create(newErgRecords.slice(i, i + 100));
+      }
+      results.erg_records = newErgRecords.length;
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      results.errors.push(`Erg_Session_Responses: ${msg}`);
+      results.errors.push(`Erg: ${e instanceof Error ? e.message : String(e)}`);
     }
 
-    return Response.json({
-      success: true,
-      synced_at: new Date().toISOString(),
-      ...results,
-    });
+    return Response.json({ success: true, synced_at: new Date().toISOString(), ...results });
+
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
-    return Response.json(
-      { error: msg, success: false },
-      { status: 500 }
-    );
+    return Response.json({ error: msg, success: false }, { status: 500 });
   }
 });
