@@ -766,7 +766,7 @@ async function loadTestingView() {
         <table class="data-table">
           <thead><tr>
             <th>Athlete</th><th>Year</th><th>Height</th><th>Weight</th>
-            <th>Hollow Hold</th><th>Prone Plank</th><th>Side Plank L</th><th>Side Plank R</th><th>Date</th>
+            <th>Prone Plank</th><th>Side Plank L</th><th>Side Plank R</th><th>Hollow Hold</th><th>Height</th><th>Weight</th><th>Date</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
@@ -2902,7 +2902,7 @@ function loadCoreTestingView() {
   table.id = 'ctTable';
   table.style.cssText = 'width:100%;border-collapse:collapse;min-width:820px';
 
-  var cols = ['#','First','Last','Year','Height (cm)','Weight (kg)','Hollow Hold (s)','Prone Plank (s)','Side Plank L (s)','Side Plank R (s)',''];
+  var cols = ['#','First','Last','Year','Prone Plank','Side Plank L','Side Plank R','Hollow Hold','Height (cm)','Weight (kg)',''];
   var thead = document.createElement('thead');
   var hrow = document.createElement('tr');
   hrow.style.cssText = 'background:#f8faff;border-bottom:2px solid #d0daf0';
@@ -2982,15 +2982,47 @@ function loadCoreTestingView() {
       tr.appendChild(td);
     }
 
+    // mm:ss text input — validates on blur, accepts "2:42" or "142" (treated as secs)
+    function makeTimeInput(field, placeholder) {
+      var td = document.createElement('td');
+      td.style.cssText = 'padding:6px 4px';
+      var inp = document.createElement('input');
+      inp.dataset.field = field;
+      inp.placeholder = placeholder || '0:00';
+      inp.type = 'text';
+      inp.inputMode = 'decimal';
+      inp.style.cssText = 'width:100%;padding:7px 8px;border:1.5px solid #d0daf0;border-radius:7px;font-size:13px;font-weight:600;color:#07122b;outline:none;box-sizing:border-box;text-align:center;min-width:64px';
+      inp.addEventListener('focus', function(){ this.style.borderColor='#1a56db'; this.select(); });
+      inp.addEventListener('blur',  function(){
+        this.style.borderColor='#d0daf0';
+        var v = this.value.trim();
+        if (!v || v === '0:00') { this.value = ''; return; }
+        // If pure number (e.g. "142") treat as seconds → convert to mm:ss
+        if (/^\d+$/.test(v)) {
+          var secs = parseInt(v, 10);
+          this.value = Math.floor(secs/60) + ':' + String(secs%60).padStart(2,'0');
+        } else if (/^\d+:\d{1,2}$/.test(v)) {
+          // normalise e.g. "2:5" → "2:05"
+          var parts = v.split(':');
+          this.value = parts[0] + ':' + parts[1].padStart(2,'0');
+        }
+      });
+      td.appendChild(inp);
+      tr.appendChild(td);
+      return inp;
+    }
+
     makeInput('first',   'First',  'text',   'min-width:80px');
     makeInput('last',    'Last',   'text',   'min-width:80px');
     makeSelect('year');
-    makeInput('height',  'cm',     'number', 'min-width:64px;text-align:center');
-    makeInput('weight',  'kg',     'number', 'min-width:64px;text-align:center');
-    makeInput('hollow',  '--',     'number', 'min-width:58px;text-align:center');
-    makeInput('prone',   '--',     'number', 'min-width:58px;text-align:center');
-    makeInput('spleft',  '--',     'number', 'min-width:58px;text-align:center');
-    makeInput('spright', '--',     'number', 'min-width:58px;text-align:center');
+    // Timed inputs (mm:ss format)
+    makeTimeInput('prone',   '0:00');
+    makeTimeInput('spleft',  '0:00');
+    makeTimeInput('spright', '0:00');
+    makeTimeInput('hollow',  '0:00');
+    // Measurements
+    makeInput('height',  'cm',  'number', 'min-width:64px;text-align:center');
+    makeInput('weight',  'kg',  'number', 'min-width:64px;text-align:center');
 
     // × remove button
     var tdX = document.createElement('td');
@@ -3109,6 +3141,15 @@ function loadCoreTestingView() {
       }
       var first = get('first'), last = get('last');
       if (!first && !last) return; // skip blank rows
+      // Convert mm:ss → total seconds for timed fields
+      function mmssToSecs(v) {
+        if (!v) return null;
+        v = v.trim();
+        if (!v) return null;
+        if (/^\d+$/.test(v)) return parseInt(v, 10);
+        var parts = v.split(':');
+        return parseInt(parts[0],10)*60 + parseInt(parts[1]||'0',10);
+      }
       records.push({
         athlete_first:    first,
         athlete_last:     last,
@@ -3116,10 +3157,10 @@ function loadCoreTestingView() {
         year_level:       get('year') || null,
         height:           get('height') || null,
         weight:           get('weight') || null,
-        hollow_hold:      get('hollow') || null,
-        prone_plank:      get('prone') || null,
-        side_plank_left:  get('spleft') || null,
-        side_plank_right: get('spright') || null,
+        hollow_hold:      mmssToSecs(get('hollow')),
+        prone_plank:      mmssToSecs(get('prone')),
+        side_plank_left:  mmssToSecs(get('spleft')),
+        side_plank_right: mmssToSecs(get('spright')),
         timestamp:        testingDate
       });
     });
