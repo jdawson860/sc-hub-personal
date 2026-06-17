@@ -3154,6 +3154,7 @@ function loadCoreTestingView() {
         athlete_first:    first,
         athlete_last:     last,
         athlete_name:     [first,last].filter(Boolean).join(' '),
+        testing_date:     dateVal || '',
         year_level:       get('year') || null,
         height:           get('height') || null,
         weight:           get('weight') || null,

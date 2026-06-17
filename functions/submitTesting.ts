@@ -6,7 +6,7 @@ const SHEET_NAME_DASHBOARD = 'Core Testing Dashboard Responses';
 const SHEETS_API = 'https://sheets.googleapis.com/v4/spreadsheets';
 
 async function appendToSheet(token: string, row: any[], sheetName: string) {
-  const url = `${SHEETS_API}/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A:J:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  const url = `${SHEETS_API}/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A:K:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -39,14 +39,22 @@ Deno.serve(async (req) => {
       return Response.json({ ok: false, error: 'athlete_first is required' }, { status: 400, headers: cors });
     }
 
-    const now = new Date().toISOString();
+    // Use the testing_date sent from the frontend (YYYY-MM-DD), fall back to now
+    const testingDateRaw: string = body?.testing_date || '';
+    const timestamp = testingDateRaw
+      ? new Date(testingDateRaw + 'T00:00:00+10:00').toISOString()
+      : new Date().toISOString();
+    // Human-readable date for the sheet (DD/MM/YYYY)
+    const displayDate = testingDateRaw
+      ? testingDateRaw.split('-').reverse().join('/')
+      : new Date().toLocaleDateString('en-AU', { timeZone: 'Australia/Sydney' });
 
     const record = {
-      timestamp:        now,
+      timestamp:        timestamp,
       athlete_name:     athleteName,
       athlete_first:    firstName,
       athlete_last:     lastName,
-      year_level:       String(body.year_level),
+      year_level:       body.year_level ? String(body.year_level) : null,
       height:           body.height      ? parseFloat(body.height)           : null,
       weight:           body.weight      ? parseFloat(body.weight)           : null,
       hollow_hold:      body.hollow_hold ? parseFloat(body.hollow_hold)      : null,
@@ -68,16 +76,17 @@ Deno.serve(async (req) => {
       const { accessToken: sheetsToken } = await base44.asServiceRole.connectors.getConnection('googlesheets');
 
       const row = [
-        now,
+        timestamp,
         firstName,
         lastName,
-        String(body.year_level),
-        record.height           ?? '',
-        record.weight           ?? '',
-        record.hollow_hold      ?? '',
+        record.year_level       ?? '',
         record.prone_plank      ?? '',
         record.side_plank_left  ?? '',
         record.side_plank_right ?? '',
+        record.hollow_hold      ?? '',
+        record.height           ?? '',
+        record.weight           ?? '',
+        displayDate,             // Testing Date (DD/MM/YYYY)
       ];
 
       await appendToSheet(sheetsToken, row, SHEET_NAME_DASHBOARD);
