@@ -1129,6 +1129,7 @@ async function processImageFile(file) {
       if (d.stroke_rate) document.getElementById('exSr').value = d.stroke_rate;
       if (d.intervals) document.getElementById('exIntervals').value = d.intervals;
       if (d.rest_time) document.getElementById('exIntervals').value = d.intervals || '';
+      if (d.session_date) document.getElementById('ergDate').value = d.session_date;
       // Render editable per-interval rows if we have split data
       renderExIntervalRows(extractedIntervalSplits);
       uploadedImageUrl = res.image_url || null;

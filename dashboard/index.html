@@ -1577,11 +1577,6 @@ function openErgSession(session){
     </div>`;
   }
 
-  // ── Notes ──────────────────────────────────────────────────────────
-  if(session.notes){
-    bodyHtml += `<div class="modal-section"><div class="modal-section-title">Notes</div><div class="erg-notes">${session.notes}</div></div>`;
-  }
-
   // ── Session image + upload ─────────────────────────────────────────
   if(session.image_url){
     bodyHtml += `<div class="modal-section"><div class="modal-section-title">Erg Screen</div><img src="${session.image_url}" style="width:100%;border-radius:10px;margin-top:4px" /></div>`;

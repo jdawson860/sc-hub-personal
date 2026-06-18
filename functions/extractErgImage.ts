@@ -61,6 +61,7 @@ Extract ALL available workout data and return it as a single JSON object with th
 
 Top-level fields:
 - workout_type: one of "Single Distance", "Single Time", "Intervals", "Custom"
+- session_date: date string in YYYY-MM-DD format if visible on screen (e.g. "2026-06-18") — check for any date/time display on the erg
 - total_distance: number in metres (e.g. 2000)
 - total_time: string in mm:ss.t format (e.g. "6:42.3")
 - avg_split: string in m:ss.t format per 500m (e.g. "1:41.0")
