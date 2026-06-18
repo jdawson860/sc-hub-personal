@@ -1429,6 +1429,9 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeSessionMod
 // Open a GYM session detail modal
 async function openGymSession(athlete, date, session_type){
   const modal = document.getElementById('sessionModal');
+  // Re-show coach notes panel for S&C sessions
+  const coachNotesPanel = document.getElementById('modalCoachNotes');
+  if (coachNotesPanel) coachNotesPanel.style.display = '';
   const scls = session_type==='Lower A'?'sb-la':session_type==='Lower B'?'sb-lb':session_type==='Upper A'?'sb-ua':'sb-ub';
   document.getElementById('modalTitle').innerHTML = `<span class="session-badge ${scls}" style="font-size:14px;padding:3px 10px">${session_type}</span>`;
   document.getElementById('modalSubtitle').textContent = `${athlete} · ${date}`;
@@ -1509,6 +1512,9 @@ function openErgSession(session){
 
   document.getElementById('modalTitle').innerHTML = `🚣 ${session.workout_type||'Erg Session'}`;
   document.getElementById('modalSubtitle').textContent = `${session.athlete} · ${date}`;
+  // Hide coach notes panel — not relevant for erg modal
+  const coachNotesPanel = document.getElementById('modalCoachNotes');
+  if (coachNotesPanel) coachNotesPanel.style.display = 'none';
 
   // Stats bar
   const dist = session.total_distance ? (session.total_distance>=1000?(session.total_distance/1000).toFixed(2)+'km':session.total_distance+'m') : '—';
