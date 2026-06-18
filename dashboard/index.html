@@ -735,46 +735,47 @@ async function loadTestingView() {
   el.innerHTML = '<div class="loading"><div class="spinner"></div> Loading testing data…</div>';
   try {
     const data = await fetchData(API_TEST, {});
-    const results = data.results || [];
-    const athletes = data.athletes || [];
+    const yearGroups = data.yearGroups || [];
 
-    if (!results.length) {
+    if (!yearGroups.length || data.totalRecords === 0) {
       el.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted)">No testing data recorded yet.</div>';
       return;
     }
 
-    // Latest result per athlete
-    const latest = {};
-    results.forEach(r => {
-      if (!latest[r.athlete_name] || r.timestamp > latest[r.athlete_name].timestamp) {
-        latest[r.athlete_name] = r;
-      }
+    // Flatten all athletes across year groups for a single table, grouped by year
+    let html = '<div class="section-title">Core Testing Results</div>';
+
+    yearGroups.forEach(group => {
+      const athletes = group.overallRanking || [];
+      // Build rows — pull scores from the ranking data
+      const rows = athletes.map((a, idx) => {
+        const s = a.scores || {};
+        const rank = a.overallRank;
+        const rankColor = rank === 1 ? '#f59e0b' : rank === 2 ? '#94a3b8' : rank === 3 ? '#b45309' : 'var(--muted)';
+        return `<tr>
+          <td style="font-weight:700;color:${rankColor}">${rank}</td>
+          <td class="athlete-name">${a.athlete||'—'}</td>
+          <td style="font-family:monospace;font-weight:700">${s.hollow_hold != null ? s.hollow_hold+'s' : '—'}</td>
+          <td style="font-family:monospace;font-weight:700">${s.prone_plank != null ? s.prone_plank+'s' : '—'}</td>
+          <td style="font-family:monospace">${s.side_plank_left != null ? s.side_plank_left+'s' : '—'}</td>
+          <td style="font-family:monospace">${s.side_plank_right != null ? s.side_plank_right+'s' : '—'}</td>
+          <td style="color:var(--muted);font-size:11px">${a.testsCompleted||0}/4</td>
+        </tr>`;
+      }).join('');
+
+      html += `
+        <div style="margin-bottom:6px;font-size:13px;font-weight:700;color:#3b82f6;margin-top:20px">Year ${group.yearLevel} — ${group.athleteCount} athlete${group.athleteCount!==1?'s':''}</div>
+        <div class="card" style="padding:0;overflow:hidden;margin-bottom:8px">
+          <table class="data-table">
+            <thead><tr>
+              <th>#</th><th>Athlete</th><th>Hollow Hold</th><th>Prone Plank</th><th>Side Plank L</th><th>Side Plank R</th><th>Tests</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
     });
 
-    const rows = Object.values(latest).map(r => `
-      <tr>
-        <td class="athlete-name">${r.athlete_name||'—'}</td>
-        <td>${r.year_level||'—'}</td>
-        <td>${r.height ? r.height+'cm' : '—'}</td>
-        <td>${r.weight ? r.weight+'kg' : '—'}</td>
-        <td style="font-weight:700">${r.hollow_hold ? r.hollow_hold+'s' : '—'}</td>
-        <td style="font-weight:700">${r.prone_plank ? r.prone_plank+'s' : '—'}</td>
-        <td>${r.side_plank_left ? r.side_plank_left+'s' : '—'}</td>
-        <td>${r.side_plank_right ? r.side_plank_right+'s' : '—'}</td>
-        <td style="color:var(--muted);font-size:11px">${(r.timestamp||'').slice(0,10)}</td>
-      </tr>`).join('');
-
-    el.innerHTML = `
-      <div class="section-title">Core Testing Results</div>
-      <div class="card" style="padding:0;overflow:hidden">
-        <table class="data-table">
-          <thead><tr>
-            <th>Athlete</th><th>Year</th><th>Height</th><th>Weight</th>
-            <th>Prone Plank</th><th>Side Plank L</th><th>Side Plank R</th><th>Hollow Hold</th><th>Height</th><th>Weight</th><th>Date</th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>`;
+    el.innerHTML = html;
   } catch(e) {
     el.innerHTML = `<div style="text-align:center;padding:60px;color:#e63946">Failed to load testing data: ${e.message}</div>`;
   }
