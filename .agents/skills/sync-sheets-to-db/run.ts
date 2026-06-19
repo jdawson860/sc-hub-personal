@@ -61,7 +61,7 @@ async function runSync(token: string) {
     appId: Deno.env.get("VITE_BASE44_APP_ID"),
   });
 
-  const athletes = ['AF', 'RR', 'JC', 'MA', 'TL', 'CC', 'SK', 'AS', 'AD', 'OO'];
+  const athletes = ['AF', 'RR', 'JC', 'MA', 'TL', 'CC', 'SK', 'AS', 'AD', 'OO', 'ASy', 'JDT', 'HM'];
   const results = { inserted_sessions: 0, inserted_testing: 0, inserted_erg: 0, skipped_sessions: 0, skipped_testing: 0, skipped_erg: 0, errors: [] as string[] };
 
   // ── 1. SESSION LOGS ─────────────────────────
