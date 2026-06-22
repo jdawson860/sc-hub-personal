@@ -501,7 +501,7 @@ function renderCoachView(data){
       <table class="data-table">
         <thead><tr>
           <th>Athlete</th><th>Last Session</th><th>Sessions</th>
-          <th>Session Types</th><th>RPE≥9</th><th>ACWR</th><th>Wk Volume</th>
+          <th>Session Types</th><th>ACWR</th><th>Wk Volume</th>
         </tr></thead>
         <tbody id="athleteTableBody"></tbody>
       </table>
@@ -570,7 +570,6 @@ function renderCoachView(data){
       <td style="color:${ds>7?'var(--red)':'var(--text)'};font-weight:${ds>7?700:400}">${lastStr}</td>
       <td><div class="mini-bar-wrap"><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${Math.round((a.total_sessions||0)/maxSess*100)}%"></div></div><span style="font-size:13px;font-weight:700">${a.total_sessions||0}</span></div></td>
       <td>${badges||'<span style="color:var(--muted)">—</span>'}</td>
-      <td style="color:${rpeColor};font-weight:${rpeWeight}">${rpeCount}</td>
       <td>${acwrBadge}</td>
       <td><span style="font-size:12px;color:var(--muted)">${a.weekly_load>0?a.weekly_load.toLocaleString()+'kg':'—'}</span></td>
     `;
