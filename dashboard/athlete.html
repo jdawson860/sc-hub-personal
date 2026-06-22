@@ -809,7 +809,13 @@ function renderExercises() {
   container.innerHTML = exercises.map((ex, ei) => {
     const canSL = isSLEx(ex.name);
     const isSL = canSL && !!ex.sl;
-    const effName = isSL ? 'SL ' + ex.name : ex.name;
+    // Display title: if exercise starts with 'Single Leg', toggle strips/keeps that prefix
+    const slPrefixed = ex.name.startsWith('Single Leg ');
+    const effName = canSL
+      ? (isSL
+          ? ex.name  // SL selected: show full name e.g. "Single Leg Hip Thrust"
+          : (slPrefixed ? ex.name.replace(/^Single Leg /, '') : ex.name))  // DL: strip prefix
+      : ex.name;
     const isTime = isTimeEx(ex.name);
     const isBand = isBandEx(ex.name);
     const repsLabel = isTime ? 'Time (s)' : 'Reps';
@@ -859,7 +865,12 @@ async function submitSession() {
       const s = ex.sets[i];
       // Skip completely blank sets (no reps AND no load)
       if (!s.reps && !s.load) continue;
-      const effName = (isSLEx(ex.name) && ex.sl) ? 'SL ' + ex.name : ex.name;
+      const slPfx = ex.name.startsWith('Single Leg ');
+      const effName = isSLEx(ex.name)
+        ? (ex.sl
+            ? ex.name  // SL selected: store as "Single Leg Hip Thrust"
+            : (slPfx ? ex.name.replace(/^Single Leg /, '') : ex.name))  // DL: strip prefix or plain name
+        : ex.name;
       records.push({
         timestamp: ts,
         athlete: currentAthlete,
