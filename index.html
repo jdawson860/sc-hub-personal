@@ -736,6 +736,103 @@ function filterErgSessions() {
 }
 
 // ── Testing View ──────────────────────────────────────────────────────────
+let _testingData = null; // cache for re-sorting without re-fetching
+
+function renderTestingTable(yearGroups, sortKey, sortDir) {
+  // sortKey: 'overall' | 'hollow_hold' | 'prone_plank' | 'side_plank_left' | 'side_plank_right' | 'tests'
+  // sortDir: 'asc' | 'desc'
+  const COLS = [
+    { key: 'overall',          label: '#',           numeric: true  },
+    { key: 'athlete',          label: 'Athlete',     numeric: false },
+    { key: 'hollow_hold',      label: 'Hollow Hold', numeric: true  },
+    { key: 'prone_plank',      label: 'Prone Plank', numeric: true  },
+    { key: 'side_plank_left',  label: 'Side Plank L',numeric: true  },
+    { key: 'side_plank_right', label: 'Side Plank R',numeric: true  },
+    { key: 'tests',            label: 'Tests',       numeric: true  },
+  ];
+
+  const arrow = (k) => {
+    if (k !== sortKey) return '<span style="opacity:.25;font-size:10px"> ⇅</span>';
+    return sortDir === 'desc'
+      ? '<span style="color:#3b82f6;font-size:10px"> ▼</span>'
+      : '<span style="color:#3b82f6;font-size:10px"> ▲</span>';
+  };
+
+  const thStyle = (k) => `cursor:pointer;user-select:none;white-space:nowrap;${k===sortKey?'color:#3b82f6;':''}`; 
+
+  const headerRow = COLS.map(c =>
+    `<th style="${thStyle(c.key)}" onclick="sortTestingBy('${c.key}')">${c.label}${arrow(c.key)}</th>`
+  ).join('');
+
+  let html = '<div class="section-title">Core Testing Results</div>';
+  html += '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Ranked by composite Z-score — overall athletic performance relative to year group. Click any column header to sort.</div>';
+
+  yearGroups.forEach(group => {
+    let athletes = (group.overallRanking || []).map(a => ({ ...a }));
+
+    // Re-sort by selected column
+    athletes.sort((a, b) => {
+      let va, vb;
+      if (sortKey === 'overall')  { va = a.compositeZ ?? -999; vb = b.compositeZ ?? -999; }
+      else if (sortKey === 'athlete') { va = a.athlete||''; vb = b.athlete||''; }
+      else if (sortKey === 'tests') { va = a.testsCompleted||0; vb = b.testsCompleted||0; }
+      else { va = a.scores?.[sortKey] ?? -1; vb = b.scores?.[sortKey] ?? -1; }
+
+      if (typeof va === 'string') return sortDir==='asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+      return sortDir === 'desc' ? vb - va : va - vb;
+    });
+
+    const rows = athletes.map((a, idx) => {
+      const s = a.scores || {};
+      const dispRank = sortKey === 'overall' ? a.overallRank : idx + 1;
+      const rankColor = a.overallRank === 1 ? '#f59e0b' : a.overallRank === 2 ? '#94a3b8' : a.overallRank === 3 ? '#b45309' : 'var(--muted)';
+      const zLabel = a.compositeZ != null && a.compositeZ > -900
+        ? `<span style="font-size:10px;color:var(--muted);font-weight:400"> (${a.compositeZ > 0 ? '+' : ''}${a.compositeZ}σ)</span>`
+        : '';
+
+      const cellStyle = (k) => sortKey === k ? 'background:rgba(59,130,246,.06);font-family:monospace;font-weight:800;color:#1a56db' : 'font-family:monospace;font-weight:700';
+
+      return `<tr>
+        <td style="font-weight:700;color:${rankColor}">${sortKey==='overall'?a.overallRank:idx+1}${sortKey==='overall'?zLabel:''}</td>
+        <td class="athlete-name">${a.athlete||'—'}</td>
+        <td style="${cellStyle('hollow_hold')}">${s.hollow_hold != null ? fmtSecs(s.hollow_hold) : '—'}</td>
+        <td style="${cellStyle('prone_plank')}">${s.prone_plank != null ? fmtSecs(s.prone_plank) : '—'}</td>
+        <td style="${cellStyle('side_plank_left')}">${s.side_plank_left != null ? fmtSecs(s.side_plank_left) : '—'}</td>
+        <td style="${cellStyle('side_plank_right')}">${s.side_plank_right != null ? fmtSecs(s.side_plank_right) : '—'}</td>
+        <td style="color:var(--muted);font-size:11px">${a.testsCompleted||0}/4</td>
+      </tr>`;
+    }).join('');
+
+    html += `
+      <div style="margin-bottom:6px;font-size:13px;font-weight:700;color:#3b82f6;margin-top:20px">Year ${group.yearLevel} — ${group.athleteCount} athlete${group.athleteCount!==1?'s':''}</div>
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:8px">
+        <table class="data-table">
+          <thead><tr>${headerRow}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  });
+
+  return html;
+}
+
+let _testSortKey = 'overall';
+let _testSortDir = 'desc';
+
+function sortTestingBy(key) {
+  if (_testSortKey === key) {
+    _testSortDir = _testSortDir === 'desc' ? 'asc' : 'desc';
+  } else {
+    _testSortKey = key;
+    // Default: numeric cols sort desc (highest first), athlete sorts asc
+    _testSortDir = key === 'athlete' ? 'asc' : 'desc';
+  }
+  if (_testingData) {
+    document.getElementById('mainContent').innerHTML =
+      renderTestingTable(_testingData, _testSortKey, _testSortDir);
+  }
+}
+
 async function loadTestingView() {
   destroyCharts();
   const el = document.getElementById('mainContent');
@@ -749,40 +846,10 @@ async function loadTestingView() {
       return;
     }
 
-    // Flatten all athletes across year groups for a single table, grouped by year
-    let html = '<div class="section-title">Core Testing Results</div>';
-
-    yearGroups.forEach(group => {
-      const athletes = group.overallRanking || [];
-      // Build rows — pull scores from the ranking data
-      const rows = athletes.map((a, idx) => {
-        const s = a.scores || {};
-        const rank = a.overallRank;
-        const rankColor = rank === 1 ? '#f59e0b' : rank === 2 ? '#94a3b8' : rank === 3 ? '#b45309' : 'var(--muted)';
-        return `<tr>
-          <td style="font-weight:700;color:${rankColor}">${rank}</td>
-          <td class="athlete-name">${a.athlete||'—'}</td>
-          <td style="font-family:monospace;font-weight:700">${s.hollow_hold != null ? fmtSecs(s.hollow_hold) : '—'}</td>
-          <td style="font-family:monospace;font-weight:700">${s.prone_plank != null ? fmtSecs(s.prone_plank) : '—'}</td>
-          <td style="font-family:monospace">${s.side_plank_left != null ? fmtSecs(s.side_plank_left) : '—'}</td>
-          <td style="font-family:monospace">${s.side_plank_right != null ? fmtSecs(s.side_plank_right) : '—'}</td>
-          <td style="color:var(--muted);font-size:11px">${a.testsCompleted||0}/4</td>
-        </tr>`;
-      }).join('');
-
-      html += `
-        <div style="margin-bottom:6px;font-size:13px;font-weight:700;color:#3b82f6;margin-top:20px">Year ${group.yearLevel} — ${group.athleteCount} athlete${group.athleteCount!==1?'s':''}</div>
-        <div class="card" style="padding:0;overflow:hidden;margin-bottom:8px">
-          <table class="data-table">
-            <thead><tr>
-              <th>#</th><th>Athlete</th><th>Hollow Hold</th><th>Prone Plank</th><th>Side Plank L</th><th>Side Plank R</th><th>Tests</th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>`;
-    });
-
-    el.innerHTML = html;
+    _testingData = yearGroups;
+    _testSortKey = 'overall';
+    _testSortDir = 'desc';
+    el.innerHTML = renderTestingTable(yearGroups, _testSortKey, _testSortDir);
   } catch(e) {
     el.innerHTML = `<div style="text-align:center;padding:60px;color:#e63946">Failed to load testing data: ${e.message}</div>`;
   }
