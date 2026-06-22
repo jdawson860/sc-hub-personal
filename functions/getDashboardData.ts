@@ -206,6 +206,11 @@ Deno.serve(async (req) => {
     const athletes = Object.keys(byAthlete).sort();
     const now = new Date();
     const week7 = new Date(now); week7.setDate(now.getDate() - 7);
+    // Calendar week start (Monday AEST) for active-this-week count
+    const weekStart = new Date(now);
+    const dow = weekStart.getDay(); // 0=Sun,1=Mon...6=Sat
+    weekStart.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+    weekStart.setHours(0, 0, 0, 0);
 
     const sessionTypes = ['Lower A', 'Lower B', 'Upper A', 'Upper B'];
 
@@ -293,7 +298,7 @@ Deno.serve(async (req) => {
 
     const squadCalendar = buildSquadLoadCalendar(allLogs);
     const totalSessions = new Set(allLogs.map(r => `${r.athlete}|${r.timestamp?.split('T')[0]}|${r.session_type}`)).size;
-    const activeThisWeek = athletes.filter(a => byAthlete[a].some(r => new Date(r.timestamp) >= week7)).length;
+    const activeThisWeek = athletes.filter(a => byAthlete[a].some(r => new Date(r.timestamp) >= weekStart)).length;
     const allRpes = allLogs.filter(r => r.rpe).map(r => r.rpe);
     const avgSquadRpe = allRpes.length ? parseFloat((allRpes.reduce((a, v) => a + v, 0) / allRpes.length).toFixed(1)) : null;
 
