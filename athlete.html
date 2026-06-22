@@ -493,7 +493,9 @@ const api = (fn, body) => fetch(`${BASE}/${fn}`, {
   body:JSON.stringify(body)
 }).then(r=>r.json());
 
-const ATHLETES = ['AF','RR','JC','MA','TL','CC','SK','AS','HM','TD','JDT'];
+// Fallback list of athletes known from session data (in case AthleteProfile fetch fails)
+const ATHLETES_FALLBACK = ['AF','RR','JC','MA','TL','CC','SK','AS','HM','TD','JDT','ASy','CW'];
+let ATHLETES = [...ATHLETES_FALLBACK];
 
 const EXERCISES = {
   // T2 W7-10 — Lower Body Session 1 (in program order)
@@ -623,7 +625,20 @@ function cancelAthletePicker() {
   document.getElementById('overlay').classList.add('hidden');
 }
 
-function buildAthGrid() {
+async function buildAthGrid() {
+  // Fetch athletes from AthleteProfile entity and merge with fallback list
+  try {
+    const res = await api('athleteProfile', { action: 'list' });
+    if (res && Array.isArray(res.athletes)) {
+      const profileIds = res.athletes.map(a => a.athlete_id);
+      // Merge: start with fallback, add any new ones from profiles
+      const merged = [...new Set([...ATHLETES_FALLBACK, ...profileIds])];
+      ATHLETES = merged.sort();
+    }
+  } catch(e) {
+    console.warn('Could not load athlete list, using fallback:', e);
+    ATHLETES = [...ATHLETES_FALLBACK];
+  }
   document.getElementById('athGrid').innerHTML = ATHLETES.map(a =>
     `<button class="ath-btn" onclick="selectAthlete('${a}')">${a}</button>`
   ).join('');
@@ -1068,9 +1083,19 @@ async function processImageFile(file) {
   document.getElementById('extractForm').style.display = 'none';
 
   try {
-    // Convert to base64 and send to extraction API
+    // Convert to base64 for AI extraction
     const base64 = await fileToBase64(file);
+
+    // Also compress the image in-browser and store as a data URL (max ~400px wide, ~50KB)
+    let storedImageUrl = null;
+    try {
+      storedImageUrl = await compressImageToDataUrl(file, 480, 0.7);
+    } catch(_) { /* compression failure is non-fatal */ }
+
+    // Extract data from image
     const res = await api('extractErgImage', { image_base64: base64, athlete: currentAthlete });
+    // Use the compressed data URL as the image — no external storage needed
+    if (storedImageUrl) res.image_url = storedImageUrl;
 
     document.getElementById('extractStatus').style.display = 'none';
 
@@ -1129,6 +1154,7 @@ async function processImageFile(file) {
       if (d.stroke_rate) document.getElementById('exSr').value = d.stroke_rate;
       if (d.intervals) document.getElementById('exIntervals').value = d.intervals;
       if (d.rest_time) document.getElementById('exIntervals').value = d.intervals || '';
+      if (d.session_date) document.getElementById('ergDate').value = d.session_date;
       // Render editable per-interval rows if we have split data
       renderExIntervalRows(extractedIntervalSplits);
       uploadedImageUrl = res.image_url || null;
@@ -1167,6 +1193,26 @@ function fileToBase64(file) {
     r.onload = e => res(e.target.result.split(',')[1]);
     r.onerror = rej;
     r.readAsDataURL(file);
+  });
+}
+
+// Compress image in-browser to a small JPEG data URL for storage with session records
+function compressImageToDataUrl(file, maxWidth = 480, quality = 0.72) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    img.src = url;
   });
 }
 

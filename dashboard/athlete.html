@@ -494,7 +494,7 @@ const api = (fn, body) => fetch(`${BASE}/${fn}`, {
 }).then(r=>r.json());
 
 // Fallback list of athletes known from session data (in case AthleteProfile fetch fails)
-const ATHLETES_FALLBACK = ['AF','RR','JC','MA','TL','CC','SK','AS','HM','TD','JDT','ASy'];
+const ATHLETES_FALLBACK = ['AF','RR','JC','MA','TL','CC','SK','AS','HM','TD','JDT','ASy','CW'];
 let ATHLETES = [...ATHLETES_FALLBACK];
 
 const EXERCISES = {
