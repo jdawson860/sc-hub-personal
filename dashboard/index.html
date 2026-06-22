@@ -476,7 +476,7 @@ function renderCoachView(data){
   document.getElementById('mainContent').innerHTML=`
     <div class="section-title">Squad Overview</div>
     <div class="stats-grid">
-      <div class="stat-card green"><div class="stat-label">Active This Week</div><div class="stat-value">${squad.active_this_week||0}<span style="font-size:14px;color:var(--muted)">/${squad.total_athletes||0}</span></div><div class="stat-sub">Athletes trained</div></div>
+      <div class="stat-card green"><div class="stat-label" id="activeWeekLabel">Active This Week</div><div class="stat-value" id="activeWeekValue">${squad.active_this_week||0}<span style="font-size:14px;color:var(--muted)">/${squad.total_athletes||0}</span></div><div class="stat-sub">Athletes trained</div></div>
       <div class="stat-card"><div class="stat-label">Total Sessions</div><div class="stat-value">${squad.total_sessions||0}</div><div class="stat-sub">Unique sessions all-time</div></div>
       <div class="stat-card warn"><div class="stat-label">Avg Squad RPE</div><div class="stat-value">${squad.avg_rpe||'—'}</div><div class="stat-sub">All sets</div></div>
     </div>
@@ -908,6 +908,19 @@ function renderComplianceForCurrentWeek() {
     }
   }
 
+  // Update "Active This Week" card to reflect selected week
+  const activeLabel = document.getElementById('activeWeekLabel');
+  const activeValue = document.getElementById('activeWeekValue');
+  if (activeLabel && activeValue) {
+    const athletesThisWeek = _complianceAthletes.filter(a =>
+      _complianceSessionTypes.some(st => heatmap[a]?.[st])
+    ).length;
+    const total = _complianceAthletes.length;
+    const weekLabel = isCurrentWeek ? 'Active This Week' : `Active (${fmt(mon)}–${fmt(sun)})`;
+    activeLabel.textContent = weekLabel;
+    activeValue.innerHTML = `${athletesThisWeek}<span style="font-size:14px;color:var(--muted)">/${total}</span>`;
+  }
+
   // Render
   const container = document.getElementById('complianceHeatmap');
   if (!container) return;
@@ -922,7 +935,7 @@ function renderComplianceForCurrentWeek() {
         const dateLabel = fmtComplianceDate(date);
         html += `<div class="heatmap-cell done" title="View ${ath} — ${st} — ${dateLabel}" onclick="openGymSession('${ath}','${date}','${st}')" style="cursor:pointer;flex-direction:column;gap:2px">
           <span style="font-size:13px;font-weight:800">✓</span>
-          <span style="font-size:9px;font-weight:600;opacity:.85;letter-spacing:.2px">${dateLabel}</span>
+          <span style="font-size:11px;font-weight:800;letter-spacing:.2px">${dateLabel}</span>
         </div>`;
       } else {
         html += `<div class="heatmap-cell none" title="${ath} — ${st} — not logged">—</div>`;
