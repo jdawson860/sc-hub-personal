@@ -25,8 +25,26 @@ async function fetchHubLogs(token: string): Promise<any[]> {
     let isoDate = '';
     if (dateStr) {
       try {
-        const d = new Date(dateStr);
-        if (!isNaN(d.getTime())) isoDate = d.toISOString().split('T')[0];
+        // Handle DD/MM/YYYY or DD/MM/YYYY HH:MM:SS (Australian Google Form format)
+        const ddmm = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (ddmm) {
+          const [, dd, mm, yyyy] = ddmm;
+          isoDate = `${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
+        } else {
+          // Try ISO or other parseable formats, but force local-date interpretation
+          const d = new Date(dateStr);
+          if (!isNaN(d.getTime())) {
+            // Avoid UTC day-shift: if no time component, parse as local
+            const parts = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (parts) {
+              isoDate = dateStr; // already YYYY-MM-DD, use as-is
+            } else {
+              // Has time — offset to AEST (UTC+10) to get correct local date
+              const aest = new Date(d.getTime() + 10 * 60 * 60 * 1000);
+              isoDate = aest.toISOString().split('T')[0];
+            }
+          }
+        }
       } catch {}
     }
     if (!isoDate) continue;
