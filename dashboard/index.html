@@ -817,10 +817,10 @@ function renderTestingTable(yearGroups, sortKey, sortDir) {
       return `<tr>
         <td style="font-weight:700;color:${rankColor}">${sortKey==='overall'?a.overallRank:idx+1}${sortKey==='overall'?zLabel:''}</td>
         <td class="athlete-name">${a.athlete||'—'}</td>
-        <td style="${cellStyle('prone_plank')}">${s.prone_plank != null ? fmtSecs(s.prone_plank) : '—'}</td>
-        <td style="${cellStyle('side_plank_left')}">${s.side_plank_left != null ? fmtSecs(s.side_plank_left) : '—'}</td>
-        <td style="${cellStyle('side_plank_right')}">${s.side_plank_right != null ? fmtSecs(s.side_plank_right) : '—'}</td>
-        <td style="${cellStyle('hollow_hold')}">${s.hollow_hold != null ? fmtSecs(s.hollow_hold) : '—'}</td>
+        <td style="${cellStyle('prone_plank')}">${fmtSecs(s.prone_plank ?? 0)}</td>
+        <td style="${cellStyle('side_plank_left')}">${fmtSecs(s.side_plank_left ?? 0)}</td>
+        <td style="${cellStyle('side_plank_right')}">${fmtSecs(s.side_plank_right ?? 0)}</td>
+        <td style="${cellStyle('hollow_hold')}">${fmtSecs(s.hollow_hold ?? 0)}</td>
         <td style="color:var(--muted);font-size:11px">${a.testsCompleted||0}/4</td>
       </tr>`;
     }).join('');
