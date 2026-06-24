@@ -483,8 +483,10 @@ function renderCoachView(data){
   const rpeTrend = buildSquadRpeTrend(sums);
 
   document.getElementById('mainContent').innerHTML=`
-    <div class="section-title">Squad Overview</div>
-    <div class="stats-grid">
+    <div style="background:var(--navy);border-radius:12px 12px 0 0;padding:14px 20px;margin-bottom:0">
+        <div style="font-size:13px;font-weight:800;color:#fff;letter-spacing:.8px;text-transform:uppercase">Squad Overview</div>
+    </div>
+    <div class="stats-grid" style="border-radius:0 0 12px 12px;margin-top:0">
       <div class="stat-card green"><div class="stat-label" id="activeWeekLabel">Active This Week</div><div class="stat-value" id="activeWeekValue">${squad.active_this_week||0}<span style="font-size:14px;color:var(--muted)">/${squad.total_athletes||0}</span></div><div class="stat-sub">Athletes trained</div></div>
       <div class="stat-card"><div class="stat-label">Total Sessions</div><div class="stat-value">${squad.total_sessions||0}</div><div class="stat-sub">Unique sessions all-time</div></div>
       <div class="stat-card warn"><div class="stat-label">Avg Squad RPE</div><div class="stat-value">${squad.avg_rpe||'—'}</div><div class="stat-sub">All sets</div></div>
