@@ -756,13 +756,16 @@ function refreshExerciseDropdown(st) {
   const programmed = EXERCISES[st] || [];
   const extras = EXTRAS[st] || [];
   const added = exercises.map(e => e.name);
-  // Combine all unique exercises, programmed first then extras
   const allExtras = [...new Set([...extras])].filter(e => !programmed.includes(e));
-  const availProgrammed = programmed.filter(e => !added.includes(e));
   const availExtras = allExtras.filter(e => !added.includes(e));
   let html = '<option value="">— Add exercise —</option>';
-  if (availProgrammed.length) {
-    html += `<optgroup label="── Program ──">` + availProgrammed.map(e => `<option value="${e}">${e}</option>`).join('') + '</optgroup>';
+  // Always show all programmed exercises; mark already-added ones
+  if (programmed.length) {
+    html += `<optgroup label="── Program ──">` +
+      programmed.map(e => added.includes(e)
+        ? `<option value="${e}" style="color:#9ca3af">${e} ✓</option>`
+        : `<option value="${e}">${e}</option>`
+      ).join('') + '</optgroup>';
   }
   if (availExtras.length) {
     html += `<optgroup label="── Extras ──">` + availExtras.map(e => `<option value="${e}">${e}</option>`).join('') + '</optgroup>';
