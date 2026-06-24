@@ -103,6 +103,8 @@
     .heatmap-label{font-size:12px;font-weight:700;color:var(--navy);width:28px;flex-shrink:0}
     .heatmap-cells{display:flex;gap:4px;flex:1}
     .heatmap-cell{flex:1;min-height:44px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:700;transition:transform .15s;cursor:default;padding:4px 2px}
+    .heatmap-total-hdr{min-width:44px;text-align:center;font-size:11px;font-weight:700;color:var(--muted,#888);padding:0 4px}
+    .heatmap-total-box{min-width:44px;height:44px;border-radius:6px;background:#1e3a5f;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
     .heatmap-cell:hover{transform:scale(1.05)}
     .heatmap-cell.done{background:#00c8a0;color:#fff}
     .heatmap-cell.miss{background:#fce4ec;color:#c62828}
@@ -1000,12 +1002,14 @@ function renderComplianceForCurrentWeek() {
   if (!container) return;
   const sessionTypes = _complianceSessionTypes;
 
-  let html = `<div class="heatmap-headers">${sessionTypes.map(s=>`<span>${s}</span>`).join('')}</div><div class="heatmap-grid">`;
+  let html = `<div class="heatmap-headers">${sessionTypes.map(s=>`<span>${s}</span>`).join('')}<span class="heatmap-total-hdr">Total</span></div><div class="heatmap-grid">`;
   _complianceAthletes.forEach(ath => {
+    let athWeekTotal = 0;
     html += `<div class="heatmap-row"><div class="heatmap-label">${ath}</div><div class="heatmap-cells">`;
     sessionTypes.forEach(st => {
       const dates = heatmap[ath]?.[st];
       if (dates && dates.length > 0) {
+        athWeekTotal += dates.length;
         const sortedDates = [...dates].sort();
         const firstDate = sortedDates[0];
         const allDateLabels = sortedDates.map(d => fmtComplianceDate(d)).join(' & ');
@@ -1018,7 +1022,7 @@ function renderComplianceForCurrentWeek() {
         html += `<div class="heatmap-cell none" title="${ath} — ${st} — not logged">—</div>`;
       }
     });
-    html += `</div></div>`;
+    html += `</div><div class="heatmap-total-box">${athWeekTotal > 0 ? athWeekTotal : '0'}</div></div>`;
   });
   html += `</div>`;
   container.innerHTML = html;
