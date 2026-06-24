@@ -584,8 +584,23 @@ const EXTRAS = {
 
 const TIME_EXERCISES = ['GHD Hold','Prone Plank','Side Plank','GHD Raise','Hollow Hold','GHD Anti-Lateral Flexion Hold','SB Roll Out + Plank Hold','Pallof Press ISO Hold'];
 const BAND_EXERCISES = ['Chin Ups','Pull Up'];
-const SL_EXERCISES = ['RDL','Leg press','Eccentric hamstring sliders','Leg extension','Hip Thrust','Calf Raise on Step'];
-function isSLEx(name) { return SL_EXERCISES.some(t => name.toLowerCase().includes(t.toLowerCase())); }
+// Map from base exercise name fragment → { dl: display name, sl: display name }
+const SL_MAP = [
+  { match: 'RDL',                        dl: null,                              sl: 'Single Leg RDL' },
+  { match: 'Leg Press',                  dl: 'Leg Press',                       sl: 'Single Leg Press' },
+  { match: 'Eccentric Hamstring Slider', dl: 'Eccentric Hamstring Sliders',     sl: 'Single Leg Eccentric Hamstring Sliders' },
+  { match: 'Leg Extension',              dl: 'Leg Extension',                   sl: 'Single Leg Extension' },
+  { match: 'Hip Thrust',                 dl: 'Hip Thrust',                      sl: 'Single Leg Hip Thrust' },
+  { match: 'Calf Raise on Step',         dl: 'Calf Raise on Step',              sl: 'Single Leg Calf Raise on Step' },
+];
+function isSLEx(name) { return SL_MAP.some(t => name.toLowerCase().includes(t.match.toLowerCase())); }
+function getSLEntry(name) { return SL_MAP.find(t => name.toLowerCase().includes(t.match.toLowerCase())); }
+function getSLName(name, isSL) {
+  const entry = getSLEntry(name);
+  if (!entry) return name;
+  if (isSL) return entry.sl;
+  return entry.dl || name.replace(/^Single Leg /i, '');
+}
 
 // ── STATE ─────────────────────────────────────────────────────────────
 let currentAthlete = localStorage.getItem('cranbrook_athlete') || null;
@@ -809,13 +824,7 @@ function renderExercises() {
   container.innerHTML = exercises.map((ex, ei) => {
     const canSL = isSLEx(ex.name);
     const isSL = canSL && !!ex.sl;
-    // Display title: if exercise starts with 'Single Leg', toggle strips/keeps that prefix
-    const slPrefixed = ex.name.startsWith('Single Leg ');
-    const effName = canSL
-      ? (isSL
-          ? ex.name  // SL selected: show full name e.g. "Single Leg Hip Thrust"
-          : (slPrefixed ? ex.name.replace(/^Single Leg /, '') : ex.name))  // DL: strip prefix
-      : ex.name;
+    const effName = canSL ? getSLName(ex.name, isSL) : ex.name;
     const isTime = isTimeEx(ex.name);
     const isBand = isBandEx(ex.name);
     const repsLabel = isTime ? 'Time (s)' : 'Reps';
@@ -865,12 +874,7 @@ async function submitSession() {
       const s = ex.sets[i];
       // Skip completely blank sets (no reps AND no load)
       if (!s.reps && !s.load) continue;
-      const slPfx = ex.name.startsWith('Single Leg ');
-      const effName = isSLEx(ex.name)
-        ? (ex.sl
-            ? ex.name  // SL selected: store as "Single Leg Hip Thrust"
-            : (slPfx ? ex.name.replace(/^Single Leg /, '') : ex.name))  // DL: strip prefix or plain name
-        : ex.name;
+      const effName = isSLEx(ex.name) ? getSLName(ex.name, ex.sl) : ex.name;
       records.push({
         timestamp: ts,
         athlete: currentAthlete,
