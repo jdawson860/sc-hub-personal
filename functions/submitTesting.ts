@@ -19,6 +19,13 @@ async function appendToSheet(token: string, row: any[], sheetName: string) {
   return res.json();
 }
 
+function secsToMmss(val: number | null): string {
+  if (val == null || isNaN(val)) return '';
+  const m = Math.floor(val / 60);
+  const s = Math.round(val % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
 Deno.serve(async (req) => {
   const cors = {
     'Access-Control-Allow-Origin': '*',
@@ -85,10 +92,10 @@ Deno.serve(async (req) => {
         record.year_level       ?? '',
         record.height           ?? '',
         record.weight           ?? '',
-        record.hollow_hold      ?? '',
-        record.prone_plank      ?? '',
-        record.side_plank_left  ?? '',
-        record.side_plank_right ?? '',
+        secsToMmss(record.hollow_hold),
+        secsToMmss(record.prone_plank),
+        secsToMmss(record.side_plank_left),
+        secsToMmss(record.side_plank_right),
         displayDate,             // Testing Date (DD/MM/YYYY)
       ];
 
