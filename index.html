@@ -103,13 +103,13 @@
     .heatmap-label{font-size:12px;font-weight:700;color:var(--navy);width:28px;flex-shrink:0}
     .heatmap-cells{display:flex;gap:4px;flex:1}
     .heatmap-cell{flex:1;min-height:44px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:700;transition:transform .15s;cursor:default;padding:4px 2px}
-    .heatmap-total-hdr{min-width:44px;text-align:center;font-size:12px;font-weight:800;color:#fff;padding:0 4px}
+    .heatmap-total-hdr{min-width:44px;text-align:center;font-size:12px;font-weight:800;color:var(--navy);padding:0 4px}
     .heatmap-total-box{min-width:44px;height:44px;border-radius:6px;background:#1e3a5f;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;align-self:center}
     .heatmap-cell:hover{transform:scale(1.05)}
     .heatmap-cell.done{background:#00c8a0;color:#fff}
     .heatmap-cell.miss{background:#fce4ec;color:#c62828}
     .heatmap-cell.none{background:#f0f4f8;color:var(--muted)}
-    .heatmap-headers{display:flex;gap:4px;margin-bottom:4px;padding-left:36px}.heatmap-headers span{flex:1;text-align:center;font-size:12px;font-weight:800;color:#fff;letter-spacing:.5px;text-transform:uppercase}
+    .heatmap-headers{display:flex;gap:4px;margin-bottom:8px;padding-left:36px}.heatmap-headers span{flex:1;text-align:center;font-size:12px;font-weight:800;color:var(--navy);letter-spacing:.5px;text-transform:uppercase}
 
     /* PB TABLE */
     .pb-table{width:100%;border-collapse:collapse}
@@ -494,14 +494,14 @@ function renderCoachView(data){
 
 
     <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
-      <span id="complianceWeekLabel">Session Compliance — This Week</span>
+      <span id="complianceWeekLabel" style="font-size:13px;font-weight:800;color:var(--navy);letter-spacing:.8px;text-transform:uppercase">Session Compliance — This Week</span>
       <div style="display:flex;align-items:center;gap:6px">
         <button onclick="stepComplianceWeek(-1)" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:14px;font-weight:700;cursor:pointer;line-height:1">‹</button>
         <button onclick="stepComplianceWeek(1)" id="complianceNextBtn" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:14px;font-weight:700;cursor:pointer;line-height:1">›</button>
       </div>
     </div>
     <div class="card">
-      <div id="complianceWeekSubtitle" class="card-title">Did each athlete complete each session type this week?</div>
+      <div id="complianceWeekSubtitle" class="card-title" style="font-size:13px;font-weight:800;color:var(--navy);text-transform:none;letter-spacing:0">Did each athlete complete each session type this week?</div>
       <div id="complianceHeatmap"></div>
     </div>
 
