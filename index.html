@@ -495,15 +495,13 @@ function renderCoachView(data){
 
 
 
-    <div style="background:var(--navy);border-radius:12px 12px 0 0;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
-      <div>
+    <div style="background:var(--navy);border-radius:12px 12px 0 0;padding:14px 20px;margin-bottom:0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="stepComplianceWeek(-1)" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:8px;padding:4px 10px;font-size:14px;font-weight:700;cursor:pointer;line-height:1;flex-shrink:0">‹</button>
         <div id="complianceWeekLabel" style="font-size:13px;font-weight:800;color:#fff;letter-spacing:.8px;text-transform:uppercase">Session Compliance — This Week</div>
-        <div id="complianceWeekSubtitle" style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.75);margin-top:2px">Did each athlete complete each session type this week?</div>
+        <button onclick="stepComplianceWeek(1)" id="complianceNextBtn" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:8px;padding:4px 10px;font-size:14px;font-weight:700;cursor:pointer;line-height:1;flex-shrink:0">›</button>
       </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <button onclick="stepComplianceWeek(-1)" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:14px;font-weight:700;cursor:pointer;line-height:1">‹</button>
-        <button onclick="stepComplianceWeek(1)" id="complianceNextBtn" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:14px;font-weight:700;cursor:pointer;line-height:1">›</button>
-      </div>
+      <div id="complianceWeekSubtitle" style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.75);margin-top:4px">Did each athlete complete each session type this week?</div>
     </div>
     <div class="card" style="border-radius:0 0 12px 12px;margin-top:0">
       <div id="complianceHeatmap"></div>
