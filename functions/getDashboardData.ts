@@ -235,7 +235,21 @@ Deno.serve(async (req) => {
       byAthlete[r.athlete].push(r);
     }
 
-    const athletes = Object.keys(byAthlete).sort();
+    // Fetch master athlete list from AthleteProfile so zero-session athletes still appear
+    let masterAthletes: string[] = [];
+    try {
+      const profilesRes = await base44.asServiceRole.entities.AthleteProfile.list();
+      const profileIds = (profilesRes || []).map((p: any) => p.athlete_id?.trim().toUpperCase()).filter(Boolean);
+      masterAthletes = profileIds;
+    } catch {}
+    // Merge: all from sheet + any in master list not yet in sheet
+    const sheetAthletes = Object.keys(byAthlete);
+    const allAthleteIds = [...new Set([...sheetAthletes, ...masterAthletes])].sort();
+    // Ensure byAthlete has an entry for every athlete (empty array if no sessions)
+    for (const ath of allAthleteIds) {
+      if (!byAthlete[ath]) byAthlete[ath] = [];
+    }
+    const athletes = allAthleteIds;
     const now = new Date();
     const week7 = new Date(now); week7.setDate(now.getDate() - 7);
     // Calendar week start (Monday AEST) for active-this-week count
