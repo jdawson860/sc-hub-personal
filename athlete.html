@@ -608,6 +608,8 @@ let currentMode = 'sc';
 let currentSession = null;
 let exercises = []; // [{name, sets:[{reps,load,rpe}]}]
 let pbMap = {}; // { exerciseName: { reps, load } } — best results for placeholders
+// Try to restore cached PBs immediately (shows placeholders before async fetch completes)
+try { const cached = localStorage.getItem('cranbrook_pb_' + (localStorage.getItem('cranbrook_athlete')||'')); if (cached) pbMap = JSON.parse(cached); } catch(e) {}
 let intervalCount = 0;
 let uploadedImageUrl = null;
 let extractedIntervalSplits = [];
@@ -672,6 +674,10 @@ function selectAthlete(ath, isReload) {
   if (!isReload) {
     clearSession();
   }
+
+  // Load cached PBs immediately for this athlete, then fetch fresh in background
+  try { const cached = localStorage.getItem('cranbrook_pb_' + ath); pbMap = cached ? JSON.parse(cached) : {}; } catch(e) { pbMap = {}; }
+  fetchAthleteHistory(ath); // always refresh PBs when athlete is selected
 
   // Reset history so it reloads for the new athlete
   _historyScSessions = [];
@@ -809,6 +815,17 @@ async function fetchAthleteHistory(ath) {
       }
     }
     pbMap = best;
+    // Also index by SL name so toggling instantly shows the right PB
+    for (const entry of SL_MAP) {
+      const dlKey = Object.keys(best).find(k => k.toLowerCase().includes(entry.match.toLowerCase()) && !k.toLowerCase().startsWith('single leg'));
+      const slKey = Object.keys(best).find(k => k.toLowerCase().startsWith('single leg') && k.toLowerCase().includes(entry.match.toLowerCase()));
+      // Cross-pollinate: if only one variant exists, show its PB for both
+      if (dlKey && !slKey) best[entry.sl] = best[dlKey];
+      if (slKey && !dlKey && entry.dl) best[entry.dl] = best[slKey];
+    }
+    pbMap = best;
+    // Cache to localStorage so it survives refresh
+    try { localStorage.setItem('cranbrook_pb_' + ath, JSON.stringify(pbMap)); } catch(e) {}
     renderExercises(); // re-render with PBs
   } catch (e) {
     // silently ignore — placeholders just stay as default
@@ -844,8 +861,8 @@ function renderExercises() {
       ${ex.sets.map((s, si) => `
         <div class="set-row">
           <div class="set-num">${si+1}</div>
-          <input class="set-input" type="${isTime?'number':'number'}" inputmode="numeric" placeholder="${pbMap[effName]?.reps != null ? 'PB: '+pbMap[effName].reps+(isTime?' sec':' reps') : (isTime?'sec':'reps')}" value="${s.reps}" oninput="updateField(${ei},${si},'reps',this.value)"/>
-          <input class="set-input" type="text" inputmode="decimal" placeholder="${pbMap[effName]?.load != null ? 'PB: '+pbMap[effName].load+'kg' : (isBand?'band/+kg':'kg')}" value="${s.load}" oninput="updateField(${ei},${si},'load',this.value)"/>
+          <input class="set-input" type="${isTime?'number':'number'}" inputmode="numeric" placeholder="${(pbMap[effName]||pbMap[ex.name])?.reps != null ? 'PB: '+(pbMap[effName]||pbMap[ex.name]).reps+(isTime?' sec':' reps') : (isTime?'sec':'reps')}" value="${s.reps}" oninput="updateField(${ei},${si},'reps',this.value)"/>
+          <input class="set-input" type="text" inputmode="decimal" placeholder="${(pbMap[effName]||pbMap[ex.name])?.load != null ? 'PB: '+(pbMap[effName]||pbMap[ex.name]).load+'kg' : (isBand?'band/+kg':'kg')}" value="${s.load}" oninput="updateField(${ei},${si},'load',this.value)"/>
           <select class="set-input rpe-input" onchange="updateField(${ei},${si},'rpe',this.value)">
             <option value="">RPE</option>
             ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}"${s.rpe==n?' selected':''}>${n}</option>`).join('')}
