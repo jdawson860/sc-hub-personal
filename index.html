@@ -507,8 +507,10 @@ function renderCoachView(data){
       <div id="complianceHeatmap"></div>
     </div>
 
-    <div class="section-title">Athlete Summary</div>
-    <div class="card">
+    <div style="background:var(--navy);border-radius:12px 12px 0 0;padding:14px 20px;margin-bottom:0">
+        <div style="font-size:13px;font-weight:800;color:#fff;letter-spacing:.8px;text-transform:uppercase">Athlete Summary</div>
+    </div>
+    <div class="card" style="border-radius:0 0 12px 12px;margin-top:0">
       <table class="data-table">
         <thead><tr>
           <th>Athlete</th><th>Last Session</th><th>Sessions</th>
@@ -519,10 +521,13 @@ function renderCoachView(data){
     </div>
     </div>
 
-    <div class="section-title">ACWR — Acute:Chronic Workload Ratio</div>
-    <div class="card">
+    <div style="background:var(--navy);border-radius:12px 12px 0 0;padding:14px 20px;margin-bottom:0">
+        <div style="font-size:13px;font-weight:800;color:#fff;letter-spacing:.8px;text-transform:uppercase">ACWR — Acute:Chronic Workload Ratio</div>
+        <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.75);margin-top:2px">Rolling 7-day acute ÷ 28-day chronic — optimal 0.8–1.3</div>
+    </div>
+    <div class="card" style="border-radius:0 0 12px 12px;margin-top:0">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-        <div class="card-title" style="margin-bottom:0">Rolling 7-day acute ÷ 28-day chronic — optimal 0.8–1.3</div>
+
         <select id="acwrAthleteSelect" onchange="onAcwrAthleteChange()" style="background:#f0f4f8;border:2px solid var(--border);color:var(--navy);padding:7px 12px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;outline:none;min-width:130px">
           <option value="squad">Whole Squad</option>
         </select>
@@ -532,9 +537,12 @@ function renderCoachView(data){
       <br/><canvas id="squadACWRChart" height="70"></canvas>
     </div>
 
-    <div class="section-title">Squad RPE Trend</div>
-    <div class="card">
-      <div class="card-title">Avg RPE per athlete — last 30 days of data</div>
+    <div style="background:var(--navy);border-radius:12px 12px 0 0;padding:14px 20px;margin-bottom:0">
+        <div style="font-size:13px;font-weight:800;color:#fff;letter-spacing:.8px;text-transform:uppercase">Squad RPE Trend</div>
+        <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.75);margin-top:2px">Avg RPE per athlete — last 30 days of data</div>
+    </div>
+    <div class="card" style="border-radius:0 0 12px 12px;margin-top:0">
+
       <canvas id="rpeChart" height="70"></canvas>
     </div>
   `;
@@ -1260,8 +1268,11 @@ function renderAthleteView(data){
       </div>
     </div>
 
-    <div class="section-title">ACWR — Acute:Chronic Workload Ratio</div>
-    <div class="card">
+    <div style="background:var(--navy);border-radius:12px 12px 0 0;padding:14px 20px;margin-bottom:0">
+        <div style="font-size:13px;font-weight:800;color:#fff;letter-spacing:.8px;text-transform:uppercase">ACWR — Acute:Chronic Workload Ratio</div>
+        <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.75);margin-top:2px">Rolling 7-day acute ÷ 28-day chronic — optimal 0.8–1.3</div>
+    </div>
+    <div class="card" style="border-radius:0 0 12px 12px;margin-top:0">
       <div class="card-title">Rolling 7-day (acute) ÷ 28-day (chronic) daily volume — optimal: 0.8–1.3</div>
       <canvas id="athleteACWRChart" height="80"></canvas>
     </div>
@@ -1811,8 +1822,10 @@ function renderWaterView(data){
       </table>`}
     </div>
 
-    <div class="section-title">Athlete Summary</div>
-    <div class="card">
+    <div style="background:var(--navy);border-radius:12px 12px 0 0;padding:14px 20px;margin-bottom:0">
+        <div style="font-size:13px;font-weight:800;color:#fff;letter-spacing:.8px;text-transform:uppercase">Athlete Summary</div>
+    </div>
+    <div class="card" style="border-radius:0 0 12px 12px;margin-top:0">
       ${sums.length===0?'<div class="empty">No on-water data yet — athletes can log sessions via the Athlete Hub</div>':`
       <table class="data-table">
         <thead><tr><th>Athlete</th><th>Sessions</th><th>Total Distance</th><th>Avg RPE</th><th>Last Session</th><th>Types</th></tr></thead>
