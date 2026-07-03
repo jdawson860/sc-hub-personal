@@ -498,96 +498,99 @@ const ATHLETES_FALLBACK = ['AF','RR','JC','MA','TL','CC','SK','AS','HM','TD','JD
 let ATHLETES = [...ATHLETES_FALLBACK];
 
 const EXERCISES = {
-  // T2 W7-10 — Lower Body A (in program order)
+  // Winter Holidays / T3 W1 — Lower Body 1 of 2 (in program order)
   'Lower A': [
-    'Heel Elevated BB Back Squat',
+    'DB Countermovement Jump',
+    'Box Drop & Hurdle Jump',
+    'BB Back Squat (Heels Elevated)',
+    'DB Rear Foot Elevated Split Squat',
+    'Chaos Pallof Press',
     'GHD Back Extension',
-    'Leg Extension',
-    'Hanging Leg Raises',
-    'Torsonator Twist',
-    'Reverse Nordics',
+    'Hanging Straight Leg Raise',
   ],
-  // T2 W7-10 — Lower Body B (in program order)
+  // Winter Holidays / T3 W1 — Lower Body 2 of 2 (in program order)
   'Lower B': [
-    'Leg Press',
-    'RDL',
-    'Leg Extension',
-    'Double Deadbug With Plate',
-    'Seated Leg Raises',
-    'Reverse Hyperextension',
+    'Trap Bar Deadlift',
+    'Box Jump',
+    'Single Leg Seated Leg Press',
+    'GHD Side Hold',
+    'BB Hip Thrust',
+    'Banded Aleknas',
+    'Single Leg Extension',
+    'Single Leg Elevated Hamstring Bridge',
   ],
-  // T2 W7-10 — Upper Body A (in program order)
+  // Winter Holidays / T3 W1 — Upper Body 1 of 2 (in program order)
   'Upper A': [
-    'Pullups',
-    'Military Press',
-    'BB High-Pull',
-    'DB Y Raises',
-    'Bicep Curl Of Choice',
-    'Banded Lat Stretch',
+    'Chin Ups',
+    'Quadruped Adductor Stretch w/ Thread The Needle',
+    'Bench Press',
+    'Prone Y/T/90-90 Holds',
+    'Split Stance Cable Row',
+    'High Plank KB Pull Through',
+    '1/2 Kneeling Plate Woodchop',
   ],
-  // T2 W7-10 — Upper Body B (in program order)
+  // Winter Holidays / T3 W1 — Upper Body 2 of 2 (in program order)
   'Upper B': [
     'Bench Pull',
-    'Incline DB Bench Press',
-    'Bird-Dog Row',
-    'Weighted Thread-The-Needle',
-    'Supine Lumbar Rotations',
-    'Bicep Curl Of Choice',
+    '1/2 Kneeling Med Ball Rotational Throw',
+    'BB Shoulder Press',
+    'TRX Single Arm Row with Reach',
+    'DB Single Arm Farmers Walk',
+    'Banded Face Pulls',
+    'TRX Ab Fallout',
   ],
 };
 
 // Optional add-on exercises per session type (shown in "Add extra exercise" dropdown)
 const EXTRAS = {
   'Lower A': [
+    'Single Leg Calf Raise on Step',
     'Belt Squat',
     'Leg Curl',
     'Nordic Hamstring Curl',
     'Hip Thrust',
-    'Box Jump',
     'Step Ups',
     'Goblet Squat',
     'KB Swing',
-    'Calf Raise',
   ],
   'Lower B': [
+    'Single Leg Calf Raise on Step',
     'Belt Squat',
     'Leg Curl',
     'Nordic Hamstring Curl',
-    'Hip Thrust',
-    'Box Jump',
     'Step Ups',
     'Goblet Squat',
     'KB Swing',
-    'Calf Raise',
   ],
   'Upper A': [
+    'Couch Stretch',
     'Face Pulls',
     'Cable Row',
     'DB Shoulder Press',
     'Tricep Pushdown',
     'Hammer Curl',
     'Band Pull Apart',
-    'Chin Ups',
   ],
   'Upper B': [
+    'Couch Stretch',
     'Face Pulls',
     'Cable Row',
     'Pull Ups',
     'Tricep Pushdown',
     'Hammer Curl',
     'Band Pull Apart',
-    'Chin Ups',
   ],
 };
 
-const TIME_EXERCISES = ['GHD Hold','Prone Plank','Side Plank','GHD Raise','Hollow Hold','Banded Lat Stretch'];
+const TIME_EXERCISES = ['GHD Hold','Prone Plank','Side Plank','GHD Raise','Hollow Hold','GHD Side Hold','Prone Y/T/90-90 Holds'];
 const BAND_EXERCISES = ['Pullups','Chin Ups','Pull Up','Pull Ups'];
 // Map from base exercise name fragment → { dl: display name, sl: display name }
 const SL_MAP = [
   { match: 'RDL',                        dl: 'RDL',                             sl: 'Single Leg RDL' },
-  { match: 'Leg Press',                  dl: 'Leg Press',                       sl: 'Single Leg Press' },
+  { match: 'Seated Leg Press',           dl: 'Seated Leg Press',                sl: 'Single Leg Seated Leg Press' },
   { match: 'Leg Extension',              dl: 'Leg Extension',                   sl: 'Single Leg Extension' },
   { match: 'Hip Thrust',                 dl: 'Hip Thrust',                      sl: 'Single Leg Hip Thrust' },
+  { match: 'Elevated Hamstring Bridge',  dl: 'Elevated Hamstring Bridge',       sl: 'Single Leg Elevated Hamstring Bridge' },
   { match: 'Reverse Hyperextension',     dl: 'Reverse Hyperextension',          sl: 'Single Leg Reverse Hyperextension' },
   { match: 'Calf Raise',                 dl: 'Calf Raise',                      sl: 'Single Leg Calf Raise' },
 ];
