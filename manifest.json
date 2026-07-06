@@ -1,19 +1,45 @@
 {
-  "name": "Rowing Hub",
-  "short_name": "Rowing Hub",
-  "description": "Cranbrook Rowing — Strength & Conditioning Athlete Hub",
-  "start_url": "/cranbrook-sc-hub/athlete.html",
-  "scope": "/cranbrook-sc-hub/",
+  "name": "S&C Hub",
+  "short_name": "S&C Hub",
+  "description": "Personal Strength & Conditioning training log",
+  "start_url": "/sc-hub-personal/dashboard/dashboard.html",
+  "scope": "/sc-hub-personal/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#07122b",
   "theme_color": "#07122b",
   "icons": [
-    { "src": "/cranbrook-sc-hub/icon-120.png", "sizes": "120x120", "type": "image/png" },
-    { "src": "/cranbrook-sc-hub/icon-152.png", "sizes": "152x152", "type": "image/png" },
-    { "src": "/cranbrook-sc-hub/icon-167.png", "sizes": "167x167", "type": "image/png" },
-    { "src": "/cranbrook-sc-hub/icon-180.png", "sizes": "180x180", "type": "image/png" },
-    { "src": "/cranbrook-sc-hub/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/cranbrook-sc-hub/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "/sc-hub-personal/icon-120.png",
+      "sizes": "120x120",
+      "type": "image/png"
+    },
+    {
+      "src": "/sc-hub-personal/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "/sc-hub-personal/icon-167.png",
+      "sizes": "167x167",
+      "type": "image/png"
+    },
+    {
+      "src": "/sc-hub-personal/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/sc-hub-personal/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/sc-hub-personal/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }

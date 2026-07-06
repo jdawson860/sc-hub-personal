@@ -1,646 +1,156 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>S&C Dashboard — Cranbrook Rowing</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --navy:  #07122b; --navy2: #0c1f48; --navy3: #102460;
-      --accent: #1a56db; --accent2: #3b82f6;
-      --warn: #f59e0b; --red: #e63946;
-      --bg: #eef2f9; --card: #ffffff; --text: #07122b; --muted: #5a6a8a;
-      --border: #d0daf0;
-    }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-
-    /* HEADER */
-    .header { background: var(--navy); color: white; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 16px rgba(0,0,0,0.35); }
-    .header-left { display: flex; align-items: center; gap: 12px; }
-    .header-logo { width: 40px; height: 40px; background: var(--accent2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900; color: white; letter-spacing: -1px; }
-    .header-title { font-size: 17px; font-weight: 800; }
-    .header-sub { font-size: 12px; color: #8fa0be; margin-top: 1px; }
-    .view-toggle { display: flex; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 3px; gap: 2px; }
-    .view-btn { padding: 6px 18px; border: none; background: transparent; color: #8fa0be; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; }
-    .view-btn.active { background: var(--accent2); color: white; }
-
-    /* ATHLETE BAR */
-    .athlete-bar { background: var(--navy2); padding: 10px 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.07); }
-    .athlete-bar label { color: #8fa0be; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
-    .athlete-select { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 7px 14px; border-radius: 7px; font-size: 14px; font-weight: 600; cursor: pointer; outline: none; }
-    .athlete-select option { background: #0d2545; }
-
-    /* LAYOUT */
-    .main { padding: 24px; max-width: 1400px; margin: 0 auto; }
-    .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 12px; margin-top: 28px; }
-    .section-title:first-child { margin-top: 0; }
-
-    /* STAT CARDS */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-    .stat-card { background: var(--card); border-radius: 12px; padding: 16px 18px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); border-left: 4px solid var(--accent2); }
-    .stat-card.warn { border-left-color: var(--warn); }
-    .stat-card.green { border-left-color: #22c55e; }
-    .stat-card.red { border-left-color: var(--red); }
-    .stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 5px; }
-    .stat-value { font-size: 26px; font-weight: 800; color: var(--navy); line-height: 1; }
-    .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
-
-    /* CARDS */
-    .card { background: var(--card); border-radius: 14px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
-    .card-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px; }
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-
-    /* TABLES */
-    .data-table { width: 100%; border-collapse: collapse; }
-    .data-table th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border, #d0daf0); }
-    .data-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid var(--border, #d0daf0); vertical-align: middle; }
-    .data-table tr:last-child td { border-bottom: none; }
-    .data-table tr:hover td { background: #f8fafc; cursor: pointer; }
-    .athlete-name { font-weight: 700; color: var(--navy); font-size: 14px; }
-
-    /* BADGES */
-    .rpe-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 12px; font-weight: 700; }
-    .rpe-low { background: #e8f5e9; color: #2e7d32; }
-    .rpe-mid { background: #fff3e0; color: #e65100; }
-    .rpe-high { background: #fce4ec; color: #c62828; }
-    /* ACWR BADGE */
-    .acwr-badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 12px; font-weight: 800; }
-    .acwr-optimal  { background: #e8f5e9; color: #2e7d32; }
-    .acwr-low      { background: #e3f2fd; color: #1565c0; }
-    .acwr-caution  { background: #fff3e0; color: #e65100; }
-    .acwr-danger   { background: #fce4ec; color: #c62828; }
-    .acwr-none     { background: #f0f4f8; color: var(--muted); }
-    .acwr-zone-bar { position: relative; height: 8px; border-radius: 4px; background: linear-gradient(to right, #90caf9 0%, #90caf9 22%, #a5d6a7 22%, #a5d6a7 61%, #ffe082 61%, #ffe082 78%, #ef9a9a 78%, #ef9a9a 100%); margin-bottom: 6px; }
-    .acwr-zone-marker { position: absolute; top: -4px; width: 16px; height: 16px; background: var(--navy); border-radius: 50%; transform: translateX(-50%); border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.3); transition: left 0.5s; }
-    .acwr-zones-label { display: flex; justify-content: space-between; font-size: 9px; color: var(--muted); font-weight: 600; margin-top: 2px; }
-    .session-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; margin: 1px; }
-    .sb-la { background: #dbeafe; color: #1a56db; }
-    .sb-lb { background: #dcfce7; color: #15803d; }
-    .sb-ua { background: #ede9fe; color: #6d28d9; }
-    .sb-ub { background: #ffedd5; color: #c2410c; }
-
-    /* MINI BAR */
-    .mini-bar-wrap { display: flex; align-items: center; gap: 6px; }
-    .mini-bar-bg { flex: 1; height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
-    .mini-bar-fill { height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.4s; }
-
-    /* COMPLIANCE HEATMAP */
-    .heatmap-grid { display: grid; gap: 6px; }
-    .heatmap-row { display: flex; align-items: center; gap: 8px; }
-    .heatmap-label { font-size: 12px; font-weight: 700; color: var(--navy); width: 28px; flex-shrink: 0; }
-    .heatmap-cells { display: flex; gap: 4px; flex: 1; }
-    .heatmap-cell { flex: 1; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; transition: transform 0.15s; cursor: default; }
-    .heatmap-cell:hover { transform: scale(1.1); }
-    .heatmap-cell.done { background: #00c8a0; color: white; }
-    .heatmap-cell.miss { background: #fce4ec; color: #c62828; }
-    .heatmap-cell.none { background: #f0f4f8; color: var(--muted); }
-    .heatmap-headers { display: flex; gap: 4px; margin-bottom: 4px; padding-left: 36px; }
-    .heatmap-headers span { flex: 1; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted); text-align: center; letter-spacing: 0.5px; }
-
-    /* PB TABLE */
-    .pb-table { width: 100%; border-collapse: collapse; }
-    .pb-table th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); text-align: left; padding: 6px 10px; border-bottom: 2px solid var(--border, #d0daf0); }
-    .pb-table td { padding: 8px 10px; font-size: 13px; border-bottom: 1px solid var(--border, #d0daf0); }
-    .pb-table tr:last-child td { border-bottom: none; }
-    .pb-val { font-weight: 800; color: var(--navy); }
-    .pb-crown { color: #f59e0b; margin-right: 3px; }
-
-    /* EXERCISE GRID */
-    .exercise-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-    .ex-card { background: var(--card); border-radius: 12px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
-    .ex-card-title { font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-
-    /* LOADING / EMPTY */
-    .loading { display: flex; align-items: center; justify-content: center; height: 200px; color: var(--muted); font-size: 15px; gap: 10px; }
-    .spinner { width: 20px; height: 20px; border: 2px solid var(--border, #d0daf0); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .empty { text-align: center; color: var(--muted); padding: 40px; font-size: 14px; }
-
-    /* COMPARISON */
-    .compare-controls { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-    .compare-select { padding: 8px 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-weight: 600; outline: none; cursor: pointer; }
-    .compare-select:focus { border-color: var(--accent); }
-
-    /* TABS */
-    .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--bg); border-radius: 10px; padding: 4px; }
-    .tab { flex: 1; padding: 9px; border: none; background: transparent; color: var(--muted); border-radius: 7px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; text-align: center; }
-    .tab.active { background: white; color: var(--navy); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-
-    @media (max-width: 768px) {
-      .header { padding: 0 14px; }
-      .main { padding: 12px; }
-      .two-col, .three-col { grid-template-columns: 1fr; }
-      .stats-grid { grid-template-columns: repeat(2, 1fr); }
-      .view-btn { padding: 5px 10px; font-size: 12px; }
-      .exercise-grid { grid-template-columns: 1fr; }
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Rowing Hub — S&amp;C Dashboard</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --navy:#07122b;--navy2:#0c1f48;
+    --accent:#e63946;--warn:#f59e0b;--green:#22c55e;
+    --bg:#07122b;--card:#fff;--text:#07122b;--muted:#5a6a8a;--border:#d0daf0;
+  }
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  .header{background:var(--navy);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,.35)}
+  .header-title{font-size:16px;font-weight:800}
+  .header-sub{font-size:11px;color:#8fa0be}
+  .header a{color:#fff;text-decoration:none;font-size:13px;font-weight:700;background:var(--accent);padding:8px 14px;border-radius:8px}
+  .main{padding:16px;max-width:640px;margin:0 auto}
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+  .stat-card{background:var(--card);border-radius:12px;padding:14px 16px;box-shadow:0 2px 12px rgba(0,0,0,.25);border-left:4px solid var(--accent)}
+  .stat-card.green{border-left-color:var(--green)}
+  .stat-card.warn{border-left-color:var(--warn)}
+  .stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px}
+  .stat-value{font-size:22px;font-weight:800;color:var(--navy);line-height:1}
+  .stat-sub{font-size:11px;color:var(--muted);margin-top:3px}
+  .card{background:var(--card);border-radius:14px;padding:18px;box-shadow:0 2px 16px rgba(0,0,0,.3);margin-bottom:14px}
+  .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px}
+  .data-table{width:100%;border-collapse:collapse}
+  .data-table th{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:2px solid var(--border)}
+  .data-table td{padding:8px;font-size:13px;border-bottom:1px solid var(--border)}
+  .data-table tr:last-child td{border-bottom:none}
+  .data-table tr:hover td{background:#f8fafc;cursor:pointer}
+  .empty-hint{color:var(--muted);font-size:13px;text-align:center;padding:20px 0}
+  .acwr-badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:800}
+  .acwr-optimal{background:#e8f5e9;color:#2e7d32}
+  .acwr-low{background:#e3f2fd;color:#1565c0}
+  .acwr-high{background:#fce4ec;color:#c62828}
+  .acwr-mid{background:#fff3e0;color:#e65100}
+  .prog-item{padding:8px 0;border-bottom:1px solid var(--border)}
+  .prog-item:last-child{border-bottom:none}
+  .prog-name{font-weight:700;font-size:13px;color:var(--navy)}
+  .prog-meta{font-size:12px;color:var(--muted);margin-top:2px}
+</style>
 </head>
 <body>
 
 <div class="header">
-  <div class="header-left">
-    <div class="header-logo">S&C</div>
-    <div>
-      <div class="header-title">Cranbrook Rowing</div>
-      <div class="header-sub">Strength & Conditioning Dashboard</div>
-    </div>
+  <div>
+    <div class="header-title">🚣 Rowing Hub</div>
+    <div class="header-sub">S&amp;C Dashboard</div>
   </div>
-  <div class="view-toggle">
-    <button class="view-btn active" id="btnCoach" onclick="switchView('coach')">Coach</button>
-    <button class="view-btn" id="btnAthlete" onclick="switchView('athlete')">Athlete</button>
-  </div>
+  <a href="logger.html">+ Log Session</a>
 </div>
 
-<div class="athlete-bar" id="athleteBar" style="display:none;">
-  <label>Athlete</label>
-  <select class="athlete-select" id="athleteSelect" onchange="loadAthleteView()">
-    <option>Loading…</option>
-  </select>
-</div>
+<div class="main">
+  <div class="stats-grid" id="statsGrid">
+    <div class="stat-card"><div class="stat-label">Loading</div><div class="stat-value">…</div></div>
+  </div>
 
-<div class="main" id="mainContent">
-  <div class="loading"><div class="spinner"></div> Loading data…</div>
+  <div class="card">
+    <div class="section-title">Recent Sessions</div>
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Exercises</th><th>Sets</th><th>Load</th></tr></thead>
+      <tbody id="sessionRows"><tr><td colspan="4" class="empty-hint">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Exercise Progress</div>
+    <div id="progList"><div class="empty-hint">Loading…</div></div>
+  </div>
 </div>
 
 <script>
-const API = 'https://superagent-84188511.base44.app/functions/getDashboardData';
-let currentView = 'coach';
-let coachData = null;
-let charts = {};
+const API = 'https://bruce-copy-ddd4bbe3.base44.app/functions';
 
-function destroyCharts() { Object.values(charts).forEach(c => c.destroy()); charts = {}; }
-
-async function fetchData(payload) {
-  const res = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-  return res.json();
+function acwrClass(v){
+  if(v == null) return 'acwr-mid';
+  if(v < 0.8) return 'acwr-low';
+  if(v <= 1.3) return 'acwr-optimal';
+  if(v <= 1.5) return 'acwr-mid';
+  return 'acwr-high';
+}
+function daysAgoLabel(n){
+  if(n == null) return '—';
+  if(n === 0) return 'Today';
+  if(n === 1) return 'Yesterday';
+  return `${n}d ago`;
 }
 
-function switchView(view) {
-  currentView = view;
-  document.getElementById('btnCoach').classList.toggle('active', view==='coach');
-  document.getElementById('btnAthlete').classList.toggle('active', view==='athlete');
-  document.getElementById('athleteBar').style.display = view==='athlete' ? 'flex' : 'none';
-  if (view==='coach') loadCoachView();
-  else loadAthleteView();
-}
+async function load(){
+  try{
+    const res = await fetch(`${API}/getDashboardData`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({}) });
+    const d = await res.json();
+    if(!d.ok) throw new Error(d.error || 'failed');
 
-// ═══════════════════════════════════════════════════════
-// COACH VIEW
-// ═══════════════════════════════════════════════════════
-async function loadCoachView() {
-  destroyCharts();
-  document.getElementById('mainContent').innerHTML = '<div class="loading"><div class="spinner"></div> Loading squad data…</div>';
-  try {
-    coachData = await fetchData({ view:'coach' });
-    renderCoachView(coachData);
-  } catch(e) {
-    document.getElementById('mainContent').innerHTML = `<div class="empty">Error: ${e.message}</div>`;
-  }
-}
-
-function renderCoachView(data) {
-  const { athleteSummary, rpeTrend, athletes } = data;
-  const totalSessions = athleteSummary.reduce((a,b) => a + b.totalSessions, 0);
-  const avgRpe = athleteSummary.length ? (athleteSummary.reduce((a,b) => a + b.avgRpe, 0) / athleteSummary.length).toFixed(1) : '—';
-  const highRpeTotal = athleteSummary.reduce((a,b) => a + b.highRpeSets, 0);
-  const activeAthletes = athleteSummary.filter(a => {
-    if (!a.lastSession) return false;
-    return (new Date() - new Date(a.lastSession)) / 86400000 <= 7;
-  }).length;
-
-  document.getElementById('mainContent').innerHTML = `
-    <div class="section-title">Squad Overview</div>
-    <div class="stats-grid">
-      <div class="stat-card green"><div class="stat-label">Active This Week</div><div class="stat-value">${activeAthletes}<span style="font-size:14px;color:var(--muted)">/${athletes.length}</span></div><div class="stat-sub">Athletes trained</div></div>
-      <div class="stat-card"><div class="stat-label">Total Sessions</div><div class="stat-value">${totalSessions}</div><div class="stat-sub">All time</div></div>
-      <div class="stat-card warn"><div class="stat-label">Avg Squad RPE</div><div class="stat-value">${avgRpe}</div><div class="stat-sub">All athletes</div></div>
-      <div class="stat-card red"><div class="stat-label">High RPE Sets</div><div class="stat-value">${highRpeTotal}</div><div class="stat-sub">RPE ≥ 9</div></div>
-    </div>
-
-    <div class="section-title">Session Compliance — Last 4 Weeks</div>
-    <div class="card">
-      <div class="card-title">Did each athlete complete each session type this week?</div>
-      <div id="complianceHeatmap"></div>
-    </div>
-
-    <div class="section-title">Athlete Summary</div>
-    <div class="card">
-      <table class="data-table" id="athleteTable">
-        <thead><tr>
-          <th>Athlete</th><th>Last Session</th><th>Sessions</th>
-          <th>Session Types</th><th>Avg RPE</th><th>⚡ RPE≥9</th><th>ACWR</th><th>Weekly Volume</th>
-        </tr></thead>
-        <tbody id="athleteTableBody"></tbody>
-      </table>
-    </div>
-
-    <div class="section-title">Athlete Comparison</div>
-    <div class="card">
-      <div class="card-title">Compare two athletes on a key exercise</div>
-      <div class="compare-controls">
-        <select class="compare-select" id="compareAth1">${athletes.map(a=>`<option>${a}</option>`).join('')}</select>
-        <span style="color:var(--muted);font-weight:700">vs</span>
-        <select class="compare-select" id="compareAth2">${athletes.map((a,i)=>`<option ${i===1?'selected':''}>${a}</option>`).join('')}</select>
-        <select class="compare-select" id="compareExercise">
-          <option>BB BACK SQUAT (HEELS ELEVATED)</option>
-          <option>BENCH PRESS</option><option>BB RDL</option>
-          <option>BENCH PULL</option><option>BB SHOULDER PRESS</option>
-          <option>CHIN UPS</option><option>BB HIGH PULL</option>
-          <option>FRONT FOOT ELEVATED SPLIT SQUAT</option>
-        </select>
-        <button onclick="renderComparison()" style="padding:8px 16px;background:var(--accent);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:13px;">Compare</button>
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card green">
+        <div class="stat-label">Last Session</div>
+        <div class="stat-value">${daysAgoLabel(d.days_since_last)}</div>
+        <div class="stat-sub">${d.last_session ? d.last_session.date : 'No sessions yet'}</div>
       </div>
-      <canvas id="compareChart" height="80"></canvas>
-    </div>
-
-
-    <div class="section-title">Squad ACWR — Acute:Chronic Workload Ratio</div>
-    <div class="card">
-      <div class="card-title">Rolling 7-day acute ÷ 28-day chronic (all athletes combined) — danger zone &gt;1.5, optimal 0.8–1.3</div>
-      <div class="acwr-zone-bar" style="margin-bottom:16px"><div class="acwr-zone-marker" id="squadACWRMarker" style="left:50%"></div></div>
-      <div class="acwr-zones-label"><span>Under (&lt;0.8)</span><span>Optimal (0.8–1.3)</span><span>Caution</span><span>Danger (&gt;1.5)</span></div>
-      <br/>
-      <canvas id="squadACWRChart" height="70"></canvas>
-    </div>
-    <div class="section-title">Squad RPE Trend</div>
-    <div class="card">
-      <div class="card-title">Average Squad RPE — Last 30 Days</div>
-      <canvas id="rpeChart" height="70"></canvas>
-    </div>
-  `;
-
-  // Compliance heatmap
-  renderComplianceHeatmap(athleteSummary, athletes);
-
-  // Athlete table
-  const tbody = document.getElementById('athleteTableBody');
-  const maxSess = Math.max(...athleteSummary.map(a => a.totalSessions), 1);
-  athleteSummary.forEach(a => {
-    const rpeClass = a.avgRpe >= 8.5 ? 'rpe-high' : a.avgRpe >= 7.5 ? 'rpe-mid' : 'rpe-low';
-    const daysSince = a.lastSession ? Math.floor((new Date() - new Date(a.lastSession)) / 86400000) : null;
-    const lastStr = daysSince === null ? '—' : daysSince === 0 ? 'Today' : daysSince === 1 ? 'Yesterday' : `${daysSince}d ago`;
-    const lastVol = a.weeklyLoad[3]?.totalVolume || 0;
-    const maxVol = Math.max(...a.weeklyLoad.map(w => w.totalVolume), 1);
-    const sessionBadges = Object.entries(a.sessionCounts).filter(([,v])=>v>0)
-      .map(([k,v]) => { const cls = k==='Lower A'?'sb-la':k==='Lower B'?'sb-lb':k==='Upper A'?'sb-ua':'sb-ub'; return `<span class="session-badge ${cls}">${k} ×${v}</span>`; }).join('');
-    const tr = document.createElement('tr');
-    tr.onclick = () => { switchView('athlete'); document.getElementById('athleteSelect').value = a.athlete; loadAthleteView(); };
-    tr.innerHTML = `
-      <td><span class="athlete-name">${a.athlete}</span></td>
-      <td style="color:${daysSince>7?'var(--red)':'var(--text)'};font-weight:${daysSince>7?700:400}">${lastStr}</td>
-      <td><div class="mini-bar-wrap"><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${Math.round(a.totalSessions/maxSess*100)}%"></div></div><span style="font-size:13px;font-weight:700">${a.totalSessions}</span></div></td>
-      <td>${sessionBadges||'<span style="color:var(--muted)">—</span>'}</td>
-      <td><span class="rpe-badge ${rpeClass}">${a.avgRpe}</span></td>
-      <td style="color:${a.highRpeSets>3?'var(--red)':'var(--text)'};font-weight:${a.highRpeSets>3?700:400}">${a.highRpeSets}</td>
-      <td>${(() => { const v=a.latestACWR?.acwr; const c=!v?'acwr-none':v<0.8?'acwr-low':v<=1.3?'acwr-optimal':v<=1.5?'acwr-caution':'acwr-danger'; return `<span class="acwr-badge ${c}">${v?v.toFixed(2):'—'}</span>`; })()}</td>
-      <td><div class="mini-bar-wrap"><div class="mini-bar-bg" style="background:#e3f2fd"><div class="mini-bar-fill" style="width:${Math.round(lastVol/maxVol*100)}%;background:var(--accent)"></div></div><span style="font-size:11px;color:var(--muted)">${lastVol>0?lastVol.toLocaleString():'—'}</span></div></td>
+      <div class="stat-card">
+        <div class="stat-label">ACWR</div>
+        <div class="stat-value">${d.acwr != null ? `<span class="acwr-badge ${acwrClass(d.acwr)}">${d.acwr.toFixed(2)}</span>` : '—'}</div>
+        <div class="stat-sub">${d.acwr_provisional ? `${d.days_until_acwr}d until ready` : (d.acwr!=null ? `Acute ${d.acute} / Chronic ${d.chronic}` : 'Not enough data')}</div>
+      </div>
+      <div class="stat-card warn">
+        <div class="stat-label">Weekly Load</div>
+        <div class="stat-value">${d.weekly_load || 0}</div>
+        <div class="stat-sub">Last 7 days</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg RPE</div>
+        <div class="stat-value">${d.avg_rpe ?? '—'}</div>
+        <div class="stat-sub">${d.total_sessions} total sessions</div>
+      </div>
     `;
-    tbody.appendChild(tr);
-  });
 
-  // Squad ACWR chart
-  const squadACWR = data.squadACWR || [];
-  if (squadACWR.length > 0) {
-    const acwrPlugin = {
-      id:'acwrZones',
-      beforeDraw(chart) {
-        const {ctx,chartArea:{left,right,top,bottom},scales:{y}} = chart;
-        [{min:0,max:0.8,color:'rgba(144,202,249,0.15)'},{min:0.8,max:1.3,color:'rgba(165,214,167,0.20)'},{min:1.3,max:1.5,color:'rgba(255,224,130,0.25)'},{min:1.5,max:2.5,color:'rgba(239,154,154,0.25)'}].forEach(z=>{
-          const yT=y.getPixelForValue(Math.min(z.max,y.max)), yB=y.getPixelForValue(Math.max(z.min,y.min));
-          ctx.fillStyle=z.color; ctx.fillRect(left,yT,right-left,yB-yT);
-        });
+    const rows = (d.session_history || []).slice(0, 12);
+    document.getElementById('sessionRows').innerHTML = rows.length ? rows.map(s => `
+      <tr>
+        <td style="font-weight:700">${s.date}</td>
+        <td>${s.exercises.slice(0,3).join(', ')}${s.exercises.length>3?` +${s.exercises.length-3}`:''}</td>
+        <td>${s.totalSets}</td>
+        <td>${s.totalLoad}</td>
+      </tr>
+    `).join('') : `<tr><td colspan="4" class="empty-hint">No sessions logged yet — <a href="logger.html">log your first one</a></td></tr>`;
+
+    const prog = (d.exercise_progressions || []).slice(0, 8);
+    document.getElementById('progList').innerHTML = prog.length ? prog.map(p => {
+      const last = p.points[p.points.length - 1];
+      const prev = p.points.length > 1 ? p.points[p.points.length - 2] : null;
+      let trend = '';
+      if(prev && last.avgLoad != null && prev.avgLoad != null){
+        const diff = last.avgLoad - prev.avgLoad;
+        trend = diff > 0 ? ` <span style="color:var(--green)">▲ +${diff.toFixed(1)}</span>` : diff < 0 ? ` <span style="color:var(--accent)">▼ ${diff.toFixed(1)}</span>` : '';
       }
-    };
-    const acwrCtx = document.getElementById('squadACWRChart').getContext('2d');
-    charts['squadACWR'] = new Chart(acwrCtx, {
-      type:'line', plugins:[acwrPlugin],
-      data:{ labels:squadACWR.map(r=>r.date.slice(5)), datasets:[
-        {label:'ACWR',data:squadACWR.map(r=>r.acwr),borderColor:'#081830',backgroundColor:'rgba(8,24,48,0.05)',borderWidth:2.5,pointRadius:2,fill:true,tension:0.4,yAxisID:'y'},
-        {label:'Acute (7d)',data:squadACWR.map(r=>r.acute),borderColor:'#1e90ff',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:0.4,yAxisID:'y2'},
-        {label:'Chronic (28d)',data:squadACWR.map(r=>r.chronic),borderColor:'#00c8a0',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,tension:0.4,yAxisID:'y2'},
-      ]},
-      options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{font:{size:11},boxWidth:12}}},
-        scales:{
-          y:{position:'left',min:0,max:2,grid:{color:'#f0f4f8'},ticks:{font:{size:11}},title:{display:true,text:'ACWR',font:{size:11}}},
-          y2:{position:'right',grid:{drawOnChartArea:false},ticks:{font:{size:11}},title:{display:true,text:'Load (kg×reps)',font:{size:10}}},
-          x:{grid:{display:false},ticks:{font:{size:10},maxTicksLimit:14}}
-        }
-      }
-    });
-    const latest = squadACWR[squadACWR.length-1];
-    if (latest) {
-      const pct = Math.min(Math.max((latest.acwr/2)*100,2),98);
-      const marker = document.getElementById('squadACWRMarker');
-      if (marker) marker.style.left = pct+'%';
-    }
-  }
-
-  // RPE trend chart
-  if (rpeTrend.length > 0) {
-    const ctx = document.getElementById('rpeChart').getContext('2d');
-    charts['rpe'] = new Chart(ctx, {
-      type: 'line',
-      data: { labels: rpeTrend.map(r=>r.date.slice(5)), datasets: [{ label:'Avg RPE', data: rpeTrend.map(r=>r.avgRpe), borderColor:'#1e90ff', backgroundColor:'rgba(30,144,255,0.08)', borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#1e90ff', fill:true, tension:0.4 }] },
-      options: { responsive:true, plugins:{ legend:{display:false} }, scales:{ y:{min:5,max:10,grid:{color:'#f0f4f8'},ticks:{font:{size:12}}}, x:{grid:{display:false},ticks:{font:{size:11}}} } }
-    });
-  }
-
-  // Initial comparison
-  setTimeout(renderComparison, 200);
-}
-
-function renderComplianceHeatmap(athleteSummary, athletes) {
-  const container = document.getElementById('complianceHeatmap');
-  const sessionTypes = ['Lower A','Lower B','Upper A','Upper B'];
-  const now = new Date();
-
-  // Build 4-week grid per athlete
-  const weeks = ['W1','W2','W3','W4'];
-  let html = `<div class="heatmap-headers">${sessionTypes.map(s=>`<span>${s}</span>`).join('')}</div><div class="heatmap-grid">`;
-
-  athletes.forEach(ath => {
-    const summary = athleteSummary.find(a => a.athlete === ath);
-    html += `<div class="heatmap-row"><div class="heatmap-label">${ath}</div><div class="heatmap-cells">`;
-    sessionTypes.forEach(st => {
-      const count = summary?.sessionCounts[st] || 0;
-      const cls = count > 0 ? 'done' : 'none';
-      const label = count > 0 ? '✓' : '—';
-      html += `<div class="heatmap-cell ${cls}" title="${ath} — ${st}: ${count} session(s)">${label}</div>`;
-    });
-    html += `</div></div>`;
-  });
-
-  html += `</div>`;
-  container.innerHTML = html;
-}
-
-async function renderComparison() {
-  const ath1 = document.getElementById('compareAth1')?.value;
-  const ath2 = document.getElementById('compareAth2')?.value;
-  const exercise = document.getElementById('compareExercise')?.value;
-  if (!ath1 || !ath2 || !exercise) return;
-  if (charts['compare']) { charts['compare'].destroy(); delete charts['compare']; }
-
-  const [d1, d2] = await Promise.all([
-    fetchData({ view:'athlete', athlete: ath1 }),
-    fetchData({ view:'athlete', athlete: ath2 })
-  ]);
-
-  const getPoints = (d, ex) => {
-    const ep = d.exerciseProgressions?.find(e => e.exercise === ex);
-    return ep?.points || [];
-  };
-
-  const p1 = getPoints(d1, exercise);
-  const p2 = getPoints(d2, exercise);
-  const allDates = [...new Set([...p1.map(p=>p.date), ...p2.map(p=>p.date)])].sort();
-
-  const ctx = document.getElementById('compareChart')?.getContext('2d');
-  if (!ctx) return;
-
-  charts['compare'] = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: allDates.map(d => d.slice(5)),
-      datasets: [
-        { label:`${ath1} — Load`, data: allDates.map(d => p1.find(p=>p.date===d)?.avgLoad ?? null), borderColor:'#1e90ff', backgroundColor:'rgba(30,144,255,0.08)', borderWidth:2.5, pointRadius:5, fill:true, tension:0.4, spanGaps:true },
-        { label:`${ath2} — Load`, data: allDates.map(d => p2.find(p=>p.date===d)?.avgLoad ?? null), borderColor:'#00c8a0', backgroundColor:'rgba(0,200,160,0.08)', borderWidth:2.5, pointRadius:5, fill:true, tension:0.4, spanGaps:true }
-      ]
-    },
-    options: { responsive:true, plugins:{ legend:{ labels:{ font:{size:12}, boxWidth:14 } } }, scales:{ y:{ title:{display:true,text:'Avg Load (kg)',font:{size:11}}, grid:{color:'#f0f4f8'} }, x:{grid:{display:false}} } }
-  });
-}
-
-// ═══════════════════════════════════════════════════════
-// ATHLETE VIEW
-// ═══════════════════════════════════════════════════════
-async function loadAthleteView() {
-  const athlete = document.getElementById('athleteSelect')?.value;
-  if (!athlete || athlete === 'Loading…') return;
-  destroyCharts();
-  document.getElementById('mainContent').innerHTML = '<div class="loading"><div class="spinner"></div> Loading athlete data…</div>';
-  try {
-    const data = await fetchData({ view:'athlete', athlete });
-    renderAthleteView(data);
-  } catch(e) {
-    document.getElementById('mainContent').innerHTML = `<div class="empty">Error: ${e.message}</div>`;
-  }
-}
-
-function renderAthleteView(data) {
-  const { athlete, exerciseProgressions, sessionHistory } = data;
-  const logs = data.logs || [];
-  const totalSets = logs.length;
-  const sessions = sessionHistory.length;
-  const rpeArr = logs.filter(r=>r.rpe).map(r=>r.rpe);
-  const avgRpe = rpeArr.length ? (rpeArr.reduce((a,b)=>a+b,0)/rpeArr.length).toFixed(1) : '—';
-  const latestACWR = data.latestACWR;
-  const acwrVal = latestACWR?.acwr;
-  const acwrStatVal = acwrVal ? acwrVal.toFixed(2) : '—';
-  const acwrStatClass = !acwrVal ? '' : acwrVal < 0.8 ? '' : acwrVal <= 1.3 ? 'green' : acwrVal <= 1.5 ? 'warn' : 'red';
-  const acwrStatSub = !acwrVal ? 'Not enough data' : acwrVal < 0.8 ? 'Under-training' : acwrVal <= 1.3 ? 'Optimal zone' : acwrVal <= 1.5 ? 'Caution' : '⚠️ Danger zone';
-
-  // Personal bests per exercise
-  const pbMap = {};
-  logs.forEach(r => {
-    const load = parseFloat(r.load);
-    if (!isNaN(load) && load > 0) {
-      if (!pbMap[r.exercise] || load > pbMap[r.exercise].load) {
-        pbMap[r.exercise] = { load, date: r.timestamp?.slice(0,10), reps: r.reps };
-      }
-    }
-  });
-  const pbs = Object.entries(pbMap).sort((a,b) => b[1].load - a[1].load);
-
-  // Weekly volume (last 6 weeks)
-  const weeklyVol = [];
-  const now = new Date();
-  for (let w = 5; w >= 0; w--) {
-    const wStart = new Date(now); wStart.setDate(now.getDate() - (w+1)*7);
-    const wEnd = new Date(now); wEnd.setDate(now.getDate() - w*7);
-    const wLogs = logs.filter(r => { const d=new Date(r.timestamp); return d>=wStart && d<wEnd; });
-    const vol = wLogs.reduce((a,r) => { const l=parseFloat(r.load); return a + (isNaN(l)?0:l*(r.reps||1)); }, 0);
-    weeklyVol.push({ week: `W-${w}`, vol: Math.round(vol) });
-  }
-  weeklyVol[weeklyVol.length-1].week = 'This wk';
-
-  document.getElementById('mainContent').innerHTML = `
-    <div class="section-title">Overview — ${athlete}</div>
-    <div class="stats-grid">
-      <div class="stat-card green"><div class="stat-label">Sessions</div><div class="stat-value">${sessions}</div><div class="stat-sub">Total logged</div></div>
-      <div class="stat-card"><div class="stat-label">Total Sets</div><div class="stat-value">${totalSets}</div><div class="stat-sub">All exercises</div></div>
-      <div class="stat-card warn"><div class="stat-label">Avg RPE</div><div class="stat-value">${avgRpe}</div><div class="stat-sub">All sets</div></div>
-      <div class="stat-card ${acwrStatClass}"><div class="stat-label">Current ACWR</div><div class="stat-value">${acwrStatVal}</div><div class="stat-sub">${acwrStatSub}</div></div>
-      <div class="stat-card"><div class="stat-label">PBs Tracked</div><div class="stat-value">${pbs.length}</div><div class="stat-sub">Exercises with load</div></div>
-    </div>
-
-    <div class="two-col" style="margin-top:20px">
-      <div>
-        <div class="section-title">Personal Bests</div>
-        <div class="card">
-          <table class="pb-table">
-            <thead><tr><th>Exercise</th><th>Best Load</th><th>Reps</th><th>Date</th></tr></thead>
-            <tbody id="pbBody"></tbody>
-          </table>
+      return `
+        <div class="prog-item">
+          <div class="prog-name">${p.exercise}</div>
+          <div class="prog-meta">Last: ${last.date} · ${last.avgLoad ?? '—'} load${last.avgRpe?` · RPE ${last.avgRpe}`:''}${trend}</div>
         </div>
-      </div>
-      <div>
-        <div class="section-title">Weekly Volume (Tonnage)</div>
-        <div class="card">
-          <div class="card-title">kg × reps — last 6 weeks</div>
-          <canvas id="volChart" height="140"></canvas>
-        </div>
-      </div>
-    </div>
+      `;
+    }).join('') : '<div class="empty-hint">No exercise history yet</div>';
 
-    <div class="section-title">ACWR — Acute:Chronic Workload Ratio</div>
-    <div class="card">
-      <div class="card-title">Rolling 7-day (acute) ÷ 28-day (chronic) daily volume — optimal: 0.8–1.3</div>
-      <canvas id="athleteACWRChart" height="80"></canvas>
-    </div>
-    <div class="section-title">Session History</div>
-    <div class="card">
-      <table class="data-table">
-        <thead><tr><th>Date</th><th>Session</th><th>Exercises</th><th>Sets</th><th>Avg RPE</th></tr></thead>
-        <tbody id="historyBody"></tbody>
-      </table>
-    </div>
-
-    <div class="section-title">Exercise Progressions — Load & RPE</div>
-    <div class="exercise-grid" id="exerciseGrid"></div>
-  `;
-
-  // PBs
-  const pbBody = document.getElementById('pbBody');
-  if (pbs.length === 0) {
-    pbBody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:20px">No load data yet</td></tr>';
-  } else {
-    pbs.forEach(([ex, pb], i) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td style="font-size:11px;font-weight:600">${i===0?'<span class="pb-crown">🏆</span>':''}${ex}</td><td class="pb-val">${pb.load}kg</td><td style="color:var(--muted)">${pb.reps||'—'}</td><td style="color:var(--muted);font-size:12px">${pb.date||'—'}</td>`;
-      pbBody.appendChild(tr);
-    });
-  }
-
-  // Athlete ACWR chart
-  const acwrSeries = data.acwrSeries || [];
-  if (acwrSeries.length > 0) {
-    setTimeout(() => {
-      const aCtx = document.getElementById('athleteACWRChart')?.getContext('2d');
-      if (!aCtx) return;
-      const acwrPlugin = {
-        id: 'acwrZones',
-        beforeDraw(chart) {
-          const {ctx, chartArea: {left,right,top,bottom}, scales: {y}} = chart;
-          const zones = [
-            {min:0, max:0.8, color:'rgba(144,202,249,0.15)'},
-            {min:0.8, max:1.3, color:'rgba(165,214,167,0.20)'},
-            {min:1.3, max:1.5, color:'rgba(255,224,130,0.25)'},
-            {min:1.5, max:2.5, color:'rgba(239,154,154,0.25)'},
-          ];
-          zones.forEach(z => {
-            const yTop = y.getPixelForValue(Math.min(z.max, y.max));
-            const yBot = y.getPixelForValue(Math.max(z.min, y.min));
-            ctx.fillStyle = z.color;
-            ctx.fillRect(left, yTop, right-left, yBot-yTop);
-          });
-        }
-      };
-      charts['athleteACWR'] = new Chart(aCtx, {
-        type:'line',
-        plugins:[acwrPlugin],
-        data:{
-          labels: acwrSeries.map(r=>r.date.slice(5)),
-          datasets:[
-            {label:'ACWR', data:acwrSeries.map(r=>r.acwr), borderColor:'#081830', backgroundColor:'rgba(8,24,48,0.05)', borderWidth:2.5, pointRadius:2, fill:true, tension:0.4, yAxisID:'y'},
-            {label:'Acute (7d)', data:acwrSeries.map(r=>r.acute), borderColor:'#1e90ff', borderWidth:1.5, borderDash:[4,3], pointRadius:0, fill:false, tension:0.4, yAxisID:'y2'},
-            {label:'Chronic (28d)', data:acwrSeries.map(r=>r.chronic), borderColor:'#00c8a0', borderWidth:1.5, borderDash:[4,3], pointRadius:0, fill:false, tension:0.4, yAxisID:'y2'},
-          ]
-        },
-        options:{
-          responsive:true,
-          interaction:{mode:'index',intersect:false},
-          plugins:{legend:{labels:{font:{size:11},boxWidth:12}}},
-          scales:{
-            y:{ position:'left', min:0, max:2, grid:{color:'#f0f4f8'}, ticks:{font:{size:11}}, title:{display:true,text:'ACWR',font:{size:11}} },
-            y2:{ position:'right', grid:{drawOnChartArea:false}, ticks:{font:{size:11}}, title:{display:true,text:'Load (kg×reps)',font:{size:10}} },
-            x:{ grid:{display:false}, ticks:{font:{size:10}, maxTicksLimit:14} }
-          }
-        }
-      });
-    }, 50);
-  }
-
-  // Weekly volume chart
-  const vCtx = document.getElementById('volChart').getContext('2d');
-  charts['vol'] = new Chart(vCtx, {
-    type: 'bar',
-    data: { labels: weeklyVol.map(w=>w.week), datasets: [{ label:'Volume (kg×reps)', data: weeklyVol.map(w=>w.vol), backgroundColor: weeklyVol.map((_,i)=>i===5?'rgba(30,144,255,0.85)':'rgba(30,144,255,0.3)'), borderRadius:6 }] },
-    options: { responsive:true, plugins:{ legend:{display:false} }, scales:{ y:{ grid:{color:'#f0f4f8'}, ticks:{font:{size:11}} }, x:{ grid:{display:false}, ticks:{font:{size:11}} } } }
-  });
-
-  // Session history
-  const hBody = document.getElementById('historyBody');
-  sessionHistory.forEach(s => {
-    const cls = s.session_type==='Lower A'?'sb-la':s.session_type==='Lower B'?'sb-lb':s.session_type==='Upper A'?'sb-ua':'sb-ub';
-    const rpeClass = s.avgRpe>=8.5?'rpe-high':s.avgRpe>=7.5?'rpe-mid':'rpe-low';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td style="font-weight:600">${s.date}</td><td><span class="session-badge ${cls}">${s.session_type}</span></td><td style="color:var(--muted);font-size:12px">${s.exercises.slice(0,3).join(', ')}${s.exercises.length>3?` +${s.exercises.length-3}`:''}</td><td style="font-weight:600">${s.totalSets}</td><td><span class="rpe-badge ${rpeClass}">${s.avgRpe||'—'}</span></td>`;
-    hBody.appendChild(tr);
-  });
-
-  // Exercise progression charts
-  const grid = document.getElementById('exerciseGrid');
-  const validEps = exerciseProgressions.filter(ep => ep.points.length >= 1);
-  if (validEps.length === 0) { grid.innerHTML = '<div class="empty">No exercise data yet</div>'; return; }
-
-  validEps.forEach((ep, idx) => {
-    const div = document.createElement('div'); div.className = 'ex-card';
-    const cid = `ex_${idx}`;
-    div.innerHTML = `<div class="ex-card-title">${ep.exercise}</div><canvas id="${cid}" height="120"></canvas>`;
-    grid.appendChild(div);
-    setTimeout(() => {
-      const ctx = document.getElementById(cid)?.getContext('2d');
-      if (!ctx) return;
-      const hasLoad = ep.points.some(p=>p.avgLoad!==null);
-      charts[cid] = new Chart(ctx, {
-        type:'line',
-        data: { labels: ep.points.map(p=>p.date.slice(5)), datasets: [
-          ...(hasLoad?[{ label:'Load (kg)', data:ep.points.map(p=>p.avgLoad), borderColor:'#1e90ff', backgroundColor:'rgba(30,144,255,0.07)', borderWidth:2, pointRadius:4, fill:true, tension:0.4, yAxisID:'y' }]:[]),
-          { label:'RPE', data:ep.points.map(p=>p.avgRpe), borderColor:'#ff6b35', borderWidth:2, borderDash:[4,3], pointRadius:3, fill:false, tension:0.4, yAxisID:hasLoad?'y2':'y' }
-        ]},
-        options: { responsive:true, interaction:{mode:'index',intersect:false}, plugins:{legend:{display:ep.points.length>1,labels:{font:{size:10},boxWidth:10}}}, scales:{
-          y:{ position:'left', grid:{color:'#f0f4f8'}, ticks:{font:{size:10}}, title:{display:hasLoad,text:'kg',font:{size:10}} },
-          ...(hasLoad?{y2:{ position:'right', min:5, max:10, grid:{drawOnChartArea:false}, ticks:{font:{size:10}}, title:{display:true,text:'RPE',font:{size:10}} }}:{}),
-          x:{ grid:{display:false}, ticks:{font:{size:10}} }
-        }}
-      });
-    }, 50);
-  });
-}
-
-// ═══════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════
-async function init() {
-  try {
-    const d = await fetchData({ view:'coach' });
-    coachData = d;
-    if (d.athletes?.length > 0) {
-      const sel = document.getElementById('athleteSelect');
-      sel.innerHTML = d.athletes.map(a=>`<option value="${a}">${a}</option>`).join('');
-    }
-    renderCoachView(d);
-  } catch(e) {
-    document.getElementById('mainContent').innerHTML = `<div class="empty">Failed to load: ${e.message}</div>`;
+  } catch(e){
+    document.getElementById('statsGrid').innerHTML = `<div class="stat-card"><div class="stat-label">Error</div><div class="stat-value" style="font-size:14px">${e.message}</div></div>`;
   }
 }
 
-init();
+load();
 </script>
 </body>
 </html>

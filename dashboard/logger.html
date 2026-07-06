@@ -1,553 +1,209 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <title>S&C Session Logger</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --navy:  #07122b;
-      --navy2: #0c1f48;
-      --accent: #1a56db;
-      --accent2: #3b82f6;
-      --bg: #eef2f9;
-      --card: #ffffff;
-      --text: #1a2332;
-      --muted: #6b7a99;
-      --success: #00c8a0;
-      --warn: #ff6b35;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding-bottom: 100px;
-    }
-
-    /* HEADER */
-    .header {
-      background: var(--navy);
-      color: white;
-      padding: 16px 20px;
-      text-align: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
-    }
-    .header h1 { font-size: 20px; font-weight: 800; letter-spacing: 0.3px; }
-    .header p { font-size: 13px; color: #8fa0be; margin-top: 2px; }
-
-    /* MAIN */
-    .main { padding: 16px; max-width: 500px; margin: 0 auto; }
-
-    /* SELECTS */
-    .select-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    .field-group label {
-      display: block;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-    select, input[type="number"], input[type="text"] {
-      width: 100%;
-      padding: 12px 14px;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      font-size: 16px;
-      color: var(--text);
-      background: white;
-      outline: none;
-      transition: border-color 0.2s;
-      -webkit-appearance: none;
-    }
-    select:focus, input:focus { border-color: var(--accent); }
-
-    /* EXERCISE CARDS */
-    .exercise-card {
-      background: var(--navy);
-      border-radius: 14px;
-      padding: 14px 16px;
-      margin-bottom: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    }
-    .exercise-select {
-      background: rgba(255,255,255,0.12) !important;
-      border: 1px solid rgba(255,255,255,0.2) !important;
-      color: white !important;
-      font-size: 15px !important;
-      font-weight: 600;
-      padding: 10px 12px !important;
-      margin-bottom: 12px;
-      border-radius: 8px !important;
-    }
-    .exercise-select option { background: #0d2545; color: white; }
-
-    /* SET TABLE HEADER */
-    .set-header {
-      display: grid;
-      grid-template-columns: 50px 1fr 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 6px;
-      padding: 0 2px;
-    }
-    .set-header span {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: rgba(255,255,255,0.5);
-      text-align: center;
-    }
-    .set-header span:first-child { text-align: left; }
-
-    /* SET ROWS */
-    .set-row {
-      display: grid;
-      grid-template-columns: 50px 1fr 1fr 1fr;
-      gap: 6px;
-      margin-bottom: 6px;
-      align-items: center;
-    }
-    .set-label {
-      font-size: 13px;
-      font-weight: 700;
-      color: rgba(255,255,255,0.8);
-    }
-    .set-row input, .set-row select {
-      background: rgba(255,255,255,0.95) !important;
-      border: none !important;
-      border-radius: 8px !important;
-      font-size: 16px !important;
-      font-weight: 600;
-      text-align: center;
-      padding: 10px 4px !important;
-      color: var(--navy) !important;
-      height: 44px;
-    }
-    .set-row select {
-      font-size: 12px !important;
-      padding: 4px !important;
-    }
-    /* RPE colour coding */
-    .set-row input[data-type="rpe"]:not([value=""]) { }
-
-    /* SUBMIT BUTTON */
-    .submit-wrap {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      padding: 14px 20px;
-      background: linear-gradient(transparent, var(--bg) 30%);
-      z-index: 50;
-    }
-    .submit-btn {
-      width: 100%;
-      max-width: 500px;
-      margin: 0 auto;
-      display: block;
-      padding: 18px;
-      background: var(--accent);
-      color: white;
-      font-size: 18px;
-      font-weight: 700;
-      border: none;
-      border-radius: 14px;
-      cursor: pointer;
-      box-shadow: 0 4px 20px rgba(30,144,255,0.4);
-      transition: all 0.2s;
-      letter-spacing: 0.3px;
-    }
-    .submit-btn:active { transform: scale(0.98); opacity: 0.9; }
-    .submit-btn:disabled { background: var(--muted); box-shadow: none; cursor: not-allowed; }
-
-    /* TOAST */
-    .toast {
-      position: fixed;
-      top: 80px; left: 50%; transform: translateX(-50%);
-      background: var(--navy);
-      color: white;
-      padding: 14px 24px;
-      border-radius: 12px;
-      font-size: 15px;
-      font-weight: 600;
-      z-index: 200;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-      transition: opacity 0.4s;
-      white-space: nowrap;
-    }
-    .toast.success { background: #0a5c44; border-left: 4px solid var(--success); }
-    .toast.error   { background: #5c0a0a; border-left: 4px solid #e63946; }
-    .toast.hidden  { opacity: 0; pointer-events: none; }
-
-    /* LOADING SPINNER */
-    .spinner {
-      display: inline-block;
-      width: 16px; height: 16px;
-      border: 2px solid rgba(255,255,255,0.4);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      vertical-align: middle;
-      margin-right: 6px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* SECTION DIVIDER */
-    .session-label {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
-      margin: 20px 0 10px;
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Log Session — Rowing Hub</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --navy:#07122b;--navy2:#0c1f48;
+    --accent:#e63946;
+    --bg:#07122b;--card:#fff;--text:#07122b;--muted:#5a6a8a;--border:#d0daf0;
+  }
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:60px}
+  .header{background:var(--navy);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,.35)}
+  .header a{color:#8fa0be;text-decoration:none;font-size:13px;font-weight:600}
+  .header-title{font-size:16px;font-weight:800}
+  .main{padding:16px;max-width:640px;margin:0 auto}
+  .card{background:var(--card);border-radius:14px;padding:18px;box-shadow:0 2px 16px rgba(0,0,0,.3);margin-bottom:14px}
+  label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
+  input[type="date"], input[type="text"]{width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:9px;font-size:15px;color:var(--text);outline:none;background:#f8fafc}
+  input[type="date"]:focus, input[type="text"]:focus{border-color:var(--accent)}
+  .exercise-block{background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)}
+  .exercise-block-head{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+  .exercise-block-head input{flex:1}
+  .remove-ex{background:none;border:none;color:var(--accent);font-size:20px;cursor:pointer;padding:4px 8px;line-height:1}
+  .sets-table{width:100%;border-collapse:collapse;margin-top:6px}
+  .sets-table th{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);text-align:left;padding:4px 6px}
+  .sets-table td{padding:4px 6px}
+  .sets-table input{padding:8px;font-size:14px;text-align:center;border:1px solid var(--border);border-radius:7px;width:100%;background:#fff}
+  .remove-set{background:none;border:none;color:#c0c8d8;font-size:16px;cursor:pointer}
+  .add-set-btn{background:none;border:2px dashed var(--border);color:var(--muted);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;width:100%;margin-top:8px}
+  .add-ex-btn{background:var(--navy2);color:#fff;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-bottom:14px}
+  .save-btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;width:100%;box-shadow:0 4px 14px rgba(230,57,70,.4)}
+  .save-btn:disabled{opacity:.5;cursor:default}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.4);z-index:200;display:none}
+  .empty-hint{color:var(--muted);font-size:13px;text-align:center;padding:20px 0}
+  .recent-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+  .recent-item:last-child{border-bottom:none}
+  .recent-date{font-weight:700;font-size:14px;color:var(--navy)}
+  .recent-meta{font-size:12px;color:var(--muted);margin-top:2px}
+  .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 10px 2px}
+</style>
 </head>
 <body>
 
 <div class="header">
-  <h1>Team Session Tracker</h1>
-  <p>Strength &amp; Conditioning Log</p>
+  <div class="header-title">💪 Log S&amp;C Session</div>
+  <a href="dashboard.html">Dashboard →</a>
 </div>
 
 <div class="main">
-  <br/>
-  <div class="select-row">
-    <div class="field-group">
-      <label>Athlete</label>
-      <select id="athleteSelect" onchange="savePrefs()">
-        <option>AF</option><option>RR</option><option>JC</option>
-        <option>MA</option><option>TL</option><option>CC</option>
-        <option>SK</option><option>AS</option><option>HM</option><option>TD</option>
-      </select>
-    </div>
-    <div class="field-group">
-      <label>Session Type</label>
-      <select id="sessionSelect" onchange="buildSession(); savePrefs()">
-        <option>Lower A</option>
-        <option>Lower B</option>
-        <option>Upper A</option>
-        <option>Upper B</option>
-      </select>
-    </div>
+  <div class="card">
+    <label>Date</label>
+    <input type="date" id="sessionDate">
   </div>
 
-  <div id="exerciseContainer"></div>
+  <div id="exerciseList"></div>
+
+  <button class="add-ex-btn" onclick="addExercise()">+ Add Exercise</button>
+  <button class="save-btn" id="saveBtn" onclick="saveSession()">Save Session</button>
+
+  <div class="card" style="margin-top:20px">
+    <div class="section-title">Recent Sessions</div>
+    <div id="recentList"><div class="empty-hint">Loading…</div></div>
+  </div>
 </div>
 
-<div class="submit-wrap">
-  <button class="submit-btn" id="submitBtn" onclick="submitSession()">Submit Session</button>
-</div>
-
-<div class="toast hidden" id="toast"></div>
+<div class="toast" id="toast"></div>
 
 <script>
-const API = 'https://superagent-84188511.base44.app/functions/submitSession';
+const API = 'https://bruce-copy-ddd4bbe3.base44.app/functions';
+let exerciseCount = 0;
 
-const SESSIONS = {
-  'Lower A': [
-    {name:'BB HIGH PULL', sets:3},
-    {name:'HURDLE JUMP AND STICK', sets:3},
-    {name:'BB BACK SQUAT (HEELS ELEVATED)', sets:5},
-    {name:'ANKLE DORSIFLEXION', sets:3},
-    {name:'FRONT FOOT ELEVATED SPLIT SQUAT', sets:3},
-    {name:'GHD ANTI-LATERAL FLEXION HOLD', sets:3},
-    {name:'ECCENTRIC HAMSTRING SLIDERS', sets:3}
-  ],
-  'Lower B': [
-    {name:'BB RDL', sets:4},
-    {name:'SB ROLL OUT + PLANK HOLD', sets:3},
-    {name:'BELT SQUAT', sets:4},
-    {name:'HANGING STRAIGHT LEG RAISE', sets:3},
-    {name:'LEG EXTENSION (DOUBLE + SINGLE)', sets:4},
-    {name:'LANDMINE ROTATION', sets:3},
-    {name:'SINGLE LEG HIP THRUST', sets:3}
-  ],
-  'Upper A': [
-    {name:'CHIN UPS', sets:4},
-    {name:'BENCH PRESS', sets:4},
-    {name:'SINGLE ARM DB ROW (KNEELING)', sets:4},
-    {name:'INCLINE DB BENCH PRESS', sets:4},
-    {name:'REVERSE DB FLY (CHEST SUPPORTED)', sets:3},
-    {name:'WEIGHTED SIT UPS', sets:3},
-    {name:'SWISS BALL DEADBUG', sets:3}
-  ],
-  'Upper B': [
-    {name:'BENCH PULL', sets:4},
-    {name:'1/2 KNEELING WALL THORACIC ROTATION', sets:3},
-    {name:'BB SHOULDER PRESS', sets:4},
-    {name:'1/2 KNEELING BANDED CUBAN PRESS', sets:3},
-    {name:'DB LATERAL RAISE', sets:3},
-    {name:'BICEPS OF YOUR CHOICE', sets:3},
-    {name:'PALLOF PRESS - ISO HOLD', sets:3}
-  ]
-};
-
-const ALL_EXERCISES = [
-  'BB HIGH PULL','HURDLE JUMP AND STICK','BB BACK SQUAT (HEELS ELEVATED)',
-  'ANKLE DORSIFLEXION','FRONT FOOT ELEVATED SPLIT SQUAT','GHD ANTI-LATERAL FLEXION HOLD',
-  'ECCENTRIC HAMSTRING SLIDERS','BB RDL','SB ROLL OUT + PLANK HOLD','BELT SQUAT',
-  'HANGING STRAIGHT LEG RAISE','LEG EXTENSION (DOUBLE + SINGLE)','LANDMINE ROTATION',
-  'SINGLE LEG HIP THRUST','CHIN UPS','BENCH PRESS','SINGLE ARM DB ROW (KNEELING)',
-  'INCLINE DB BENCH PRESS','REVERSE DB FLY (CHEST SUPPORTED)','WEIGHTED SIT UPS',
-  'SWISS BALL DEADBUG','BENCH PULL','1/2 KNEELING WALL THORACIC ROTATION',
-  'BB SHOULDER PRESS','1/2 KNEELING BANDED CUBAN PRESS','DB LATERAL RAISE',
-  'BICEPS OF YOUR CHOICE','PALLOF PRESS - ISO HOLD'
-];
-
-const TIME_EXERCISES = new Set([
-  'GHD ANTI-LATERAL FLEXION HOLD',
-  'SB ROLL OUT + PLANK HOLD',
-  'PALLOF PRESS - ISO HOLD'
-]);
-
-const BAND_EXERCISES = new Set(['CHIN UPS']);
-const BAND_OPTIONS = ['BW','Yellow Band','Red Band','Blue Band','Green Band','Black Band','Added Weight'];
-
-function savePrefs() {
-  localStorage.setItem('sc_athlete', document.getElementById('athleteSelect').value);
-  localStorage.setItem('sc_session', document.getElementById('sessionSelect').value);
+function todayLocal(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
+document.getElementById('sessionDate').value = todayLocal();
 
-function loadPrefs() {
-  const a = localStorage.getItem('sc_athlete');
-  const s = localStorage.getItem('sc_session');
-  if (a) document.getElementById('athleteSelect').value = a;
-  if (s) document.getElementById('sessionSelect').value = s;
-}
-
-function getStorageKey(athlete, session, exercise, type, setNum) {
-  return `${athlete}|${session}|${exercise}|${type}|${setNum}`;
-}
-
-function saveInput(inputEl, exercise, type, setNum) {
-  const athlete = document.getElementById('athleteSelect').value;
-  const session = document.getElementById('sessionSelect').value;
-  const key = getStorageKey(athlete, session, exercise, type, setNum);
-  if (inputEl.value !== '') localStorage.setItem(key, inputEl.value);
-}
-
-function loadInput(inputEl, exercise, type, setNum) {
-  const athlete = document.getElementById('athleteSelect').value;
-  const session = document.getElementById('sessionSelect').value;
-  const key = getStorageKey(athlete, session, exercise, type, setNum);
-  const val = localStorage.getItem(key);
-  if (val !== null) inputEl.value = val;
-}
-
-function buildSession() {
-  const session = document.getElementById('sessionSelect').value;
-  const exercises = SESSIONS[session];
-  const container = document.getElementById('exerciseContainer');
-  container.innerHTML = '';
-
-  exercises.forEach((ex, idx) => {
-    const card = document.createElement('div');
-    card.className = 'exercise-card';
-    card.dataset.idx = idx;
-
-    // Exercise dropdown
-    const exSelect = document.createElement('select');
-    exSelect.className = 'exercise-select';
-    exSelect.id = `exercise_${idx}`;
-    ALL_EXERCISES.forEach(e => {
-      const opt = document.createElement('option');
-      opt.value = e; opt.textContent = e;
-      if (e === ex.name) opt.selected = true;
-      exSelect.appendChild(opt);
-    });
-    exSelect.addEventListener('change', () => rebuildSets(card, idx));
-    card.appendChild(exSelect);
-
-    // Set rows
-    buildSets(card, idx, ex.name, ex.sets);
-    container.appendChild(card);
-  });
-}
-
-function rebuildSets(card, idx) {
-  const exName = document.getElementById(`exercise_${idx}`).value;
-  const sets = getSetsForExercise(exName);
-  // Remove old set rows
-  const old = card.querySelector('.sets-wrap');
-  if (old) old.remove();
-  buildSets(card, idx, exName, sets);
-}
-
-function getSetsForExercise(name) {
-  const map = {
-    'BB HIGH PULL':3,'HURDLE JUMP AND STICK':3,'BB BACK SQUAT (HEELS ELEVATED)':5,
-    'ANKLE DORSIFLEXION':3,'FRONT FOOT ELEVATED SPLIT SQUAT':3,
-    'GHD ANTI-LATERAL FLEXION HOLD':3,'ECCENTRIC HAMSTRING SLIDERS':3,
-    'BB RDL':4,'SB ROLL OUT + PLANK HOLD':3,'BELT SQUAT':4,
-    'HANGING STRAIGHT LEG RAISE':3,'LEG EXTENSION (DOUBLE + SINGLE)':4,
-    'LANDMINE ROTATION':3,'SINGLE LEG HIP THRUST':3,
-    'CHIN UPS':4,'BENCH PRESS':4,'SINGLE ARM DB ROW (KNEELING)':4,
-    'INCLINE DB BENCH PRESS':4,'REVERSE DB FLY (CHEST SUPPORTED)':3,
-    'WEIGHTED SIT UPS':3,'SWISS BALL DEADBUG':3,
-    'BENCH PULL':4,'1/2 KNEELING WALL THORACIC ROTATION':3,
-    'BB SHOULDER PRESS':4,'1/2 KNEELING BANDED CUBAN PRESS':3,
-    'DB LATERAL RAISE':3,'BICEPS OF YOUR CHOICE':3,'PALLOF PRESS - ISO HOLD':3
-  };
-  return map[name] || 3;
-}
-
-function buildSets(card, idx, exName, setsN) {
+function addExercise(prefill){
+  const id = 'ex' + (exerciseCount++);
   const wrap = document.createElement('div');
-  wrap.className = 'sets-wrap';
-
-  // Header
-  const header = document.createElement('div');
-  header.className = 'set-header';
-  const repsLabel = TIME_EXERCISES.has(exName) ? 'Time (s)' : 'Reps';
-  const loadLabel = BAND_EXERCISES.has(exName) ? 'Band' : 'Load';
-  header.innerHTML = `<span>Set</span><span>${repsLabel}</span><span>${loadLabel}</span><span>RPE</span>`;
-  wrap.appendChild(header);
-
-  for (let s = 1; s <= setsN; s++) {
-    const row = document.createElement('div');
-    row.className = 'set-row';
-
-    const label = document.createElement('div');
-    label.className = 'set-label';
-    label.textContent = `${s}`;
-    row.appendChild(label);
-
-    // Reps / Time
-    const repsInput = document.createElement('input');
-    repsInput.type = 'number';
-    repsInput.inputMode = 'numeric';
-    repsInput.placeholder = TIME_EXERCISES.has(exName) ? 'sec' : 'reps';
-    repsInput.min = 0;
-    loadInput(repsInput, exName, 'reps', s);
-    repsInput.addEventListener('change', () => saveInput(repsInput, exName, 'reps', s));
-    row.appendChild(repsInput);
-
-    // Load / Band
-    if (BAND_EXERCISES.has(exName)) {
-      const bandSel = document.createElement('select');
-      BAND_OPTIONS.forEach(b => {
-        const o = document.createElement('option'); o.value = b; o.textContent = b;
-        bandSel.appendChild(o);
-      });
-      loadInput(bandSel, exName, 'load', s);
-      bandSel.addEventListener('change', () => saveInput(bandSel, exName, 'load', s));
-      row.appendChild(bandSel);
-    } else {
-      const loadInput_ = document.createElement('input');
-      loadInput_.type = 'number';
-      loadInput_.inputMode = 'decimal';
-      loadInput_.placeholder = 'kg';
-      loadInput_.min = 0;
-      loadInput_.step = '0.5';
-      loadInput(loadInput_, exName, 'load', s);
-      loadInput_.addEventListener('change', () => saveInput(loadInput_, exName, 'load', s));
-      row.appendChild(loadInput_);
-    }
-
-    // RPE
-    const rpeInput = document.createElement('input');
-    rpeInput.type = 'number';
-    rpeInput.inputMode = 'numeric';
-    rpeInput.placeholder = '1-10';
-    rpeInput.min = 1; rpeInput.max = 10;
-    rpeInput.dataset.type = 'rpe';
-    loadInput(rpeInput, exName, 'rpe', s);
-    rpeInput.addEventListener('change', () => saveInput(rpeInput, exName, 'rpe', s));
-    row.appendChild(rpeInput);
-
-    wrap.appendChild(row);
-  }
-
-  card.appendChild(wrap);
+  wrap.className = 'exercise-block';
+  wrap.id = id;
+  wrap.innerHTML = `
+    <div class="exercise-block-head">
+      <input type="text" placeholder="Exercise name" class="ex-name" value="${prefill||''}">
+      <button class="remove-ex" onclick="document.getElementById('${id}').remove()">×</button>
+    </div>
+    <table class="sets-table">
+      <thead><tr><th style="width:36px">Set</th><th>Reps</th><th>Load</th><th>RPE</th><th style="width:24px"></th></tr></thead>
+      <tbody class="sets-body"></tbody>
+    </table>
+    <button class="add-set-btn" onclick="addSet('${id}')">+ Add Set</button>
+  `;
+  document.getElementById('exerciseList').appendChild(wrap);
+  addSet(id);
+  return id;
 }
 
-function showToast(msg, type = 'success') {
+function addSet(exId){
+  const tbody = document.querySelector(`#${exId} .sets-body`);
+  const setNum = tbody.children.length + 1;
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td style="text-align:center;font-weight:700;color:var(--muted)">${setNum}</td>
+    <td><input type="text" inputmode="numeric" class="set-reps" placeholder="8"></td>
+    <td><input type="text" inputmode="decimal" class="set-load" placeholder="60kg"></td>
+    <td><input type="text" inputmode="numeric" class="set-rpe" placeholder="7"></td>
+    <td><button class="remove-set" onclick="this.closest('tr').remove(); renumberSets('${exId}')">×</button></td>
+  `;
+  tbody.appendChild(row);
+}
+
+function renumberSets(exId){
+  const rows = document.querySelectorAll(`#${exId} .sets-body tr`);
+  rows.forEach((r,i)=> r.children[0].textContent = i+1);
+}
+
+function showToast(msg){
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = `toast ${type}`;
-  setTimeout(() => t.className = 'toast hidden', 3500);
+  t.style.display = 'block';
+  setTimeout(()=> t.style.display='none', 2500);
 }
 
-async function submitSession() {
-  const athlete = document.getElementById('athleteSelect').value;
-  const session = document.getElementById('sessionSelect').value;
-  const timestamp = new Date().toISOString();
+async function saveSession(){
+  const date = document.getElementById('sessionDate').value;
+  if(!date){ showToast('Pick a date first'); return; }
+  const blocks = document.querySelectorAll('.exercise-block');
   const records = [];
-
-  const cards = document.querySelectorAll('.exercise-card');
-  cards.forEach((card, idx) => {
-    const exName = document.getElementById(`exercise_${idx}`).value;
-    const rows = card.querySelectorAll('.set-row');
-    rows.forEach((row, s) => {
-      const inputs = row.querySelectorAll('input, select');
-      if (inputs.length < 3) return;
-      const reps = inputs[0].value;
-      const load = inputs[1].value;
-      const rpe  = inputs[2].value;
-      if (!reps || !load || !rpe) return; // skip incomplete sets
+  blocks.forEach(block => {
+    const name = block.querySelector('.ex-name').value.trim();
+    if(!name) return;
+    const rows = block.querySelectorAll('.sets-body tr');
+    rows.forEach((row, i) => {
+      const reps = row.querySelector('.set-reps').value.trim();
+      const load = row.querySelector('.set-load').value.trim();
+      const rpe = row.querySelector('.set-rpe').value.trim();
+      if(!reps && !load && !rpe) return;
       records.push({
-        timestamp,
-        athlete,
-        session_type: session,
-        exercise: exName,
-        set_number: s + 1,
-        reps: parseFloat(reps),
-        load: String(load),
-        rpe: parseFloat(rpe)
+        timestamp: date + 'T09:00:00',
+        exercise: name,
+        set_number: i+1,
+        reps: reps || null,
+        load: load || null,
+        rpe: rpe || null,
       });
     });
   });
+  if(!records.length){ showToast('Add at least one set'); return; }
 
-  if (records.length === 0) {
-    showToast('No complete sets to submit. Fill in Reps, Load and RPE.', 'error');
-    return;
-  }
-
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Submitting…';
-
-  try {
-    const res = await fetch(API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(records)
-    });
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    const res = await fetch(`${API}/submitSession`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(records) });
     const data = await res.json();
-    if (res.ok && data.ok) {
-      showToast(`✅ Session submitted — ${data.created} sets logged!`, 'success');
-      // Clear localStorage for this athlete/session
-      const keys = Object.keys(localStorage).filter(k => k.startsWith(`${athlete}|${session}|`));
-      keys.forEach(k => localStorage.removeItem(k));
-      // Reset inputs
-      document.querySelectorAll('.exercise-card input').forEach(i => i.value = '');
+    if(data.ok){
+      showToast(`Saved ${data.created} sets ✓`);
+      document.getElementById('exerciseList').innerHTML = '';
+      exerciseCount = 0;
+      addExercise();
+      loadRecent();
     } else {
-      showToast(`❌ Submission failed — ${data.error || 'Unknown error'}`, 'error');
+      showToast('Error saving session');
     }
-  } catch(e) {
-    showToast(`❌ Network error — ${e.message}`, 'error');
+  } catch(e){
+    showToast('Network error');
   }
-
-  btn.disabled = false;
-  btn.textContent = 'Submit Session';
+  btn.disabled = false; btn.textContent = 'Save Session';
 }
 
-// Init
-loadPrefs();
-buildSession();
+function timeAgo(dateStr){
+  const days = Math.floor((new Date(todayLocal()) - new Date(dateStr)) / 86400000);
+  if(days === 0) return 'Today';
+  if(days === 1) return 'Yesterday';
+  return `${days}d ago`;
+}
+
+async function loadRecent(){
+  try{
+    const res = await fetch(`${API}/getDashboardData`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({}) });
+    const data = await res.json();
+    const list = document.getElementById('recentList');
+    const sessions = (data.session_history || []).slice(0, 8);
+    if(!sessions.length){ list.innerHTML = '<div class="empty-hint">No sessions logged yet</div>'; return; }
+    list.innerHTML = sessions.map(s => `
+      <div class="recent-item">
+        <div>
+          <div class="recent-date">${s.date}</div>
+          <div class="recent-meta">${s.exercises.join(', ')}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="recent-meta">${s.totalSets} sets${s.avgRpe?` · RPE ${s.avgRpe}`:''}</div>
+          <div class="recent-meta">${timeAgo(s.date)}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e){
+    document.getElementById('recentList').innerHTML = '<div class="empty-hint">Could not load</div>';
+  }
+}
+
+addExercise();
+loadRecent();
 </script>
 </body>
 </html>
