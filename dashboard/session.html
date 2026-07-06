@@ -94,9 +94,9 @@ function renderExercise(ex){
     row.dataset.id = s.id || '';
     row.innerHTML = `
       <td style="text-align:center;font-weight:700;color:var(--muted)" class="set-num">${s.set || ''}</td>
-      <td><input type="text" inputmode="numeric" class="set-reps" value="${s.reps != null ? s.reps : ''}" placeholder="reps"></td>
-      <td><input type="text" class="set-load" value="${s.load != null ? s.load : ''}" placeholder="kg / #slot"></td>
-      <td><input type="text" inputmode="numeric" class="set-rpe" value="${s.rpe != null ? s.rpe : ''}" placeholder="rpe"></td>
+      <td><input type="text" inputmode="numeric" class="set-reps" value="${s.reps != null ? s.reps : ''}" placeholder=""></td>
+      <td><input type="text" class="set-load" value="${s.load != null ? s.load : ''}" placeholder=""></td>
+      <td><input type="text" inputmode="numeric" class="set-rpe" value="${s.rpe != null ? s.rpe : ''}" placeholder=""></td>
       <td><button class="remove-set" onclick="removeSetRow(this)">×</button></td>
     `;
     tbody.appendChild(row);
@@ -110,9 +110,9 @@ function addSetRow(exId){
   row.dataset.id = '';
   row.innerHTML = `
     <td style="text-align:center;font-weight:700;color:var(--muted)" class="set-num">${setNum}</td>
-    <td><input type="text" inputmode="numeric" class="set-reps" placeholder="reps"></td>
-    <td><input type="text" class="set-load" placeholder="kg / #slot"></td>
-    <td><input type="text" inputmode="numeric" class="set-rpe" placeholder="rpe"></td>
+    <td><input type="text" inputmode="numeric" class="set-reps" placeholder=""></td>
+    <td><input type="text" class="set-load" placeholder=""></td>
+    <td><input type="text" inputmode="numeric" class="set-rpe" placeholder=""></td>
     <td><button class="remove-set" onclick="removeSetRow(this)">×</button></td>
   `;
   tbody.appendChild(row);
