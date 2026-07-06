@@ -20,7 +20,11 @@ Deno.serve(async (req) => {
     const sessionType = body.session_type;
 
     const allLogs = await base44.asServiceRole.entities.SessionLog.list();
-    const athleteLogs = allLogs.filter((l: any) => (l.athlete || DEFAULT_ATHLETE) === athlete);
+    const athleteLogs = allLogs
+      .filter((l: any) => (l.athlete || DEFAULT_ATHLETE) === athlete)
+      // Sort by created_date so exercise order always matches actual logging order
+      // (list() ordering isn't guaranteed and can shift after edits).
+      .sort((a: any, b: any) => new Date(a.created_date).getTime() - new Date(b.created_date).getTime());
 
     // Session index: unique date + session_type combos
     const seenKeys = new Set<string>();

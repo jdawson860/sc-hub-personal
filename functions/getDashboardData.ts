@@ -203,7 +203,12 @@ Deno.serve(async (req) => {
     const athlete = (body.athlete || DEFAULT_ATHLETE);
 
     const allLogs = await base44.asServiceRole.entities.SessionLog.list();
-    const logs = allLogs.filter((l: any) => (l.athlete || DEFAULT_ATHLETE) === athlete);
+    const logs = allLogs
+      .filter((l: any) => (l.athlete || DEFAULT_ATHLETE) === athlete)
+      // Entity list() ordering is not guaranteed to reflect logging order (e.g. it can shift
+      // after any edit bumps updated_date). Sort by created_date so exercise order within a
+      // session always matches the order they were actually entered/performed.
+      .sort((a: any, b: any) => new Date(a.created_date).getTime() - new Date(b.created_date).getTime());
 
     const now = new Date();
     const week7 = new Date(now); week7.setDate(now.getDate() - 7);
