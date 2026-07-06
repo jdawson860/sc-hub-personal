@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Session — S&amp;C Hub</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --navy:#07122b;--navy2:#0c1f48;
+    --accent:#e63946;
+    --bg:#07122b;--card:#fff;--text:#07122b;--muted:#5a6a8a;--border:#d0daf0;
+  }
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:60px}
+  .header{background:var(--navy);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 12px rgba(0,0,0,.35)}
+  .header a{color:#8fa0be;text-decoration:none;font-size:13px;font-weight:600}
+  .header-title{font-size:16px;font-weight:800}
+  .main{padding:16px;max-width:640px;margin:0 auto}
+  .card{background:var(--card);border-radius:14px;padding:18px;box-shadow:0 2px 16px rgba(0,0,0,.3);margin-bottom:14px}
+  .session-title{font-size:20px;font-weight:800;color:var(--navy)}
+  .session-type-badge{display:inline-block;background:var(--navy);color:#fff;font-size:11px;font-weight:800;padding:3px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}
+  .session-meta{color:var(--muted);font-size:13px;margin-top:4px}
+  .exercise-block{background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)}
+  .exercise-block-head{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+  .exercise-name{font-weight:800;font-size:15px;color:var(--navy);flex:1}
+  .remove-ex{background:none;border:none;color:var(--accent);font-size:20px;cursor:pointer;padding:4px 8px;line-height:1}
+  .sets-table{width:100%;border-collapse:collapse;margin-top:6px}
+  .sets-table th{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);text-align:left;padding:4px 6px}
+  .sets-table td{padding:4px 6px}
+  .sets-table input{padding:8px;font-size:14px;text-align:center;border:1px solid var(--border);border-radius:7px;width:100%;background:#fff}
+  .remove-set{background:none;border:none;color:#c0c8d8;font-size:16px;cursor:pointer}
+  .add-set-btn{background:none;border:2px dashed var(--border);color:var(--muted);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;width:100%;margin-top:8px}
+  .save-btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;width:100%;box-shadow:0 4px 14px rgba(230,57,70,.4)}
+  .save-btn:disabled{opacity:.5;cursor:default}
+  .delete-session-btn{background:none;border:1px solid var(--accent);color:var(--accent);border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:10px}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.4);z-index:200;display:none}
+  .empty-hint{color:var(--muted);font-size:13px;text-align:center;padding:20px 0}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">Edit Session</div>
+  <a href="dashboard.html">Dashboard →</a>
+</div>
+
+<div class="main">
+  <div class="card" id="sessionHeader">
+    <div class="empty-hint">Loading…</div>
+  </div>
+
+  <div id="exerciseList"></div>
+
+  <button class="save-btn" id="saveBtn" onclick="saveChanges()">Save Changes</button>
+  <button class="delete-session-btn" onclick="deleteSession()">Delete Entire Session</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://bruce-copy-ddd4bbe3.base44.app/functions';
+const params = new URLSearchParams(location.search);
+const date = params.get('date');
+const sessionType = params.get('type');
+let deletedIds = [];
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(()=> t.style.display='none', 2500);
+}
+
+function renderExercise(ex){
+  const id = 'ex_' + Math.random().toString(36).slice(2, 9);
+  const wrap = document.createElement('div');
+  wrap.className = 'exercise-block';
+  wrap.id = id;
+  wrap.dataset.exercise = ex.name;
+  wrap.innerHTML = `
+    <div class="exercise-block-head">
+      <div class="exercise-name">${ex.name}</div>
+    </div>
+    <table class="sets-table">
+      <thead><tr><th style="width:36px">Set</th><th>Reps</th><th>Load</th><th>RPE</th><th style="width:24px"></th></tr></thead>
+      <tbody class="sets-body"></tbody>
+    </table>
+    <button class="add-set-btn" onclick="addSetRow('${id}')">+ Add Set</button>
+  `;
+  document.getElementById('exerciseList').appendChild(wrap);
+  const tbody = wrap.querySelector('.sets-body');
+  ex.sets.forEach(s => {
+    const row = document.createElement('tr');
+    row.dataset.id = s.id || '';
+    row.innerHTML = `
+      <td style="text-align:center;font-weight:700;color:var(--muted)" class="set-num">${s.set || ''}</td>
+      <td><input type="text" inputmode="numeric" class="set-reps" value="${s.reps != null ? s.reps : ''}" placeholder="reps"></td>
+      <td><input type="text" class="set-load" value="${s.load != null ? s.load : ''}" placeholder="kg / #slot"></td>
+      <td><input type="text" inputmode="numeric" class="set-rpe" value="${s.rpe != null ? s.rpe : ''}" placeholder="rpe"></td>
+      <td><button class="remove-set" onclick="removeSetRow(this)">×</button></td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+function addSetRow(exId){
+  const tbody = document.querySelector(`#${exId} .sets-body`);
+  const setNum = tbody.children.length + 1;
+  const row = document.createElement('tr');
+  row.dataset.id = '';
+  row.innerHTML = `
+    <td style="text-align:center;font-weight:700;color:var(--muted)" class="set-num">${setNum}</td>
+    <td><input type="text" inputmode="numeric" class="set-reps" placeholder="reps"></td>
+    <td><input type="text" class="set-load" placeholder="kg / #slot"></td>
+    <td><input type="text" inputmode="numeric" class="set-rpe" placeholder="rpe"></td>
+    <td><button class="remove-set" onclick="removeSetRow(this)">×</button></td>
+  `;
+  tbody.appendChild(row);
+}
+
+function removeSetRow(btn){
+  const row = btn.closest('tr');
+  const id = row.dataset.id;
+  if(id) deletedIds.push(id);
+  const tbody = row.closest('.sets-body');
+  row.remove();
+  [...tbody.children].forEach((r, i) => r.querySelector('.set-num').textContent = i + 1);
+}
+
+async function loadSession(){
+  if(!date){ document.getElementById('sessionHeader').innerHTML = '<div class="empty-hint">No session specified</div>'; return; }
+  try{
+    const res = await fetch(`${API}/getSessionDetail`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ date, session_type: sessionType }) });
+    const data = await res.json();
+    const s = data.session_detail;
+    if(!s || !s.exercises.length){
+      document.getElementById('sessionHeader').innerHTML = '<div class="empty-hint">Session not found</div>';
+      return;
+    }
+    document.getElementById('sessionHeader').innerHTML = `
+      <div class="session-title">${s.date}<span class="session-type-badge">${s.session_type}</span></div>
+      <div class="session-meta">${s.total_sets} sets · ${s.total_load}kg total load${s.avg_rpe?` · avg RPE ${s.avg_rpe}`:''}</div>
+    `;
+    s.exercises.forEach(renderExercise);
+  } catch(e){
+    document.getElementById('sessionHeader').innerHTML = '<div class="empty-hint">Failed to load session</div>';
+  }
+}
+
+async function saveChanges(){
+  const updates = [];
+  const creates = [];
+  document.querySelectorAll('.exercise-block').forEach(block => {
+    const exName = block.dataset.exercise;
+    const rows = block.querySelectorAll('.sets-body tr');
+    rows.forEach((row, i) => {
+      const reps = row.querySelector('.set-reps').value.trim();
+      const load = row.querySelector('.set-load').value.trim();
+      const rpe = row.querySelector('.set-rpe').value.trim();
+      const id = row.dataset.id;
+      if(id){
+        updates.push({ id, reps: reps || null, load: load || null, rpe: rpe || null });
+      } else if(reps || load || rpe){
+        creates.push({
+          timestamp: date + 'T09:00:00',
+          session_type: sessionType,
+          exercise: exName,
+          set_number: i + 1,
+          reps: reps || null,
+          load: load || null,
+          rpe: rpe || null,
+        });
+      }
+    });
+  });
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    const res = await fetch(`${API}/updateSessionSets`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ updates, deletes: deletedIds, creates }) });
+    const data = await res.json();
+    if(data.ok){
+      showToast('Session updated ✓');
+      deletedIds = [];
+      document.getElementById('exerciseList').innerHTML = '';
+      await loadSession();
+    } else {
+      showToast('Error saving changes');
+    }
+  } catch(e){
+    showToast('Network error');
+  }
+  btn.disabled = false; btn.textContent = 'Save Changes';
+}
+
+async function deleteSession(){
+  if(!confirm('Delete this entire session? This cannot be undone.')) return;
+  const allIds = [];
+  document.querySelectorAll('.sets-body tr').forEach(row => { if(row.dataset.id) allIds.push(row.dataset.id); });
+  if(!allIds.length){ showToast('Nothing to delete'); return; }
+  try{
+    const res = await fetch(`${API}/updateSessionSets`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ deletes: allIds }) });
+    const data = await res.json();
+    if(data.ok){
+      showToast('Session deleted');
+      setTimeout(()=> location.href = 'dashboard.html', 800);
+    } else {
+      showToast('Error deleting session');
+    }
+  } catch(e){
+    showToast('Network error');
+  }
+}
+
+loadSession();
+</script>
+</body>
+</html>

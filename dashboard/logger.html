@@ -273,7 +273,7 @@ function loadRecent(){
   const sessions = (dashData && dashData.session_history || []).slice(0, 8);
   if(!sessions.length){ list.innerHTML = '<div class="empty-hint">No sessions logged yet</div>'; return; }
   list.innerHTML = sessions.map(s => `
-    <div class="recent-item">
+    <div class="recent-item" style="cursor:pointer" onclick="location.href='session.html?date=${encodeURIComponent(s.date)}&type=${encodeURIComponent(s.session_type||'OTHER')}'" title="Tap to view/edit">
       <div>
         <div class="recent-date">${s.date}<span class="recent-type">${s.session_type}</span></div>
         <div class="recent-meta">${s.exercises.join(', ')}</div>

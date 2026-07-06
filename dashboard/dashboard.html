@@ -120,7 +120,7 @@ async function load(){
 
     const rows = (d.session_history || []).slice(0, 12);
     document.getElementById('sessionRows').innerHTML = rows.length ? rows.map(s => `
-      <tr>
+      <tr onclick="location.href='session.html?date=${encodeURIComponent(s.date)}&type=${encodeURIComponent(s.session_type||'OTHER')}'" style="cursor:pointer" title="Tap to view/edit">
         <td style="font-weight:700">${s.date}</td>
         <td><span style="background:var(--navy);color:#fff;font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px">${s.session_type||'—'}</span></td>
         <td>${s.exercises.slice(0,3).join(', ')}${s.exercises.length>3?` +${s.exercises.length-3}`:''}</td>

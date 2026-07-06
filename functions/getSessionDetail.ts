@@ -1,4 +1,5 @@
-// getSessionDetail v4 — single-user, reads directly from SessionLog entity
+// getSessionDetail v5 — single-user, reads directly from SessionLog entity
+// Filters by date AND session_type (a day can have more than one session type)
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 const DEFAULT_ATHLETE = 'Jack';
@@ -16,24 +17,32 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const athlete = body.athlete || DEFAULT_ATHLETE;
     const date = body.date;
+    const sessionType = body.session_type;
 
     const allLogs = await base44.asServiceRole.entities.SessionLog.list();
     const athleteLogs = allLogs.filter((l: any) => (l.athlete || DEFAULT_ATHLETE) === athlete);
 
-    // Session index: unique dates for this athlete
-    const seenDates = new Set<string>();
+    // Session index: unique date + session_type combos
+    const seenKeys = new Set<string>();
     const sessions: any[] = [];
     for (const l of athleteLogs) {
       const d = l.timestamp?.split('T')[0];
-      if (!d || seenDates.has(d)) continue;
-      seenDates.add(d);
-      sessions.push({ date: d });
+      if (!d) continue;
+      const t = l.session_type || 'OTHER';
+      const key = `${d}|${t}`;
+      if (seenKeys.has(key)) continue;
+      seenKeys.add(key);
+      sessions.push({ date: d, session_type: t });
     }
     sessions.sort((a, b) => b.date.localeCompare(a.date));
 
     let sessionDetail = null;
     if (date) {
-      const sets = athleteLogs.filter((l: any) => l.timestamp?.startsWith(date));
+      const sets = athleteLogs.filter((l: any) => {
+        if (!l.timestamp?.startsWith(date)) return false;
+        if (sessionType && (l.session_type || 'OTHER') !== sessionType) return false;
+        return true;
+      });
 
       const byExercise: Record<string, any[]> = {};
       const exerciseOrder: string[] = [];
@@ -64,6 +73,7 @@ Deno.serve(async (req) => {
 
       sessionDetail = {
         athlete, date,
+        session_type: sessionType || (sets[0]?.session_type || 'OTHER'),
         exercises: exerciseOrder.map(name => ({ name, sets: byExercise[name] })),
         total_sets: sets.length,
         avg_rpe: avgRpe,

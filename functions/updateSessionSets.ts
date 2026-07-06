@@ -1,8 +1,8 @@
+// updateSessionSets v2 — id-based edit/delete/create for individual SessionLog set records
+// Payload: { updates: [{id, reps, load, rpe}], deletes: ["id1", ...], creates: [{timestamp, athlete, session_type, exercise, set_number, reps, load, rpe}] }
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-// Updates individual set records in SessionLog
-// Payload: { updates: [{ timestamp, athlete, exercise, session_type, reps, load, rpe }] }
-// Matches records by athlete + exercise + timestamp (unique per set)
+const DEFAULT_ATHLETE = 'Jack';
 
 Deno.serve(async (req) => {
   const cors = {
@@ -14,50 +14,57 @@ Deno.serve(async (req) => {
 
   try {
     const base44 = createClientFromRequest(req);
-    const { updates } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const updates = Array.isArray(body.updates) ? body.updates : [];
+    const deletes = Array.isArray(body.deletes) ? body.deletes : [];
+    const creates = Array.isArray(body.creates) ? body.creates : [];
 
-    if (!Array.isArray(updates) || updates.length === 0) {
-      return Response.json({ error: 'updates array required' }, { status: 400, headers: cors });
-    }
-
-    // Fetch all logs for this athlete on this date to find IDs
-    const athlete = updates[0].athlete;
-    const date = updates[0].timestamp?.split('T')[0];
-
-    const allLogs = await base44.asServiceRole.entities.SessionLog.list();
-    const relevantLogs = allLogs.filter((l: any) =>
-      l.athlete === athlete && l.timestamp?.startsWith(date)
-    );
-
-    let updated = 0;
+    let updated = 0, deleted = 0, created = 0;
     const errors: string[] = [];
 
     for (const upd of updates) {
-      // Match by athlete + timestamp + exercise
-      const match = relevantLogs.find((l: any) =>
-        l.athlete === upd.athlete &&
-        l.timestamp === upd.timestamp &&
-        l.exercise === upd.exercise
-      );
-
-      if (!match) {
-        errors.push(`No record found for ${upd.exercise} @ ${upd.timestamp}`);
-        continue;
-      }
-
+      if (!upd.id) { errors.push('Update missing id'); continue; }
       try {
-        await base44.asServiceRole.entities.SessionLog.update(match.id, {
-          reps: upd.reps,
-          load: String(upd.load),
-          rpe: parseFloat(upd.rpe),
+        await base44.asServiceRole.entities.SessionLog.update(upd.id, {
+          reps: upd.reps !== undefined && upd.reps !== null && upd.reps !== '' ? Number(upd.reps) : null,
+          load: upd.load !== undefined && upd.load !== null && upd.load !== '' ? String(upd.load) : null,
+          rpe: upd.rpe !== undefined && upd.rpe !== null && upd.rpe !== '' ? Number(upd.rpe) : null,
         });
         updated++;
       } catch (e: any) {
-        errors.push(`Failed to update ${upd.exercise}: ${e.message}`);
+        errors.push(`Failed to update ${upd.id}: ${e.message}`);
       }
     }
 
-    return Response.json({ ok: true, updated, errors }, { status: 200, headers: cors });
+    for (const id of deletes) {
+      try {
+        await base44.asServiceRole.entities.SessionLog.delete(id);
+        deleted++;
+      } catch (e: any) {
+        errors.push(`Failed to delete ${id}: ${e.message}`);
+      }
+    }
+
+    for (const rec of creates) {
+      if (!rec.exercise) { errors.push('Create missing exercise'); continue; }
+      try {
+        await base44.asServiceRole.entities.SessionLog.create({
+          timestamp: rec.timestamp || new Date().toISOString(),
+          athlete: String(rec.athlete || DEFAULT_ATHLETE),
+          session_type: String(rec.session_type || 'OTHER'),
+          exercise: String(rec.exercise),
+          set_number: rec.set_number !== undefined ? Number(rec.set_number) : null,
+          reps: rec.reps !== undefined && rec.reps !== null && rec.reps !== '' ? Number(rec.reps) : null,
+          load: rec.load !== undefined && rec.load !== null && rec.load !== '' ? String(rec.load) : null,
+          rpe: rec.rpe !== undefined && rec.rpe !== null && rec.rpe !== '' ? Number(rec.rpe) : null,
+        });
+        created++;
+      } catch (e: any) {
+        errors.push(`Failed to create ${rec.exercise}: ${e.message}`);
+      }
+    }
+
+    return Response.json({ ok: true, updated, deleted, created, errors: errors.length ? errors : undefined }, { status: 200, headers: cors });
   } catch (err: any) {
     return Response.json({ error: err.message }, { status: 500, headers: cors });
   }
