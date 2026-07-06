@@ -113,23 +113,37 @@ function buildSessionHistory(logs: any[]) {
   return sessions.sort((a, b) => b.date.localeCompare(a.date));
 }
 
-// For each session type, find the most recent session and its exercises/sets (for autofill)
+// Build the exercise/set list for a specific set of logs on their most recent shared date
+function buildDayExercises(dayLogs: any[], date: string) {
+  const daySets = dayLogs.filter((l: any) => l.timestamp?.startsWith(date));
+  const byExercise: Record<string, any[]> = {};
+  const order: string[] = [];
+  for (const s of daySets) {
+    if (!s.exercise) continue;
+    if (!byExercise[s.exercise]) { byExercise[s.exercise] = []; order.push(s.exercise); }
+    byExercise[s.exercise].push({ set: s.set_number, reps: s.reps, load: s.load, rpe: s.rpe });
+  }
+  for (const ex of order) byExercise[ex].sort((a, b) => (a.set || 0) - (b.set || 0));
+  return order.map(name => ({ name, sets: byExercise[name] }));
+}
+
+// For each session type, find the most recent session and its exercises/sets (for autofill).
+// If this type has no history yet, fall back to the single most recent session overall
+// (any type) so the logger still prefills something useful instead of a blank list.
 function buildLastByType(logs: any[]) {
   const result: Record<string, any> = {};
+
+  let overallFallback: any = null;
+  if (logs.length) {
+    const lastOverallDate = [...logs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0].timestamp.split('T')[0];
+    overallFallback = { date: lastOverallDate, exercises: buildDayExercises(logs, lastOverallDate), fallback: true };
+  }
+
   for (const type of SESSION_TYPES) {
     const typeLogs = logs.filter((l: any) => (l.session_type || 'OTHER') === type);
-    if (!typeLogs.length) { result[type] = null; continue; }
+    if (!typeLogs.length) { result[type] = overallFallback; continue; }
     const lastDate = [...typeLogs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0].timestamp.split('T')[0];
-    const daySets = typeLogs.filter((l: any) => l.timestamp?.startsWith(lastDate));
-    const byExercise: Record<string, any[]> = {};
-    const order: string[] = [];
-    for (const s of daySets) {
-      if (!s.exercise) continue;
-      if (!byExercise[s.exercise]) { byExercise[s.exercise] = []; order.push(s.exercise); }
-      byExercise[s.exercise].push({ set: s.set_number, reps: s.reps, load: s.load, rpe: s.rpe });
-    }
-    for (const ex of order) byExercise[ex].sort((a, b) => (a.set || 0) - (b.set || 0));
-    result[type] = { date: lastDate, exercises: order.map(name => ({ name, sets: byExercise[name] })) };
+    result[type] = { date: lastDate, exercises: buildDayExercises(typeLogs, lastDate), fallback: false };
   }
   return result;
 }
