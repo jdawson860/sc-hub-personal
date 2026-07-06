@@ -10,10 +10,9 @@
     "session_type": {
       "type": "string",
       "enum": [
-        "Lower A",
-        "Lower B",
-        "Upper A",
-        "Upper B"
+        "UPPER",
+        "LOWER",
+        "OTHER"
       ]
     },
     "exercise": {

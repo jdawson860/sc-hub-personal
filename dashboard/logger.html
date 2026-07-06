@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Log Session — Rowing Hub</title>
+<title>Log Session — S&amp;C Hub</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{
@@ -20,10 +20,16 @@
   label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
   input[type="date"], input[type="text"]{width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:9px;font-size:15px;color:var(--text);outline:none;background:#f8fafc}
   input[type="date"]:focus, input[type="text"]:focus{border-color:var(--accent)}
+  .type-toggle{display:flex;gap:8px}
+  .type-btn{flex:1;padding:12px;border:2px solid var(--border);background:#f8fafc;border-radius:9px;font-size:13px;font-weight:800;letter-spacing:.5px;color:var(--muted);cursor:pointer;transition:all .15s}
+  .type-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
   .exercise-block{background:#f8fafc;border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)}
   .exercise-block-head{display:flex;gap:8px;align-items:center;margin-bottom:10px}
   .exercise-block-head input{flex:1}
-  .remove-ex{background:none;border:none;color:var(--accent);font-size:20px;cursor:pointer;padding:4px 8px;line-height:1}
+  .mode-toggle{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;flex-shrink:0}
+  .mode-btn{padding:8px 10px;border:none;background:#fff;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer}
+  .mode-btn.active{background:var(--navy2);color:#fff}
+  .remove-ex{background:none;border:none;color:var(--accent);font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;flex-shrink:0}
   .sets-table{width:100%;border-collapse:collapse;margin-top:6px}
   .sets-table th{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);text-align:left;padding:4px 6px}
   .sets-table td{padding:4px 6px}
@@ -38,6 +44,7 @@
   .recent-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
   .recent-item:last-child{border-bottom:none}
   .recent-date{font-weight:700;font-size:14px;color:var(--navy)}
+  .recent-type{display:inline-block;background:var(--navy);color:#fff;font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px;margin-left:6px;vertical-align:middle}
   .recent-meta{font-size:12px;color:var(--muted);margin-top:2px}
   .section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 10px 2px}
 </style>
@@ -52,7 +59,13 @@
 <div class="main">
   <div class="card">
     <label>Date</label>
-    <input type="date" id="sessionDate">
+    <input type="date" id="sessionDate" style="margin-bottom:14px">
+    <label>Session Type</label>
+    <div class="type-toggle">
+      <button class="type-btn" data-type="UPPER" onclick="selectType('UPPER')">UPPER</button>
+      <button class="type-btn" data-type="LOWER" onclick="selectType('LOWER')">LOWER</button>
+      <button class="type-btn" data-type="OTHER" onclick="selectType('OTHER')">OTHER</button>
+    </div>
   </div>
 
   <div id="exerciseList"></div>
@@ -66,11 +79,14 @@
   </div>
 </div>
 
+<datalist id="exerciseNames"></datalist>
 <div class="toast" id="toast"></div>
 
 <script>
 const API = 'https://bruce-copy-ddd4bbe3.base44.app/functions';
 let exerciseCount = 0;
+let dashData = null;
+let currentType = null;
 
 function todayLocal(){
   const d = new Date();
@@ -78,36 +94,107 @@ function todayLocal(){
 }
 document.getElementById('sessionDate').value = todayLocal();
 
-function addExercise(prefill){
+function timeModeKey(name){ return 'sc_timemode_' + name.trim().toLowerCase(); }
+function isTimeMode(name){ return localStorage.getItem(timeModeKey(name)) === '1'; }
+function setTimeMode(name, on){ localStorage.setItem(timeModeKey(name), on ? '1' : '0'); }
+
+function selectType(type){
+  currentType = type;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+  // Clear and autofill from last session of this type
+  document.getElementById('exerciseList').innerHTML = '';
+  exerciseCount = 0;
+  const last = dashData && dashData.last_by_type ? dashData.last_by_type[type] : null;
+  if(last && last.exercises && last.exercises.length){
+    last.exercises.forEach(ex => {
+      const id = addExercise(ex.name, true);
+      // one row per previous set, with placeholders from that exact set
+      const tbody = document.querySelector(`#${id} .sets-body`);
+      tbody.innerHTML = '';
+      ex.sets.forEach((s, i) => addSetRow(id, s));
+      if(!ex.sets.length) addSetRow(id, null);
+    });
+  } else {
+    addExercise();
+  }
+}
+
+function getPlaceholderSet(exName, setIndex){
+  if(!dashData || !dashData.exercise_history) return null;
+  const hist = dashData.exercise_history[exName.trim().toLowerCase()];
+  if(!hist || !hist.sets || !hist.sets.length) return null;
+  return hist.sets[setIndex] || hist.sets[hist.sets.length - 1];
+}
+
+function addExercise(prefill, skipAutoSet){
   const id = 'ex' + (exerciseCount++);
+  const name = prefill || '';
+  const timeMode = name ? isTimeMode(name) : false;
   const wrap = document.createElement('div');
   wrap.className = 'exercise-block';
   wrap.id = id;
   wrap.innerHTML = `
     <div class="exercise-block-head">
-      <input type="text" placeholder="Exercise name" class="ex-name" value="${prefill||''}">
+      <input type="text" placeholder="Exercise name" class="ex-name" list="exerciseNames" value="${name}" oninput="onExerciseNameChange('${id}')">
+      <div class="mode-toggle">
+        <button type="button" class="mode-btn ${!timeMode?'active':''}" onclick="setMode('${id}', false)">Reps</button>
+        <button type="button" class="mode-btn ${timeMode?'active':''}" onclick="setMode('${id}', true)">Time</button>
+      </div>
       <button class="remove-ex" onclick="document.getElementById('${id}').remove()">×</button>
     </div>
     <table class="sets-table">
-      <thead><tr><th style="width:36px">Set</th><th>Reps</th><th>Load</th><th>RPE</th><th style="width:24px"></th></tr></thead>
+      <thead><tr><th style="width:36px">Set</th><th class="reps-hdr">${timeMode?'Time (s)':'Reps'}</th><th>Load</th><th>RPE</th><th style="width:24px"></th></tr></thead>
       <tbody class="sets-body"></tbody>
     </table>
-    <button class="add-set-btn" onclick="addSet('${id}')">+ Add Set</button>
+    <button class="add-set-btn" onclick="addSetRow('${id}')">+ Add Set</button>
   `;
   document.getElementById('exerciseList').appendChild(wrap);
-  addSet(id);
+  if(!skipAutoSet) addSetRow(id, name ? getPlaceholderSet(name, 0) : null);
   return id;
 }
 
-function addSet(exId){
+function onExerciseNameChange(exId){
+  const input = document.querySelector(`#${exId} .ex-name`);
+  const name = input.value.trim();
+  if(!name) return;
+  // update time-mode toggle state based on saved preference
+  setMode(exId, isTimeMode(name), true);
+  // refresh placeholders for all existing set rows for this exercise
+  const rows = document.querySelectorAll(`#${exId} .sets-body tr`);
+  rows.forEach((row, i) => {
+    const ph = getPlaceholderSet(name, i);
+    row.querySelector('.set-reps').placeholder = ph && ph.reps != null ? String(ph.reps) : (isTimeMode(name) ? 'sec' : 'reps');
+    row.querySelector('.set-load').placeholder = ph && ph.load != null ? String(ph.load) : 'kg / #slot';
+    row.querySelector('.set-rpe').placeholder = ph && ph.rpe != null ? String(ph.rpe) : 'rpe';
+  });
+}
+
+function setMode(exId, timeOn, skipSave){
+  const block = document.getElementById(exId);
+  block.querySelectorAll('.mode-btn')[0].classList.toggle('active', !timeOn);
+  block.querySelectorAll('.mode-btn')[1].classList.toggle('active', timeOn);
+  block.querySelector('.reps-hdr').textContent = timeOn ? 'Time (s)' : 'Reps';
+  if(!skipSave){
+    const name = block.querySelector('.ex-name').value.trim();
+    if(name) setTimeMode(name, timeOn);
+  }
+  block.querySelectorAll('.set-reps').forEach(inp => {
+    if(!inp.value) inp.placeholder = timeOn ? 'sec' : 'reps';
+  });
+}
+
+function addSetRow(exId, placeholderSet){
   const tbody = document.querySelector(`#${exId} .sets-body`);
   const setNum = tbody.children.length + 1;
+  const exName = document.querySelector(`#${exId} .ex-name`).value.trim();
+  const timeOn = exName ? isTimeMode(exName) : false;
+  const ph = placeholderSet || getPlaceholderSet(exName, setNum - 1);
   const row = document.createElement('tr');
   row.innerHTML = `
     <td style="text-align:center;font-weight:700;color:var(--muted)">${setNum}</td>
-    <td><input type="text" inputmode="numeric" class="set-reps" placeholder="8"></td>
-    <td><input type="text" inputmode="decimal" class="set-load" placeholder="60kg"></td>
-    <td><input type="text" inputmode="numeric" class="set-rpe" placeholder="7"></td>
+    <td><input type="text" inputmode="numeric" class="set-reps" placeholder="${ph && ph.reps != null ? ph.reps : (timeOn?'sec':'reps')}"></td>
+    <td><input type="text" class="set-load" placeholder="${ph && ph.load != null ? ph.load : 'kg / #slot'}"></td>
+    <td><input type="text" inputmode="numeric" class="set-rpe" placeholder="${ph && ph.rpe != null ? ph.rpe : 'rpe'}"></td>
     <td><button class="remove-set" onclick="this.closest('tr').remove(); renumberSets('${exId}')">×</button></td>
   `;
   tbody.appendChild(row);
@@ -128,6 +215,7 @@ function showToast(msg){
 async function saveSession(){
   const date = document.getElementById('sessionDate').value;
   if(!date){ showToast('Pick a date first'); return; }
+  if(!currentType){ showToast('Pick a session type first'); return; }
   const blocks = document.querySelectorAll('.exercise-block');
   const records = [];
   blocks.forEach(block => {
@@ -141,6 +229,7 @@ async function saveSession(){
       if(!reps && !load && !rpe) return;
       records.push({
         timestamp: date + 'T09:00:00',
+        session_type: currentType,
         exercise: name,
         set_number: i+1,
         reps: reps || null,
@@ -158,9 +247,8 @@ async function saveSession(){
     const data = await res.json();
     if(data.ok){
       showToast(`Saved ${data.created} sets ✓`);
-      document.getElementById('exerciseList').innerHTML = '';
-      exerciseCount = 0;
-      addExercise();
+      await loadDashboardData();
+      selectType(currentType);
       loadRecent();
     } else {
       showToast('Error saving session');
@@ -178,32 +266,40 @@ function timeAgo(dateStr){
   return `${days}d ago`;
 }
 
-async function loadRecent(){
+function loadRecent(){
+  const list = document.getElementById('recentList');
+  const sessions = (dashData && dashData.session_history || []).slice(0, 8);
+  if(!sessions.length){ list.innerHTML = '<div class="empty-hint">No sessions logged yet</div>'; return; }
+  list.innerHTML = sessions.map(s => `
+    <div class="recent-item">
+      <div>
+        <div class="recent-date">${s.date}<span class="recent-type">${s.session_type}</span></div>
+        <div class="recent-meta">${s.exercises.join(', ')}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="recent-meta">${s.totalSets} sets${s.avgRpe?` · RPE ${s.avgRpe}`:''}</div>
+        <div class="recent-meta">${timeAgo(s.date)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function loadDashboardData(){
   try{
     const res = await fetch(`${API}/getDashboardData`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({}) });
-    const data = await res.json();
-    const list = document.getElementById('recentList');
-    const sessions = (data.session_history || []).slice(0, 8);
-    if(!sessions.length){ list.innerHTML = '<div class="empty-hint">No sessions logged yet</div>'; return; }
-    list.innerHTML = sessions.map(s => `
-      <div class="recent-item">
-        <div>
-          <div class="recent-date">${s.date}</div>
-          <div class="recent-meta">${s.exercises.join(', ')}</div>
-        </div>
-        <div style="text-align:right">
-          <div class="recent-meta">${s.totalSets} sets${s.avgRpe?` · RPE ${s.avgRpe}`:''}</div>
-          <div class="recent-meta">${timeAgo(s.date)}</div>
-        </div>
-      </div>
-    `).join('');
+    dashData = await res.json();
+    const dl = document.getElementById('exerciseNames');
+    dl.innerHTML = (dashData.exercise_names || []).map(n => `<option value="${n}">`).join('');
   } catch(e){
-    document.getElementById('recentList').innerHTML = '<div class="empty-hint">Could not load</div>';
+    dashData = { session_history: [], exercise_history: {}, last_by_type: {}, exercise_names: [] };
   }
 }
 
-addExercise();
-loadRecent();
+(async function init(){
+  await loadDashboardData();
+  loadRecent();
+  document.getElementById('exerciseList').innerHTML = '<div class="empty-hint">Pick a session type above to start logging</div>';
+})();
 </script>
 </body>
 </html>

@@ -1,7 +1,9 @@
-// getDashboardData v7 — single-user personal S&C dashboard, reads directly from SessionLog entity
+// getDashboardData v8 — single-user personal S&C dashboard, reads directly from SessionLog entity
+// Adds: session-type-aware history, per-exercise "last time" placeholders, exercise name autocomplete list
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
 const DEFAULT_ATHLETE = 'Jack';
+const SESSION_TYPES = ['UPPER', 'LOWER', 'OTHER'];
 
 function buildDailyLoad(logs: any[]): Record<string, number> {
   const daily: Record<string, number> = {};
@@ -82,22 +84,26 @@ function buildExerciseProgressions(logs: any[]) {
   }).sort((a, b) => (b.lastDate || '').localeCompare(a.lastDate || ''));
 }
 
+// Group logs into sessions keyed by date + session_type
 function buildSessionHistory(logs: any[]) {
-  const byDate: Record<string, any[]> = {};
+  const byKey: Record<string, any[]> = {};
   for (const r of logs) {
     const date = r.timestamp?.split('T')[0];
     if (!date) continue;
-    if (!byDate[date]) byDate[date] = [];
-    byDate[date].push(r);
+    const type = r.session_type || 'OTHER';
+    const key = `${date}|${type}`;
+    if (!byKey[key]) byKey[key] = [];
+    byKey[key].push(r);
   }
-  const sessions = Object.entries(byDate).map(([date, sets]) => {
+  const sessions = Object.entries(byKey).map(([key, sets]) => {
+    const [date, session_type] = key.split('|');
     const rpes = sets.filter(s => s.rpe).map(s => s.rpe);
     const tl = sets.reduce((a, s) => { const l = parseFloat(s.load); return a + (isNaN(l) ? 0 : l * (parseFloat(s.reps) || 1)); }, 0);
     const exSeen = new Set<string>();
     const exercises: string[] = [];
     for (const s of sets) { if (s.exercise && !exSeen.has(s.exercise)) { exSeen.add(s.exercise); exercises.push(s.exercise); } }
     return {
-      date,
+      date, session_type,
       totalSets: sets.length,
       avgRpe: rpes.length ? parseFloat((rpes.reduce((a, v) => a + v, 0) / rpes.length).toFixed(1)) : null,
       totalLoad: Math.round(tl),
@@ -105,6 +111,68 @@ function buildSessionHistory(logs: any[]) {
     };
   });
   return sessions.sort((a, b) => b.date.localeCompare(a.date));
+}
+
+// For each session type, find the most recent session and its exercises/sets (for autofill)
+function buildLastByType(logs: any[]) {
+  const result: Record<string, any> = {};
+  for (const type of SESSION_TYPES) {
+    const typeLogs = logs.filter((l: any) => (l.session_type || 'OTHER') === type);
+    if (!typeLogs.length) { result[type] = null; continue; }
+    const lastDate = [...typeLogs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0].timestamp.split('T')[0];
+    const daySets = typeLogs.filter((l: any) => l.timestamp?.startsWith(lastDate));
+    const byExercise: Record<string, any[]> = {};
+    const order: string[] = [];
+    for (const s of daySets) {
+      if (!s.exercise) continue;
+      if (!byExercise[s.exercise]) { byExercise[s.exercise] = []; order.push(s.exercise); }
+      byExercise[s.exercise].push({ set: s.set_number, reps: s.reps, load: s.load, rpe: s.rpe });
+    }
+    for (const ex of order) byExercise[ex].sort((a, b) => (a.set || 0) - (b.set || 0));
+    result[type] = { date: lastDate, exercises: order.map(name => ({ name, sets: byExercise[name] })) };
+  }
+  return result;
+}
+
+// For every exercise ever logged, remember the sets from the most recent time it was logged (any session type)
+function buildExerciseHistory(logs: any[]) {
+  const history: Record<string, any> = {};
+  const sorted = [...logs].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  const lastDateByExercise: Record<string, string> = {};
+  for (const r of sorted) {
+    if (!r.exercise) continue;
+    const key = r.exercise.trim().toLowerCase();
+    const date = r.timestamp?.split('T')[0];
+    if (!date) continue;
+    lastDateByExercise[key] = date;
+  }
+  for (const r of sorted) {
+    if (!r.exercise) continue;
+    const key = r.exercise.trim().toLowerCase();
+    const date = r.timestamp?.split('T')[0];
+    if (date !== lastDateByExercise[key]) continue;
+    if (!history[key]) history[key] = { name: r.exercise, date, sets: [] };
+    history[key].sets.push({ set: r.set_number, reps: r.reps, load: r.load, rpe: r.rpe });
+  }
+  for (const key of Object.keys(history)) {
+    history[key].sets.sort((a: any, b: any) => (a.set || 0) - (b.set || 0));
+  }
+  return history;
+}
+
+// Distinct exercise names, most-recently-used first
+function buildExerciseNames(logs: any[]) {
+  const sorted = [...logs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const r of sorted) {
+    if (!r.exercise) continue;
+    const key = r.exercise.trim().toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    names.push(r.exercise);
+  }
+  return names;
 }
 
 Deno.serve(async (req) => {
@@ -145,6 +213,9 @@ Deno.serve(async (req) => {
     const daysSinceFirst = oldestLog ? Math.floor((now.getTime() - new Date(oldestLog.timestamp).getTime()) / 86400000) : 0;
 
     const exerciseProgressions = buildExerciseProgressions(logs);
+    const lastByType = buildLastByType(logs);
+    const exerciseHistory = buildExerciseHistory(logs);
+    const exerciseNames = buildExerciseNames(logs);
 
     return Response.json({
       ok: true,
@@ -163,6 +234,9 @@ Deno.serve(async (req) => {
       acwr_history: acwrData.slice(-28),
       session_history: sessionHistory,
       exercise_progressions: exerciseProgressions,
+      last_by_type: lastByType,
+      exercise_history: exerciseHistory,
+      exercise_names: exerciseNames,
     }, { status: 200, headers: cors });
 
   } catch (error: any) {

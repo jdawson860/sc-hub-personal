@@ -7,7 +7,7 @@ const cors = {
 };
 
 const DEFAULT_ATHLETE = 'Jack';
-const DEFAULT_SESSION_TYPE = 'S&C';
+const DEFAULT_SESSION_TYPE = 'OTHER';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
