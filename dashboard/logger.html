@@ -123,7 +123,9 @@ function getPlaceholderSet(exName, setIndex){
   if(!dashData || !dashData.exercise_history) return null;
   const hist = dashData.exercise_history[exName.trim().toLowerCase()];
   if(!hist || !hist.sets || !hist.sets.length) return null;
-  return hist.sets[setIndex] || hist.sets[hist.sets.length - 1];
+  // Only show a placeholder if that exact set number was actually recorded last time —
+  // never duplicate the last known set into sets that weren't actually done.
+  return hist.sets[setIndex] || null;
 }
 
 function addExercise(prefill, skipAutoSet){
