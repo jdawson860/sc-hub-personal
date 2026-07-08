@@ -68,7 +68,6 @@
     </div>
   </div>
 
-  <div id="prefillNote" style="display:none;color:var(--muted);font-size:12px;margin-bottom:8px;font-style:italic"></div>
   <div id="exerciseList"></div>
 
   <button class="add-ex-btn" onclick="addExercise()">+ Add Exercise</button>
@@ -102,11 +101,10 @@ function setTimeMode(name, on){ localStorage.setItem(timeModeKey(name), on ? '1'
 function selectType(type){
   currentType = type;
   document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
-  // Clear and autofill from last session of this type
+  // Clear and autofill from last session of this exact type only (never another type's exercises)
   document.getElementById('exerciseList').innerHTML = '';
   exerciseCount = 0;
   const last = dashData && dashData.last_by_type ? dashData.last_by_type[type] : null;
-  const note = document.getElementById('prefillNote');
   if(last && last.exercises && last.exercises.length){
     last.exercises.forEach(ex => {
       const id = addExercise(ex.name, true);
@@ -116,15 +114,8 @@ function selectType(type){
       ex.sets.forEach((s, i) => addSetRow(id, s));
       if(!ex.sets.length) addSetRow(id, null);
     });
-    if(last.fallback){
-      note.textContent = `No ${type} history yet — prefilled from your last session (${last.date})`;
-      note.style.display = 'block';
-    } else {
-      note.style.display = 'none';
-    }
   } else {
     addExercise();
-    note.style.display = 'none';
   }
 }
 

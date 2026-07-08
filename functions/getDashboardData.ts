@@ -128,20 +128,13 @@ function buildDayExercises(dayLogs: any[], date: string) {
 }
 
 // For each session type, find the most recent session and its exercises/sets (for autofill).
-// If this type has no history yet, fall back to the single most recent session overall
-// (any type) so the logger still prefills something useful instead of a blank list.
+// Strictly type-scoped: UPPER only ever pulls from a previous UPPER session, never LOWER/OTHER,
+// even if that means an empty list until that type has been logged at least once.
 function buildLastByType(logs: any[]) {
   const result: Record<string, any> = {};
-
-  let overallFallback: any = null;
-  if (logs.length) {
-    const lastOverallDate = [...logs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0].timestamp.split('T')[0];
-    overallFallback = { date: lastOverallDate, exercises: buildDayExercises(logs, lastOverallDate), fallback: true };
-  }
-
   for (const type of SESSION_TYPES) {
     const typeLogs = logs.filter((l: any) => (l.session_type || 'OTHER') === type);
-    if (!typeLogs.length) { result[type] = overallFallback; continue; }
+    if (!typeLogs.length) { result[type] = null; continue; }
     const lastDate = [...typeLogs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0].timestamp.split('T')[0];
     result[type] = { date: lastDate, exercises: buildDayExercises(typeLogs, lastDate), fallback: false };
   }
